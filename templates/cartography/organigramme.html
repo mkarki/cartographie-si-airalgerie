@@ -122,51 +122,75 @@
                     </div>
                 </div>
 
-                <!-- Systems table -->
-                <div class="border-t border-white/5">
+                <!-- Systems table with Key Users & Response Status -->
+                <div class="border-t border-white/5 overflow-x-auto">
                     <table class="w-full text-xs">
                         <thead>
                             <tr class="text-[10px] text-gray-500 uppercase border-b border-white/5">
-                                <th class="text-left px-5 py-2">Système</th>
-                                <th class="text-left px-2 py-2">Éditeur</th>
-                                <th class="text-left px-2 py-2">Mode</th>
+                                <th class="text-left px-4 py-2">Système</th>
+                                <th class="text-left px-2 py-2">Key User Principal</th>
+                                <th class="text-left px-2 py-2">Key User Backup</th>
+                                <th class="text-center px-2 py-2">Statut</th>
                                 <th class="text-center px-2 py-2">Avancement</th>
-                                <th class="text-right px-5 py-2">Action</th>
+                                <th class="text-right px-4 py-2">Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for sys in dept.systems %}
                             <tr class="sys-row border-b border-white/[0.03]">
-                                <td class="px-5 py-2.5">
+                                <td class="px-4 py-2.5">
                                     <div class="flex items-center gap-2">
                                         <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:{{ sys.criticality_color }};"></span>
                                         <div>
                                             <p class="font-medium text-gray-200">{{ sys.code }}</p>
-                                            <p class="text-[10px] text-gray-500 truncate max-w-[140px]">{{ sys.name }}</p>
+                                            <p class="text-[10px] text-gray-500 truncate max-w-[120px]">{{ sys.q_editor|default:sys.vendor }}</p>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-2 py-2.5 text-gray-400">{{ sys.q_editor|default:sys.vendor }}</td>
-                                <td class="px-2 py-2.5 text-gray-500">{{ sys.mode }}</td>
-                                <td class="px-2 py-2.5 text-center">
-                                    {% if sys.q_status == 'COMPLETED' %}
-                                    <span class="inline-flex items-center gap-1 text-green-400"><i data-lucide="check-circle-2" class="w-3 h-3"></i> 100%</span>
-                                    {% elif sys.q_status == 'IN_PROGRESS' %}
-                                    <div class="flex items-center gap-1.5 justify-center">
-                                        <div class="w-12 bg-gray-700 rounded-full h-1">
-                                            <div class="h-1 rounded-full bg-blue-500" style="width:{{ sys.q_progress }}%"></div>
-                                        </div>
-                                        <span class="text-blue-400">{{ sys.q_progress }}%</span>
+                                <td class="px-2 py-2.5">
+                                    {% if sys.q_key_users %}
+                                    <div class="flex flex-wrap gap-1">
+                                        {% for ku in sys.q_key_users|truncatechars:60 %}{% endfor %}
+                                        <span class="user-chip text-gray-300">
+                                            <i data-lucide="user" class="w-2.5 h-2.5 text-amber-500"></i>
+                                            {{ sys.q_key_users|truncatechars:40 }}
+                                        </span>
                                     </div>
-                                    {% elif sys.q_pk %}
-                                    <span class="text-gray-600">0%</span>
+                                    {% else %}
+                                    <span class="text-gray-600 italic text-[10px]">Non désigné</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-2 py-2.5">
+                                    {% if sys.q_key_users_backup and sys.q_key_users_backup != '—' %}
+                                    <span class="text-[10px] text-gray-400">{{ sys.q_key_users_backup|truncatechars:35 }}</span>
+                                    {% else %}
+                                    <span class="text-gray-700 text-[10px]">—</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-2 py-2.5 text-center">
+                                    <span class="inline-flex items-center gap-1 {{ sys.response_class }} text-[10px] font-medium">
+                                        {% if sys.q_status == 'COMPLETED' %}<i data-lucide="check-circle-2" class="w-3 h-3"></i>
+                                        {% elif sys.q_status == 'IN_PROGRESS' %}<i data-lucide="loader" class="w-3 h-3"></i>
+                                        {% elif sys.q_pk %}<i data-lucide="alert-circle" class="w-3 h-3"></i>
+                                        {% else %}<i data-lucide="minus-circle" class="w-3 h-3"></i>{% endif %}
+                                        {{ sys.response_label }}
+                                    </span>
+                                </td>
+                                <td class="px-2 py-2.5 text-center">
+                                    {% if sys.q_pk %}
+                                    <div class="flex items-center gap-1.5 justify-center">
+                                        <div class="w-14 bg-gray-700 rounded-full h-1.5">
+                                            <div class="h-1.5 rounded-full {% if sys.q_progress == 100 %}bg-green-500{% elif sys.q_progress > 0 %}bg-blue-500{% else %}bg-gray-700{% endif %}" style="width:{{ sys.q_progress }}%"></div>
+                                        </div>
+                                        <span class="text-[10px] {% if sys.q_progress == 100 %}text-green-400{% elif sys.q_progress > 0 %}text-blue-400{% else %}text-gray-600{% endif %}">{{ sys.q_progress }}%</span>
+                                    </div>
                                     {% else %}
                                     <span class="text-gray-700">—</span>
                                     {% endif %}
                                 </td>
-                                <td class="px-5 py-2.5 text-right">
+                                <td class="px-4 py-2.5 text-right">
                                     {% if sys.q_pk %}
-                                    <a href="{% url 'cartography:questionnaire_detail' sys.q_pk %}" class="text-gray-400 hover:text-white transition" title="Ouvrir le questionnaire">
+                                    <a href="{% url 'cartography:questionnaire_form' sys.q_pk %}" class="text-gray-400 hover:text-white transition" title="Ouvrir le questionnaire">
                                         <i data-lucide="external-link" class="w-3.5 h-3.5 inline"></i>
                                     </a>
                                     {% endif %}
@@ -176,21 +200,6 @@
                         </tbody>
                     </table>
                 </div>
-
-                <!-- Key users -->
-                {% if dept.key_users %}
-                <div class="px-5 py-3 border-t border-white/5">
-                    <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Interlocuteurs clés</p>
-                    <div class="flex flex-wrap gap-1.5">
-                        {% for user in dept.key_users %}
-                        <span class="user-chip text-gray-300">
-                            <i data-lucide="user" class="w-2.5 h-2.5 text-gray-500"></i>
-                            {{ user }}
-                        </span>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% endif %}
             </div>
         </div>
         {% endfor %}

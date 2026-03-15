@@ -1660,6 +1660,9 @@ def organigramme_view(request):
             q_editor = ''
             q_pk = None
             
+            q_key_users_backup = ''
+            q_responsible = ''
+            
             if q:
                 q_progress = q.progress_percent
                 q_status = q.status
@@ -1667,8 +1670,10 @@ def organigramme_view(request):
                 q_answered = q.answered_questions
                 q_validated = q.validated_questions
                 q_key_users = q.key_users or ''
+                q_key_users_backup = q.key_users_backup or ''
                 q_direction = q.direction or ''
                 q_editor = q.editor or ''
+                q_responsible = q.responsible or ''
                 q_pk = q.pk
                 dept_questions += q_total
                 dept_answered += q_answered
@@ -1677,11 +1682,25 @@ def organigramme_view(request):
                 
                 for name in q_key_users.split(','):
                     name = name.strip()
-                    if name:
+                    if name and name != '—':
                         dept_key_users.add(name)
             
             if s.criticality == 'CRITIQUE':
                 dept_critiques += 1
+            
+            # Determine response status for display
+            if q_pk is None:
+                response_label = 'Pas de questionnaire'
+                response_class = 'text-gray-600'
+            elif q_status == 'COMPLETED':
+                response_label = 'Complété'
+                response_class = 'text-green-400'
+            elif q_status == 'IN_PROGRESS':
+                response_label = f'En cours ({q_progress}%)'
+                response_class = 'text-blue-400'
+            else:
+                response_label = 'Non commencé'
+                response_class = 'text-red-400'
             
             systems_data.append({
                 'pk': s.pk,
@@ -1698,8 +1717,12 @@ def organigramme_view(request):
                 'q_total': q_total,
                 'q_answered': q_answered,
                 'q_key_users': q_key_users,
+                'q_key_users_backup': q_key_users_backup,
                 'q_direction': q_direction,
                 'q_editor': q_editor,
+                'q_responsible': q_responsible,
+                'response_label': response_label,
+                'response_class': response_class,
             })
         
         dept_progress = int((dept_answered / dept_questions * 100)) if dept_questions > 0 else 0
