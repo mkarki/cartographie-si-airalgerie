@@ -161,5 +161,48 @@ Suite au mail de la Sous-Direction Études & Développements (DSI), les observat
 
 ---
 
+### 7. Organigramme hiérarchique + Questionnaires Key Users (15 mars 2026)
+
+**Organigramme :**
+- Arbre hiérarchique DG → DAG/DC/DIVEX → sous-directions, avec expand/collapse inline
+- Chaque nœud affiche : responsable, nb systèmes, progression questionnaires
+- Clic sur un nœud → tableau inline des systèmes avec Key User, Backup, Statut, Avancement
+- Vue grille détaillée en bas avec les mêmes colonnes
+- Suppression de la section "Interlocuteurs" et de tous les compteurs associés
+
+**Questionnaires :**
+- Bouton **"Enregistrer"** par question (AJAX) → sauvegarde individuelle sans recharger la page
+- Feedback visuel : ✅ "Enregistré" + heure, barre de progression mise à jour en temps réel
+- Permet aux key users de remplir le questionnaire en plusieurs sessions
+
+**Questionnaire "Questions Techniques — Tous Systèmes" :**
+- 42 sections, 243 questions extraites du document Word (par système, par phase + prérequis transverses)
+- Lié à YOUCEF ACHIRA Abdellah (DSI)
+- Token : `Brurv0922TZybV7vSqA-9mVw8CsgeTl9EaLTEwPP8JY`
+
+**Multi-questionnaires Key Users :**
+- Les key users avec plusieurs systèmes (BENYELLES, SAID Sihem, YOUCEF ACHIRA, SAMEUR) voient un sélecteur "Mes questionnaires" dans la barre du haut
+- Session stocke tous les questionnaires accessibles, switch sans re-login
+
+**Accès :**
+- Admin : `admin` / `AirAlgerie2026!`
+- Auditeur DSI : `/auditor/?token=oSE3uRQC5nPv5Bekf3ruh70rg-trgvyYFdqNyVBYPuU`
+- 40 accès key users (voir `ACCES_KEY_USERS.md`)
+
+**Infra Render :**
+- Fix gunicorn : `--bind 0.0.0.0:$PORT --timeout 120 --workers 2 --preload`
+- URL prod : `https://cartographie-si-airalgerie.onrender.com`
+
+---
+
+## TODO — Prochaine session
+
+1. Vérifier que Render est stable (logs "No open HTTP ports" résolu)
+2. Vérifier les données Questions/Réponses à jour dans l'organigramme
+3. Tester le questionnaire technique avec YOUCEF ACHIRA
+4. Export PDF des questionnaires remplis
+
+---
+
 ## Dernière mise à jour
-23 février 2026 - Intégration retours DSI (M. Youcef-Achira) : corrections SITATEX, SAGE Stock, Dashboards CCO, Qlik Sense, Power BI, Zimbra, Portail AH
+15 mars 2026 — Organigramme hiérarchique, bouton enregistrer par question, questionnaire technique 243 questions, accès auditeur, fix Render
