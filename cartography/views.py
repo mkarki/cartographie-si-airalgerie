@@ -1,3 +1,4 @@
+import os
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse, HttpResponse
 from django.db.models import Count, Q, Avg
@@ -1123,8 +1124,8 @@ def api_graph_data_with_validation(request):
     })
 
 
-# Configuration API Claude (à mettre dans settings.py en production)
-CLAUDE_API_KEY = "REMOVED_API_KEY"
+# Configuration API Claude (via variable d'environnement)
+CLAUDE_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
 
 
 def ai_report_view(request):
