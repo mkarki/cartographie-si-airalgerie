@@ -21,7 +21,7 @@
     <div class="flex items-center justify-between mb-6">
         <div>
             <h1 class="text-2xl font-bold">Organigramme par Direction</h1>
-            <p class="text-gray-400 text-sm mt-1">{{ total_structures }} directions · {{ total_systems }} systèmes · {{ total_key_users }} interlocuteurs</p>
+            <p class="text-gray-400 text-sm mt-1">{{ total_structures }} directions · {{ total_systems }} systèmes</p>
         </div>
         <a href="{% url 'cartography:kpi_dashboard' %}" class="glass px-3 py-2 rounded-lg hover:bg-white/10 transition text-xs flex items-center gap-2">
             <i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i> KPI
@@ -55,6 +55,7 @@
     <h2 class="text-lg font-bold mb-4 flex items-center gap-2"><i data-lucide="layout-grid" class="w-5 h-5 text-gray-400"></i> Vue détaillée par direction</h2>
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {% for dept in departments %}
+        {% if dept.system_count > 0 %}
         <div class="dept-card glass rounded-xl overflow-hidden" style="border-left: 3px solid {{ dept.color }};" id="dept-{{ dept.code }}">
             
             <!-- Department header (clickable) -->
@@ -71,8 +72,6 @@
                         <div class="flex items-center gap-2 text-[11px] text-gray-500 mt-0.5">
                             {% if dept.responsable %}<span class="text-gray-400"><i data-lucide="user" class="w-2.5 h-2.5 inline"></i> {{ dept.responsable }}</span><span class="text-gray-700">·</span>{% endif %}
                             <span>{{ dept.system_count }} système{{ dept.system_count|pluralize }}</span>
-                            <span class="text-gray-700">·</span>
-                            <span>{{ dept.key_users_count }} interlocuteur{{ dept.key_users_count|pluralize }}</span>
                             {% if dept.critiques > 0 %}
                             <span class="text-gray-700">·</span>
                             <span class="text-red-400">{{ dept.critiques }} critique{{ dept.critiques|pluralize }}</span>
@@ -81,7 +80,6 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-3 flex-shrink-0 ml-3">
-                    <!-- Mini progress -->
                     <div class="text-right hidden sm:block">
                         <p class="text-xs font-mono {% if dept.progress == 100 %}text-green-400{% elif dept.progress > 0 %}text-blue-400{% else %}text-gray-600{% endif %}">{{ dept.progress }}%</p>
                         <div class="w-16 bg-gray-700 rounded-full h-1 mt-1">
@@ -95,7 +93,7 @@
             <!-- Expandable detail -->
             <div class="dept-detail" id="detail-{{ dept.code }}">
                 <!-- Stats bar -->
-                <div class="px-5 py-3 border-t border-white/5 grid grid-cols-6 gap-3 text-center">
+                <div class="px-5 py-3 border-t border-white/5 grid grid-cols-5 gap-3 text-center">
                     <div>
                         <p class="text-lg font-bold" style="color:{{ dept.color }};">{{ dept.system_count }}</p>
                         <p class="text-[10px] text-gray-500">Systèmes</p>
@@ -116,23 +114,19 @@
                         <p class="text-lg font-bold text-red-400">{{ dept.rejected_questions }}</p>
                         <p class="text-[10px] text-gray-500">À revoir</p>
                     </div>
-                    <div>
-                        <p class="text-lg font-bold text-amber-400">{{ dept.key_users_count }}</p>
-                        <p class="text-[10px] text-gray-500">Interlocuteurs</p>
-                    </div>
                 </div>
 
-                <!-- Systems table with Key Users & Response Status -->
+                <!-- Systems table -->
                 <div class="border-t border-white/5 overflow-x-auto">
                     <table class="w-full text-xs">
                         <thead>
                             <tr class="text-[10px] text-gray-500 uppercase border-b border-white/5">
                                 <th class="text-left px-4 py-2">Système</th>
-                                <th class="text-left px-2 py-2">Key User Principal</th>
-                                <th class="text-left px-2 py-2">Key User Backup</th>
+                                <th class="text-left px-2 py-2">Key User</th>
+                                <th class="text-left px-2 py-2">Backup</th>
                                 <th class="text-center px-2 py-2">Statut</th>
                                 <th class="text-center px-2 py-2">Avancement</th>
-                                <th class="text-right px-4 py-2">Action</th>
+                                <th class="text-right px-4 py-2"></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -149,26 +143,23 @@
                                 </td>
                                 <td class="px-2 py-2.5">
                                     {% if sys.q_key_users %}
-                                    <div class="flex flex-wrap gap-1">
-                                        {% for ku in sys.q_key_users|truncatechars:60 %}{% endfor %}
-                                        <span class="user-chip text-gray-300">
-                                            <i data-lucide="user" class="w-2.5 h-2.5 text-amber-500"></i>
-                                            {{ sys.q_key_users|truncatechars:40 }}
-                                        </span>
-                                    </div>
+                                    <span class="user-chip text-gray-300">
+                                        <i data-lucide="user" class="w-2.5 h-2.5 text-amber-500"></i>
+                                        {{ sys.q_key_users|truncatechars:30 }}
+                                    </span>
                                     {% else %}
                                     <span class="text-gray-600 italic text-[10px]">Non désigné</span>
                                     {% endif %}
                                 </td>
                                 <td class="px-2 py-2.5">
                                     {% if sys.q_key_users_backup and sys.q_key_users_backup != '—' %}
-                                    <span class="text-[10px] text-gray-400">{{ sys.q_key_users_backup|truncatechars:35 }}</span>
+                                    <span class="text-[10px] text-gray-400">{{ sys.q_key_users_backup|truncatechars:25 }}</span>
                                     {% else %}
                                     <span class="text-gray-700 text-[10px]">—</span>
                                     {% endif %}
                                 </td>
                                 <td class="px-2 py-2.5 text-center">
-                                    <span class="inline-flex items-center gap-1 {{ sys.response_class }} text-[10px] font-medium">
+                                    <span class="inline-flex items-center gap-1 {{ sys.response_class }} text-[10px] font-medium whitespace-nowrap">
                                         {% if sys.q_status == 'COMPLETED' %}<i data-lucide="check-circle-2" class="w-3 h-3"></i>
                                         {% elif sys.q_status == 'IN_PROGRESS' %}<i data-lucide="loader" class="w-3 h-3"></i>
                                         {% elif sys.q_pk %}<i data-lucide="alert-circle" class="w-3 h-3"></i>
@@ -190,9 +181,7 @@
                                 </td>
                                 <td class="px-4 py-2.5 text-right">
                                     {% if sys.q_pk %}
-                                    <a href="{% url 'cartography:questionnaire_form' sys.q_pk %}" class="text-gray-400 hover:text-white transition" title="Ouvrir le questionnaire">
-                                        <i data-lucide="external-link" class="w-3.5 h-3.5 inline"></i>
-                                    </a>
+                                    <a href="{% url 'cartography:questionnaire_form' sys.q_pk %}" class="text-gray-400 hover:text-white transition" title="Ouvrir"><i data-lucide="external-link" class="w-3.5 h-3.5 inline"></i></a>
                                     {% endif %}
                                 </td>
                             </tr>
@@ -202,6 +191,7 @@
                 </div>
             </div>
         </div>
+        {% endif %}
         {% endfor %}
     </div>
 </div>
