@@ -2,14 +2,15 @@ from django.contrib import admin
 from .models import (
     Structure, SystemCategory, System, DataFlow, 
     DataField, MessageFormat, MessageField, DataDomain,
-    Questionnaire, QuestionSection, Question, KeyUserAccess
+    Questionnaire, QuestionSection, Question, KeyUserAccess, AuditorAccess
 )
 
 
 @admin.register(Structure)
 class StructureAdmin(admin.ModelAdmin):
-    list_display = ['code', 'name']
-    search_fields = ['code', 'name']
+    list_display = ['code', 'name', 'parent', 'level', 'responsable']
+    list_filter = ['level']
+    search_fields = ['code', 'name', 'responsable']
 
 
 @admin.register(SystemCategory)
@@ -87,5 +88,13 @@ class QuestionSectionAdmin(admin.ModelAdmin):
 class KeyUserAccessAdmin(admin.ModelAdmin):
     list_display = ['name', 'questionnaire', 'email', 'token', 'is_active', 'last_accessed']
     list_filter = ['is_active', 'questionnaire']
+    search_fields = ['name', 'email', 'token']
+    readonly_fields = ['token', 'created_at', 'last_accessed']
+
+
+@admin.register(AuditorAccess)
+class AuditorAccessAdmin(admin.ModelAdmin):
+    list_display = ['name', 'email', 'token', 'is_active', 'last_accessed']
+    list_filter = ['is_active']
     search_fields = ['name', 'email', 'token']
     readonly_fields = ['token', 'created_at', 'last_accessed']

@@ -14,7 +14,7 @@ from .models import (
     DataField, MessageFormat, MessageField, DataDomain,
     DataSample, FlowFieldHypothesis, FlowValidation,
     ReferenceData, FlowReferential, DataImportHistory, COUNTRY_CHOICES,
-    Questionnaire, QuestionSection, Question, KeyUserAccess
+    Questionnaire, QuestionSection, Question, KeyUserAccess, AuditorAccess
 )
 
 
@@ -39,10 +39,12 @@ def login_view(request):
 
 
 def logout_view(request):
-    """Déconnexion admin ou key user"""
+    """Déconnexion admin, key user ou auditeur"""
     request.session.pop('key_user_token', None)
     request.session.pop('key_user_name', None)
     request.session.pop('key_user_questionnaire_id', None)
+    request.session.pop('auditor_token', None)
+    request.session.pop('auditor_name', None)
     logout(request)
     return redirect('cartography:login')
 
@@ -62,6 +64,22 @@ def key_user_login(request):
         return redirect('cartography:questionnaire_form', pk=access.questionnaire.pk)
     except KeyUserAccess.DoesNotExist:
         return render(request, 'cartography/login.html', {'error': 'Code d\'accès invalide ou désactivé.'})
+
+
+def auditor_login(request):
+    """Accès auditeur via token — redirige vers le KPI dashboard"""
+    token = request.GET.get('token', '').strip()
+    if not token:
+        return redirect('cartography:login')
+    try:
+        access = AuditorAccess.objects.get(token=token, is_active=True)
+        access.last_accessed = timezone.now()
+        access.save(update_fields=['last_accessed'])
+        request.session['auditor_token'] = token
+        request.session['auditor_name'] = access.name
+        return redirect('cartography:kpi_dashboard')
+    except AuditorAccess.DoesNotExist:
+        return render(request, 'cartography/login.html', {'error': 'Code auditeur invalide ou désactivé.'})
 
 
 @login_required(login_url='/login/')
@@ -1408,9 +1426,10 @@ def import_history_detail(request, pk):
 
 # ─── Questionnaires ─────────────────────────────────────────────────────────
 
-@login_required(login_url='/login/')
 def questionnaires_list(request):
     """Liste des questionnaires par phase avec filtres et progression"""
+    if not request.user.is_authenticated and not request.session.get('auditor_token'):
+        return redirect('cartography:login')
     questionnaires = Questionnaire.objects.prefetch_related('sections__questions').all()
     
     phase = request.GET.get('phase')
@@ -1464,9 +1483,10 @@ def questionnaires_list(request):
     return render(request, 'cartography/questionnaires_list.html', context)
 
 
-@login_required(login_url='/login/')
 def questionnaire_detail(request, pk):
     """Détail d'un questionnaire — formulaire interactif pour l'entretien"""
+    if not request.user.is_authenticated and not request.session.get('auditor_token'):
+        return redirect('cartography:login')
     questionnaire = get_object_or_404(
         Questionnaire.objects.prefetch_related('sections__questions'),
         pk=pk
@@ -1603,24 +1623,28 @@ def api_save_answer(request):
 
 # ─── Organigramme ──────────────────────────────────────────────────────────
 
-@login_required(login_url='/login/')
 def organigramme_view(request):
-    """Organigramme par département — fiche détaillée de chaque direction"""
+    """Organigramme par département — hiérarchie + suivi réponses par direction"""
+    if not request.user.is_authenticated and not request.session.get('auditor_token'):
+        return redirect('cartography:login')
     structures = Structure.objects.prefetch_related(
         'systems__category',
         'systems__questionnaire__sections__questions',
+        'children',
     ).annotate(
         system_count=Count('systems')
     ).order_by('code')
     
-    departments = []
-    total_key_users = set()
+    # Build a lookup for all structures
+    struct_map = {s.pk: s for s in structures}
     
-    for struct in structures:
+    def build_dept_data(struct):
+        """Build department data dict for a structure"""
         systems_data = []
         dept_questions = 0
         dept_answered = 0
         dept_validated = 0
+        dept_rejected = 0
         dept_key_users = set()
         dept_critiques = 0
         
@@ -1649,13 +1673,12 @@ def organigramme_view(request):
                 dept_questions += q_total
                 dept_answered += q_answered
                 dept_validated += q_validated
+                dept_rejected += q.rejected_questions
                 
-                # Collect key users
                 for name in q_key_users.split(','):
                     name = name.strip()
                     if name:
                         dept_key_users.add(name)
-                        total_key_users.add(name)
             
             if s.criticality == 'CRITIQUE':
                 dept_critiques += 1
@@ -1680,23 +1703,50 @@ def organigramme_view(request):
             })
         
         dept_progress = int((dept_answered / dept_questions * 100)) if dept_questions > 0 else 0
+        validation_progress = int((dept_validated / dept_questions * 100)) if dept_questions > 0 else 0
         
-        departments.append({
+        return {
             'pk': struct.pk,
             'code': struct.code,
             'name': struct.name,
             'color': struct.color,
+            'level': struct.level or '',
+            'responsable': struct.responsable or '',
+            'parent_id': struct.parent_id,
             'country': struct.get_country_display(),
             'system_count': struct.system_count,
             'systems': systems_data,
             'total_questions': dept_questions,
             'answered_questions': dept_answered,
             'validated_questions': dept_validated,
+            'rejected_questions': dept_rejected,
             'progress': dept_progress,
+            'validation_progress': validation_progress,
             'critiques': dept_critiques,
             'key_users': sorted(dept_key_users),
             'key_users_count': len(dept_key_users),
-        })
+            'children': [],
+        }
+    
+    # Build all department data
+    all_depts = {}
+    total_key_users = set()
+    for struct in structures:
+        dept = build_dept_data(struct)
+        all_depts[struct.pk] = dept
+        total_key_users.update(dept['key_users'])
+    
+    # Build hierarchy tree: attach children to parents
+    root_depts = []
+    for pk, dept in all_depts.items():
+        parent_id = dept['parent_id']
+        if parent_id and parent_id in all_depts:
+            all_depts[parent_id]['children'].append(dept)
+        else:
+            root_depts.append(dept)
+    
+    # Flat list for backward compat (grid view)
+    departments = list(all_depts.values())
     
     # Selected department detail
     selected_code = request.GET.get('dept')
@@ -1706,6 +1756,7 @@ def organigramme_view(request):
     
     context = {
         'departments': departments,
+        'root_depts': root_depts,
         'selected_dept': selected_dept,
         'total_structures': structures.count(),
         'total_systems': System.objects.count(),
@@ -1716,9 +1767,10 @@ def organigramme_view(request):
 
 # ─── KPI Dashboard ─────────────────────────────────────────────────────────
 
-@login_required(login_url='/login/')
 def kpi_dashboard_view(request):
     """Dashboard KPI avec avancement cartographie en temps réel vs roadmap"""
+    if not request.user.is_authenticated and not request.session.get('auditor_token'):
+        return redirect('cartography:login')
     import json as json_module
     
     # ── Systems stats
@@ -1940,13 +1992,14 @@ def api_kpi_stats(request):
 
 
 def questionnaire_form_view(request, pk):
-    """Formulaire de questionnaire — accès admin ou key user via token de session"""
-    # Auth check: admin OU key user avec le bon questionnaire en session
+    """Formulaire de questionnaire — accès admin, key user ou auditeur"""
     is_admin = request.user.is_authenticated
+    is_auditor = bool(request.session.get('auditor_token'))
     session_q_id = request.session.get('key_user_questionnaire_id')
     key_user_name = request.session.get('key_user_name', '')
+    auditor_name = request.session.get('auditor_name', '')
     
-    if not is_admin and session_q_id != pk:
+    if not is_admin and not is_auditor and session_q_id != pk:
         return redirect('cartography:login')
     
     questionnaire = get_object_or_404(
@@ -1957,6 +2010,34 @@ def questionnaire_form_view(request, pk):
     token = request.GET.get('token', '')
     
     if request.method == 'POST':
+        # Auditor: handle validation + comments only
+        if is_auditor:
+            for key, value in request.POST.items():
+                if key.startswith('validate_'):
+                    q_id = key.replace('validate_', '')
+                    try:
+                        question = Question.objects.get(pk=q_id)
+                        question.validation_status = value
+                        question.validated_by = auditor_name
+                        question.validated_at = timezone.now()
+                        question.save()
+                    except Question.DoesNotExist:
+                        pass
+                elif key.startswith('auditor_comment_'):
+                    q_id = key.replace('auditor_comment_', '')
+                    try:
+                        question = Question.objects.get(pk=q_id)
+                        if value.strip():
+                            question.auditor_comment = value
+                            question.auditor_comment_by = auditor_name
+                            question.auditor_comment_at = timezone.now()
+                            question.save()
+                    except Question.DoesNotExist:
+                        pass
+            messages.success(request, f'Validation enregistrée pour « {questionnaire.system_name} ».')
+            return redirect(f"{request.path}?saved=1")
+        
+        # Key user / admin: handle answers + notes + attachments
         respondent_name = request.POST.get('respondent_name', '')
         
         for key, value in request.POST.items():
@@ -2008,5 +2089,7 @@ def questionnaire_form_view(request, pk):
         'saved': saved,
         'key_user_name': key_user_name,
         'is_admin': is_admin,
+        'is_auditor': is_auditor,
+        'auditor_name': auditor_name,
     }
     return render(request, 'cartography/questionnaire_form.html', context)

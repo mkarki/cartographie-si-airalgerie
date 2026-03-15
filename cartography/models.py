@@ -16,6 +16,9 @@ class Structure(models.Model):
     description = models.TextField(blank=True)
     color = models.CharField(max_length=7, default='#6366f1')
     country = models.CharField(max_length=10, choices=COUNTRY_CHOICES, default='DZ', help_text="Pays où la structure est localisée")
+    parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='children', help_text="Structure parente (ex: Direction parente d'un Service)")
+    level = models.CharField(max_length=30, blank=True, default='', help_text="Niveau hiérarchique (PDG, DGA, Direction, Sous-direction, Service)")
+    responsable = models.CharField(max_length=200, blank=True, help_text="Nom du responsable de la structure")
     
     class Meta:
         ordering = ['code']
@@ -504,6 +507,11 @@ class Question(models.Model):
     # Pièce jointe
     attachment = models.FileField(upload_to='question_attachments/', blank=True, null=True, help_text="Pièce jointe (PDF, image, document...)")
     
+    # Commentaire auditeur
+    auditor_comment = models.TextField(blank=True, help_text="Commentaire de l'auditeur")
+    auditor_comment_by = models.CharField(max_length=200, blank=True)
+    auditor_comment_at = models.DateTimeField(null=True, blank=True)
+    
     # Historique des révisions (JSON: [{date, answer, validated_by, action}])
     revision_history = models.JSONField(default=list, blank=True, help_text="Historique des modifications")
     
@@ -535,6 +543,30 @@ class KeyUserAccess(models.Model):
     
     def __str__(self):
         return f"{self.name} → {self.questionnaire.system_name}"
+    
+    def save(self, *args, **kwargs):
+        if not self.token:
+            import secrets
+            self.token = secrets.token_urlsafe(32)
+        super().save(*args, **kwargs)
+
+
+class AuditorAccess(models.Model):
+    """Accès auditeur — token unique pour consulter KPI + questionnaires et valider/commenter"""
+    name = models.CharField(max_length=200, help_text="Nom de l'auditeur")
+    email = models.EmailField(blank=True)
+    token = models.CharField(max_length=64, unique=True, db_index=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_accessed = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['name']
+        verbose_name = "Accès Auditeur"
+        verbose_name_plural = "Accès Auditeurs"
+    
+    def __str__(self):
+        return f"Auditeur: {self.name}"
     
     def save(self, *args, **kwargs):
         if not self.token:

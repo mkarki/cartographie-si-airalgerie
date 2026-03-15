@@ -1,0 +1,48 @@
+<!-- Recursive organigramme node -->
+<div class="{% if depth > 0 %}ml-6 border-l-2 border-white/5 pl-4{% endif %}">
+    <div class="glass rounded-lg px-4 py-3 mb-2 flex items-center justify-between hover:bg-white/[0.03] transition cursor-pointer" onclick="toggleDept('{{ dept.code }}')" style="border-left: 3px solid {{ dept.color }};">
+        <div class="flex items-center gap-3 min-w-0">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold flex-shrink-0" style="background: {{ dept.color }}20; color: {{ dept.color }};">
+                {{ dept.code }}
+            </div>
+            <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                    <h3 class="font-semibold text-sm truncate">{{ dept.name }}</h3>
+                    {% if dept.level %}
+                    <span class="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-gray-500 uppercase tracking-wider">{{ dept.level }}</span>
+                    {% endif %}
+                </div>
+                <div class="flex items-center gap-2 text-[11px] text-gray-500 mt-0.5">
+                    {% if dept.responsable %}<span class="text-gray-400"><i data-lucide="user" class="w-2.5 h-2.5 inline"></i> {{ dept.responsable }}</span><span class="text-gray-700">·</span>{% endif %}
+                    <span>{{ dept.system_count }} sys.</span>
+                    {% if dept.total_questions > 0 %}
+                    <span class="text-gray-700">·</span>
+                    <span class="{% if dept.progress == 100 %}text-green-400{% elif dept.progress > 0 %}text-blue-400{% else %}text-gray-600{% endif %}">{{ dept.progress }}% répondu</span>
+                    {% if dept.validation_progress > 0 %}
+                    <span class="text-gray-700">·</span>
+                    <span class="text-purple-400">{{ dept.validation_progress }}% validé</span>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0 ml-2">
+            {% if dept.total_questions > 0 %}
+            <div class="w-16 bg-gray-700 rounded-full h-1.5">
+                <div class="h-1.5 rounded-full {% if dept.progress == 100 %}bg-green-500{% elif dept.progress > 0 %}bg-blue-500{% else %}bg-gray-700{% endif %}" style="width:{{ dept.progress }}%"></div>
+            </div>
+            {% endif %}
+            {% if dept.children %}
+            <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-gray-600"></i>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if dept.children %}
+    <div class="space-y-1">
+        {% for child in dept.children %}
+        {% include "cartography/_organigramme_node.html" with dept=child depth=1 %}
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>

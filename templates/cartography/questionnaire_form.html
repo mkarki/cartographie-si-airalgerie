@@ -158,6 +158,62 @@
                             </div>
 
                             <div class="ml-11">
+                                {% if is_auditor %}
+                                <!-- AUDITOR: read-only answer -->
+                                <div class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white text-sm min-h-[60px] {% if not question.answer %}text-gray-600 italic{% endif %}">
+                                    {{ question.answer|default:"Pas encore de réponse" }}
+                                </div>
+
+                                {% if question.attachment %}
+                                <div class="flex items-center gap-2 mt-2 bg-white/5 rounded-lg px-3 py-2">
+                                    <i data-lucide="file" class="w-4 h-4 text-blue-400 flex-shrink-0"></i>
+                                    <a href="{{ question.attachment.url }}" target="_blank" class="text-xs text-blue-400 hover:text-blue-300 truncate">{{ question.attachment.name }}</a>
+                                </div>
+                                {% endif %}
+
+                                <!-- Validation buttons -->
+                                <div class="mt-3 flex items-center gap-2">
+                                    <span class="text-xs text-gray-500 mr-1">Validation :</span>
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="validate_{{ question.pk }}" value="VALIDATED" class="hidden peer" {% if question.validation_status == 'VALIDATED' %}checked{% endif %}>
+                                        <span class="peer-checked:bg-green-600 peer-checked:text-white bg-white/5 text-green-400 border border-green-800 text-xs px-3 py-1.5 rounded-lg transition hover:bg-green-900/30 inline-flex items-center gap-1">
+                                            <i data-lucide="check" class="w-3 h-3"></i> Validée
+                                        </span>
+                                    </label>
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="validate_{{ question.pk }}" value="REJECTED" class="hidden peer" {% if question.validation_status == 'REJECTED' %}checked{% endif %}>
+                                        <span class="peer-checked:bg-red-600 peer-checked:text-white bg-white/5 text-red-400 border border-red-800 text-xs px-3 py-1.5 rounded-lg transition hover:bg-red-900/30 inline-flex items-center gap-1">
+                                            <i data-lucide="x" class="w-3 h-3"></i> À revoir
+                                        </span>
+                                    </label>
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="validate_{{ question.pk }}" value="PENDING" class="hidden peer" {% if question.validation_status == 'PENDING' %}checked{% endif %}>
+                                        <span class="peer-checked:bg-gray-600 peer-checked:text-white bg-white/5 text-gray-400 border border-gray-700 text-xs px-3 py-1.5 rounded-lg transition hover:bg-gray-800/30 inline-flex items-center gap-1">
+                                            <i data-lucide="clock" class="w-3 h-3"></i> En attente
+                                        </span>
+                                    </label>
+                                    {% if question.validated_by %}
+                                    <span class="text-xs text-gray-600 ml-2">par {{ question.validated_by }}</span>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Auditor comment -->
+                                <div class="mt-3">
+                                    <label class="text-xs text-purple-400 font-semibold flex items-center gap-1 mb-1">
+                                        <i data-lucide="message-square" class="w-3 h-3"></i> Commentaire de l'auditeur
+                                    </label>
+                                    <textarea
+                                        name="auditor_comment_{{ question.pk }}"
+                                        class="w-full bg-purple-900/10 border border-purple-800/30 rounded-lg px-4 py-2 text-purple-200 text-xs focus:outline-none focus:border-purple-600 min-h-[50px] placeholder-gray-600"
+                                        placeholder="Votre commentaire sur cette réponse..."
+                                    >{{ question.auditor_comment }}</textarea>
+                                    {% if question.auditor_comment_by %}
+                                    <p class="text-[10px] text-gray-600 mt-1">{{ question.auditor_comment_by }} · {{ question.auditor_comment_at|date:"d/m/Y H:i" }}</p>
+                                    {% endif %}
+                                </div>
+
+                                {% else %}
+                                <!-- KEY USER / ADMIN: editable answer -->
                                 <textarea 
                                     name="answer_{{ question.pk }}" 
                                     class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-ah-red min-h-[80px] placeholder-gray-600"
@@ -166,14 +222,24 @@
                                     oninput="updateFormProgress(this)"
                                 >{{ question.answer }}</textarea>
 
-                                <details class="mt-2">
-                                    <summary class="text-xs text-gray-500 cursor-pointer hover:text-gray-300">Ajouter une remarque</summary>
-                                    <textarea 
-                                        name="notes_{{ question.pk }}" 
-                                        class="w-full mt-1 bg-yellow-900/10 border border-yellow-900/20 rounded-lg px-4 py-2 text-yellow-200 text-xs focus:outline-none focus:border-yellow-700 min-h-[50px] placeholder-gray-600"
-                                        placeholder="Remarques complémentaires..."
-                                    >{{ question.notes }}</textarea>
-                                </details>
+                                {% if question.auditor_comment %}
+                                <div class="mt-2 bg-purple-900/10 border border-purple-800/20 rounded-lg px-4 py-2">
+                                    <p class="text-xs text-purple-400 font-semibold flex items-center gap-1 mb-1"><i data-lucide="message-square" class="w-3 h-3"></i> Commentaire de l'auditeur</p>
+                                    <p class="text-xs text-purple-200">{{ question.auditor_comment }}</p>
+                                    {% if question.auditor_comment_by %}<p class="text-[10px] text-gray-600 mt-1">{{ question.auditor_comment_by }} · {{ question.auditor_comment_at|date:"d/m/Y H:i" }}</p>{% endif %}
+                                </div>
+                                {% endif %}
+
+                                {% if question.validation_status != 'PENDING' %}
+                                <div class="mt-2 flex items-center gap-2">
+                                    {% if question.validation_status == 'VALIDATED' %}
+                                    <span class="text-xs bg-green-900/30 text-green-400 border border-green-800 px-2 py-1 rounded inline-flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3 h-3"></i> Validée</span>
+                                    {% elif question.validation_status == 'REJECTED' %}
+                                    <span class="text-xs bg-red-900/30 text-red-400 border border-red-800 px-2 py-1 rounded inline-flex items-center gap-1"><i data-lucide="alert-circle" class="w-3 h-3"></i> À revoir</span>
+                                    {% endif %}
+                                    {% if question.validated_by %}<span class="text-xs text-gray-600">par {{ question.validated_by }}</span>{% endif %}
+                                </div>
+                                {% endif %}
 
                                 <details class="mt-2">
                                     <summary class="text-xs text-gray-500 cursor-pointer hover:text-gray-300 flex items-center gap-1">
@@ -194,6 +260,7 @@
                                         </label>
                                     </div>
                                 </details>
+                                {% endif %}
                             </div>
                         </div>
                         {% endfor %}
@@ -204,6 +271,15 @@
                 <!-- Submit -->
                 <div class="glass rounded-xl p-6 mb-8">
                     <div class="flex items-center justify-between">
+                        {% if is_auditor %}
+                        <div class="text-sm text-gray-400">
+                            <p>Vos validations et commentaires seront sauvegardés.</p>
+                            <p class="text-xs text-gray-600 mt-1">Vous pouvez revenir modifier vos avis à tout moment.</p>
+                        </div>
+                        <button type="submit" class="bg-purple-600 hover:bg-purple-700 px-8 py-3 rounded-lg font-semibold transition flex items-center gap-2 flex-shrink-0">
+                            <i data-lucide="shield-check" class="w-5 h-5"></i> Enregistrer la validation
+                        </button>
+                        {% else %}
                         <div class="text-sm text-gray-400">
                             <p>Vos réponses seront sauvegardées et visibles par l'équipe projet.</p>
                             <p class="text-xs text-gray-600 mt-1">Vous pouvez revenir modifier vos réponses à tout moment via ce lien.</p>
@@ -211,6 +287,7 @@
                         <button type="submit" class="bg-ah-red hover:bg-red-700 px-8 py-3 rounded-lg font-semibold transition flex items-center gap-2 flex-shrink-0">
                             <i data-lucide="send" class="w-5 h-5"></i> Envoyer mes réponses
                         </button>
+                        {% endif %}
                     </div>
                 </div>
             </form>

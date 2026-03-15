@@ -42,7 +42,17 @@
         <div class="w-px h-6 bg-white/10 mx-auto"></div>
     </div>
 
-    <!-- Departments Grid -->
+    <!-- Hierarchy Tree View -->
+    {% if root_depts %}
+    <div class="space-y-3 mb-10">
+        {% for dept in root_depts %}
+        {% include "cartography/_organigramme_node.html" with dept=dept depth=0 %}
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- All Departments Grid (flat) -->
+    <h2 class="text-lg font-bold mb-4 flex items-center gap-2"><i data-lucide="layout-grid" class="w-5 h-5 text-gray-400"></i> Vue détaillée par direction</h2>
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {% for dept in departments %}
         <div class="dept-card glass rounded-xl overflow-hidden" style="border-left: 3px solid {{ dept.color }};" id="dept-{{ dept.code }}">
@@ -54,8 +64,12 @@
                         {{ dept.code }}
                     </div>
                     <div class="min-w-0">
-                        <h3 class="font-semibold text-sm truncate">{{ dept.name }}</h3>
+                        <div class="flex items-center gap-2">
+                            <h3 class="font-semibold text-sm truncate">{{ dept.name }}</h3>
+                            {% if dept.level %}<span class="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-gray-500 uppercase tracking-wider">{{ dept.level }}</span>{% endif %}
+                        </div>
                         <div class="flex items-center gap-2 text-[11px] text-gray-500 mt-0.5">
+                            {% if dept.responsable %}<span class="text-gray-400"><i data-lucide="user" class="w-2.5 h-2.5 inline"></i> {{ dept.responsable }}</span><span class="text-gray-700">·</span>{% endif %}
                             <span>{{ dept.system_count }} système{{ dept.system_count|pluralize }}</span>
                             <span class="text-gray-700">·</span>
                             <span>{{ dept.key_users_count }} interlocuteur{{ dept.key_users_count|pluralize }}</span>
@@ -81,7 +95,7 @@
             <!-- Expandable detail -->
             <div class="dept-detail" id="detail-{{ dept.code }}">
                 <!-- Stats bar -->
-                <div class="px-5 py-3 border-t border-white/5 grid grid-cols-4 gap-3 text-center">
+                <div class="px-5 py-3 border-t border-white/5 grid grid-cols-6 gap-3 text-center">
                     <div>
                         <p class="text-lg font-bold" style="color:{{ dept.color }};">{{ dept.system_count }}</p>
                         <p class="text-[10px] text-gray-500">Systèmes</p>
@@ -93,6 +107,14 @@
                     <div>
                         <p class="text-lg font-bold {% if dept.progress == 100 %}text-green-400{% elif dept.progress > 0 %}text-blue-400{% else %}text-gray-600{% endif %}">{{ dept.answered_questions }}</p>
                         <p class="text-[10px] text-gray-500">Réponses</p>
+                    </div>
+                    <div>
+                        <p class="text-lg font-bold text-purple-400">{{ dept.validated_questions }}</p>
+                        <p class="text-[10px] text-gray-500">Validées</p>
+                    </div>
+                    <div>
+                        <p class="text-lg font-bold text-red-400">{{ dept.rejected_questions }}</p>
+                        <p class="text-[10px] text-gray-500">À revoir</p>
                     </div>
                     <div>
                         <p class="text-lg font-bold text-amber-400">{{ dept.key_users_count }}</p>
