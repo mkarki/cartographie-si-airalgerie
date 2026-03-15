@@ -501,6 +501,9 @@ class Question(models.Model):
     validated_at = models.DateTimeField(null=True, blank=True)
     validation_comment = models.TextField(blank=True, help_text="Commentaire de validation ou motif de rejet")
     
+    # Pièce jointe
+    attachment = models.FileField(upload_to='question_attachments/', blank=True, null=True, help_text="Pièce jointe (PDF, image, document...)")
+    
     # Historique des révisions (JSON: [{date, answer, validated_by, action}])
     revision_history = models.JSONField(default=list, blank=True, help_text="Historique des modifications")
     

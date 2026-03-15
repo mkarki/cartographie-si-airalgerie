@@ -58,7 +58,7 @@ class DataDomainAdmin(admin.ModelAdmin):
 class QuestionInline(admin.TabularInline):
     model = Question
     extra = 0
-    fields = ['number', 'text', 'answer', 'is_answered', 'order']
+    fields = ['number', 'text', 'answer', 'is_answered', 'attachment', 'order']
     readonly_fields = ['is_answered']
 
 

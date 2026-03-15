@@ -39,7 +39,10 @@ def login_view(request):
 
 
 def logout_view(request):
-    """Déconnexion"""
+    """Déconnexion admin ou key user"""
+    request.session.pop('key_user_token', None)
+    request.session.pop('key_user_name', None)
+    request.session.pop('key_user_questionnaire_id', None)
     logout(request)
     return redirect('cartography:login')
 
@@ -1971,6 +1974,17 @@ def questionnaire_form_view(request, pk):
                 try:
                     question = Question.objects.get(pk=q_id)
                     question.notes = value
+                    question.save()
+                except Question.DoesNotExist:
+                    pass
+        
+        # Handle file attachments
+        for key, f in request.FILES.items():
+            if key.startswith('attachment_'):
+                q_id = key.replace('attachment_', '')
+                try:
+                    question = Question.objects.get(pk=q_id)
+                    question.attachment = f
                     question.save()
                 except Question.DoesNotExist:
                     pass

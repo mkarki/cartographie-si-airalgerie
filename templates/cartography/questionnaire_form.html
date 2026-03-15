@@ -135,7 +135,7 @@
 
         <!-- Form content -->
         <div class="flex-1 min-w-0">
-            <form method="post" id="questionnaire-form">
+            <form method="post" enctype="multipart/form-data" id="questionnaire-form">
                 {% csrf_token %}
                 {% if token %}<input type="hidden" name="token" value="{{ token }}">{% endif %}
 
@@ -173,6 +173,26 @@
                                         class="w-full mt-1 bg-yellow-900/10 border border-yellow-900/20 rounded-lg px-4 py-2 text-yellow-200 text-xs focus:outline-none focus:border-yellow-700 min-h-[50px] placeholder-gray-600"
                                         placeholder="Remarques complémentaires..."
                                     >{{ question.notes }}</textarea>
+                                </details>
+
+                                <details class="mt-2">
+                                    <summary class="text-xs text-gray-500 cursor-pointer hover:text-gray-300 flex items-center gap-1">
+                                        <i data-lucide="paperclip" class="w-3 h-3"></i> Pièce jointe
+                                        {% if question.attachment %}<span class="text-green-400 ml-1">(1 fichier)</span>{% endif %}
+                                    </summary>
+                                    <div class="mt-2">
+                                        {% if question.attachment %}
+                                        <div class="flex items-center gap-2 mb-2 bg-white/5 rounded-lg px-3 py-2">
+                                            <i data-lucide="file" class="w-4 h-4 text-blue-400 flex-shrink-0"></i>
+                                            <a href="{{ question.attachment.url }}" target="_blank" class="text-xs text-blue-400 hover:text-blue-300 truncate">{{ question.attachment.name }}</a>
+                                        </div>
+                                        {% endif %}
+                                        <label class="flex items-center gap-2 cursor-pointer bg-white/5 hover:bg-white/10 border border-white/10 border-dashed rounded-lg px-4 py-3 transition">
+                                            <i data-lucide="upload" class="w-4 h-4 text-gray-400"></i>
+                                            <span class="text-xs text-gray-400">{% if question.attachment %}Remplacer le fichier{% else %}Joindre un fichier (PDF, image, doc...){% endif %}</span>
+                                            <input type="file" name="attachment_{{ question.pk }}" class="hidden" onchange="this.previousElementSibling.textContent = this.files[0]?.name || 'Aucun fichier'">
+                                        </label>
+                                    </div>
                                 </details>
                             </div>
                         </div>
