@@ -43,6 +43,7 @@ def logout_view(request):
     request.session.pop('key_user_token', None)
     request.session.pop('key_user_name', None)
     request.session.pop('key_user_questionnaire_id', None)
+    request.session.pop('key_user_questionnaires', None)
     request.session.pop('auditor_token', None)
     request.session.pop('auditor_name', None)
     logout(request)
@@ -61,6 +62,14 @@ def key_user_login(request):
         request.session['key_user_token'] = token
         request.session['key_user_name'] = access.name
         request.session['key_user_questionnaire_id'] = access.questionnaire.pk
+        # Find all questionnaires this key user has access to (by name)
+        all_access = KeyUserAccess.objects.filter(
+            name=access.name, is_active=True
+        ).select_related('questionnaire').order_by('questionnaire__system_name')
+        request.session['key_user_questionnaires'] = [
+            {'id': a.questionnaire.pk, 'name': a.questionnaire.system_name, 'token': a.token}
+            for a in all_access
+        ]
         return redirect('cartography:questionnaire_form', pk=access.questionnaire.pk)
     except KeyUserAccess.DoesNotExist:
         return render(request, 'cartography/login.html', {'error': 'Code d\'accès invalide ou désactivé.'})

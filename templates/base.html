@@ -301,6 +301,28 @@
                 </div>
             </div>
             <div class="flex items-center gap-4">
+                {% if request.session.key_user_questionnaires|length > 1 %}
+                <!-- Questionnaire switcher -->
+                <div class="relative" id="ku-switcher">
+                    <button onclick="document.getElementById('ku-dropdown').classList.toggle('hidden')" class="flex items-center gap-1.5 text-xs text-gray-300 bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg transition border border-white/10">
+                        <i data-lucide="repeat" class="w-3 h-3"></i>
+                        <span>Mes questionnaires ({{ request.session.key_user_questionnaires|length }})</span>
+                        <i data-lucide="chevron-down" class="w-3 h-3 text-gray-500"></i>
+                    </button>
+                    <div id="ku-dropdown" class="hidden absolute right-0 top-full mt-1 w-64 glass rounded-lg border border-white/10 shadow-xl z-50 py-1">
+                        {% for q in request.session.key_user_questionnaires %}
+                        <a href="{% url 'cartography:key_user_login' %}?token={{ q.token }}" class="flex items-center gap-2 px-3 py-2 text-xs hover:bg-white/5 transition {% if q.id == request.session.key_user_questionnaire_id %}text-ah-red font-semibold{% else %}text-gray-300{% endif %}">
+                            {% if q.id == request.session.key_user_questionnaire_id %}
+                            <i data-lucide="check-circle-2" class="w-3 h-3 flex-shrink-0"></i>
+                            {% else %}
+                            <i data-lucide="circle" class="w-3 h-3 flex-shrink-0 text-gray-600"></i>
+                            {% endif %}
+                            {{ q.name }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
                 <span class="text-xs text-gray-400"><i data-lucide="user" class="w-3 h-3 inline mr-1"></i>{{ request.session.key_user_name }}</span>
                 <a href="{% url 'cartography:logout' %}" class="text-xs text-gray-500 hover:text-red-400 transition flex items-center gap-1">
                     <i data-lucide="log-out" class="w-3 h-3"></i> Quitter
@@ -324,6 +346,15 @@
             btn.classList.toggle('collapsed');
             items.classList.toggle('hidden');
         }
+        
+        // Close key user dropdown on click outside
+        document.addEventListener('click', function(e) {
+            const dd = document.getElementById('ku-dropdown');
+            const sw = document.getElementById('ku-switcher');
+            if (dd && sw && !sw.contains(e.target)) {
+                dd.classList.add('hidden');
+            }
+        });
     </script>
     
     {% block extra_js %}{% endblock %}

@@ -1,41 +1,115 @@
 <!-- Recursive organigramme node -->
 <div class="{% if depth > 0 %}ml-6 border-l-2 border-white/5 pl-4{% endif %}">
-    <div class="glass rounded-lg px-4 py-3 mb-2 flex items-center justify-between hover:bg-white/[0.03] transition cursor-pointer" onclick="toggleDept('{{ dept.code }}')" style="border-left: 3px solid {{ dept.color }};">
-        <div class="flex items-center gap-3 min-w-0">
-            <div class="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold flex-shrink-0" style="background: {{ dept.color }}20; color: {{ dept.color }};">
-                {{ dept.code }}
+    <div class="glass rounded-lg mb-2 overflow-hidden" style="border-left: 3px solid {{ dept.color }};">
+        <!-- Header (clickable) -->
+        <div class="px-4 py-3 flex items-center justify-between hover:bg-white/[0.03] transition cursor-pointer" onclick="toggleNode('{{ dept.code }}')">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold flex-shrink-0" style="background: {{ dept.color }}20; color: {{ dept.color }};">
+                    {{ dept.code }}
+                </div>
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                        <h3 class="font-semibold text-sm truncate">{{ dept.name }}</h3>
+                        {% if dept.level %}
+                        <span class="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-gray-500 uppercase tracking-wider">{{ dept.level }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="flex items-center gap-2 text-[11px] text-gray-500 mt-0.5">
+                        {% if dept.responsable %}<span class="text-gray-400"><i data-lucide="user" class="w-2.5 h-2.5 inline"></i> {{ dept.responsable }}</span><span class="text-gray-700">·</span>{% endif %}
+                        <span>{{ dept.system_count }} sys.</span>
+                        {% if dept.total_questions > 0 %}
+                        <span class="text-gray-700">·</span>
+                        <span class="{% if dept.progress == 100 %}text-green-400{% elif dept.progress > 0 %}text-blue-400{% else %}text-gray-600{% endif %}">{{ dept.progress }}% répondu</span>
+                        {% if dept.validation_progress > 0 %}
+                        <span class="text-gray-700">·</span>
+                        <span class="text-purple-400">{{ dept.validation_progress }}% validé</span>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
             </div>
-            <div class="min-w-0">
-                <div class="flex items-center gap-2">
-                    <h3 class="font-semibold text-sm truncate">{{ dept.name }}</h3>
-                    {% if dept.level %}
-                    <span class="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-gray-500 uppercase tracking-wider">{{ dept.level }}</span>
-                    {% endif %}
+            <div class="flex items-center gap-2 flex-shrink-0 ml-2">
+                {% if dept.total_questions > 0 %}
+                <div class="w-16 bg-gray-700 rounded-full h-1.5">
+                    <div class="h-1.5 rounded-full {% if dept.progress == 100 %}bg-green-500{% elif dept.progress > 0 %}bg-blue-500{% else %}bg-gray-700{% endif %}" style="width:{{ dept.progress }}%"></div>
                 </div>
-                <div class="flex items-center gap-2 text-[11px] text-gray-500 mt-0.5">
-                    {% if dept.responsable %}<span class="text-gray-400"><i data-lucide="user" class="w-2.5 h-2.5 inline"></i> {{ dept.responsable }}</span><span class="text-gray-700">·</span>{% endif %}
-                    <span>{{ dept.system_count }} sys.</span>
-                    {% if dept.total_questions > 0 %}
-                    <span class="text-gray-700">·</span>
-                    <span class="{% if dept.progress == 100 %}text-green-400{% elif dept.progress > 0 %}text-blue-400{% else %}text-gray-600{% endif %}">{{ dept.progress }}% répondu</span>
-                    {% if dept.validation_progress > 0 %}
-                    <span class="text-gray-700">·</span>
-                    <span class="text-purple-400">{{ dept.validation_progress }}% validé</span>
-                    {% endif %}
-                    {% endif %}
-                </div>
+                {% endif %}
+                {% if dept.systems or dept.children %}
+                <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-gray-600 node-chevron-{{ dept.code }} transition-transform duration-200"></i>
+                {% endif %}
             </div>
         </div>
-        <div class="flex items-center gap-2 flex-shrink-0 ml-2">
-            {% if dept.total_questions > 0 %}
-            <div class="w-16 bg-gray-700 rounded-full h-1.5">
-                <div class="h-1.5 rounded-full {% if dept.progress == 100 %}bg-green-500{% elif dept.progress > 0 %}bg-blue-500{% else %}bg-gray-700{% endif %}" style="width:{{ dept.progress }}%"></div>
+
+        <!-- Expandable systems detail (hidden by default) -->
+        {% if dept.systems %}
+        <div class="node-detail hidden" id="node-detail-{{ dept.code }}">
+            <div class="border-t border-white/5 overflow-x-auto">
+                <table class="w-full text-xs">
+                    <thead>
+                        <tr class="text-[10px] text-gray-500 uppercase border-b border-white/5">
+                            <th class="text-left px-4 py-2">Système</th>
+                            <th class="text-left px-2 py-2">Key User</th>
+                            <th class="text-left px-2 py-2">Backup</th>
+                            <th class="text-center px-2 py-2">Statut</th>
+                            <th class="text-center px-2 py-2">Avancement</th>
+                            <th class="text-right px-4 py-2"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sys in dept.systems %}
+                        <tr class="border-b border-white/[0.03] hover:bg-white/[0.03]">
+                            <td class="px-4 py-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:{{ sys.criticality_color }};"></span>
+                                    <div>
+                                        <p class="font-medium text-gray-200">{{ sys.code }}</p>
+                                        <p class="text-[10px] text-gray-500 truncate max-w-[110px]">{{ sys.q_editor|default:sys.vendor }}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-2 py-2">
+                                {% if sys.q_key_users %}
+                                <span class="user-chip text-gray-300"><i data-lucide="user" class="w-2.5 h-2.5 text-amber-500"></i> {{ sys.q_key_users|truncatechars:30 }}</span>
+                                {% else %}
+                                <span class="text-gray-600 italic text-[10px]">Non désigné</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-2 py-2">
+                                {% if sys.q_key_users_backup and sys.q_key_users_backup != '—' %}
+                                <span class="text-[10px] text-gray-400">{{ sys.q_key_users_backup|truncatechars:25 }}</span>
+                                {% else %}<span class="text-gray-700 text-[10px]">—</span>{% endif %}
+                            </td>
+                            <td class="px-2 py-2 text-center">
+                                <span class="inline-flex items-center gap-1 {{ sys.response_class }} text-[10px] font-medium whitespace-nowrap">
+                                    {% if sys.q_status == 'COMPLETED' %}<i data-lucide="check-circle-2" class="w-3 h-3"></i>
+                                    {% elif sys.q_status == 'IN_PROGRESS' %}<i data-lucide="loader" class="w-3 h-3"></i>
+                                    {% elif sys.q_pk %}<i data-lucide="alert-circle" class="w-3 h-3"></i>
+                                    {% else %}<i data-lucide="minus-circle" class="w-3 h-3"></i>{% endif %}
+                                    {{ sys.response_label }}
+                                </span>
+                            </td>
+                            <td class="px-2 py-2 text-center">
+                                {% if sys.q_pk %}
+                                <div class="flex items-center gap-1 justify-center">
+                                    <div class="w-12 bg-gray-700 rounded-full h-1">
+                                        <div class="h-1 rounded-full {% if sys.q_progress == 100 %}bg-green-500{% elif sys.q_progress > 0 %}bg-blue-500{% else %}bg-gray-700{% endif %}" style="width:{{ sys.q_progress }}%"></div>
+                                    </div>
+                                    <span class="text-[10px] {% if sys.q_progress == 100 %}text-green-400{% elif sys.q_progress > 0 %}text-blue-400{% else %}text-gray-600{% endif %}">{{ sys.q_progress }}%</span>
+                                </div>
+                                {% else %}<span class="text-gray-700">—</span>{% endif %}
+                            </td>
+                            <td class="px-4 py-2 text-right">
+                                {% if sys.q_pk %}
+                                <a href="{% url 'cartography:questionnaire_form' sys.q_pk %}" class="text-gray-400 hover:text-white transition" title="Ouvrir"><i data-lucide="external-link" class="w-3 h-3 inline"></i></a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-            {% endif %}
-            {% if dept.children %}
-            <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-gray-600"></i>
-            {% endif %}
         </div>
+        {% endif %}
     </div>
 
     {% if dept.children %}

@@ -211,23 +211,37 @@
 <script>
     lucide.createIcons();
     
+    // Toggle for hierarchy tree nodes (top section)
+    function toggleNode(code) {
+        const detail = document.getElementById('node-detail-' + code);
+        const chevron = document.querySelector('.node-chevron-' + code);
+        if (detail) {
+            detail.classList.toggle('hidden');
+            if (chevron) {
+                chevron.style.transform = detail.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+            }
+            lucide.createIcons();
+        }
+    }
+    
+    // Toggle for flat grid cards (bottom section)
     function toggleDept(code) {
         const detail = document.getElementById('detail-' + code);
         const chevron = document.querySelector('.dept-chevron-' + code);
-        detail.classList.toggle('open');
-        if (detail.classList.contains('open')) {
-            chevron.style.transform = 'rotate(180deg)';
-        } else {
-            chevron.style.transform = 'rotate(0deg)';
+        if (detail) {
+            detail.classList.toggle('open');
+            if (chevron) {
+                chevron.style.transform = detail.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)';
+            }
+            lucide.createIcons();
         }
-        // Re-init icons for newly visible content
-        lucide.createIcons();
     }
     
     // Auto-open if ?dept= param
     {% if selected_dept %}
     toggleDept('{{ selected_dept.code }}');
-    document.getElementById('dept-{{ selected_dept.code }}').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    toggleNode('{{ selected_dept.code }}');
+    document.getElementById('dept-{{ selected_dept.code }}')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     {% endif %}
 </script>
 {% endblock %}
