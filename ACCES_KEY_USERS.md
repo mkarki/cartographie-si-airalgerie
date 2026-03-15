@@ -16,9 +16,9 @@
 
 ## Auditeurs
 
-Aucun auditeur configuré. Créer via admin Django > **Accès Auditeurs**.
-
-Lien d'accès : `/auditor/?token=<TOKEN>`
+| Nom | Email | Lien |
+|-----|-------|------|
+| Auditeur DSI | audit@airalgerie.dz | `/auditor/?token=oSE3uRQC5nPv5Bekf3ruh70rg-trgvyYFdqNyVBYPuU` |
 
 ---
 
