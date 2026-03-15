@@ -31,10 +31,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'cloudinary_storage',
-    'cloudinary',
     'cartography',
 ]
+
+if os.environ.get('CLOUDINARY_CLOUD_NAME'):
+    INSTALLED_APPS.insert(-1, 'cloudinary_storage')
+    INSTALLED_APPS.insert(-1, 'cloudinary')
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
