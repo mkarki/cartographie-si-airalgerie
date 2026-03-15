@@ -1,0 +1,345 @@
+{% extends 'base.html' %}
+
+{% block title %}Rapport des Éléments Manquants{% endblock %}
+
+{% block content %}
+<div class="p-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold">Rapport des Éléments Manquants</h1>
+            <p class="text-gray-400 mt-1">Analyse de complétude des échantillons de données pour chaque flux</p>
+        </div>
+        <div class="flex items-center gap-4">
+            <button onclick="window.print()" class="glass px-4 py-2 rounded-lg hover:bg-white/10 transition flex items-center gap-2">
+                <i data-lucide="printer" class="w-4 h-4"></i>
+                Imprimer
+            </button>
+        </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+        <div class="glass rounded-xl p-6 text-center">
+            <div class="text-3xl font-bold text-white">{{ total_flows }}</div>
+            <div class="text-sm text-gray-400 mt-1">Flux analysés</div>
+        </div>
+        <div class="glass rounded-xl p-6 text-center border-l-4 border-green-500">
+            <div class="text-3xl font-bold text-green-400">{{ complete_flows }}</div>
+            <div class="text-sm text-gray-400 mt-1">Complets</div>
+        </div>
+        <div class="glass rounded-xl p-6 text-center border-l-4 border-yellow-500">
+            <div class="text-3xl font-bold text-yellow-400">{{ partial_flows }}</div>
+            <div class="text-sm text-gray-400 mt-1">Partiels</div>
+        </div>
+        <div class="glass rounded-xl p-6 text-center border-l-4 border-red-500">
+            <div class="text-3xl font-bold text-red-400">{{ issues_flows }}</div>
+            <div class="text-sm text-gray-400 mt-1">Problèmes</div>
+        </div>
+        <div class="glass rounded-xl p-6 text-center border-l-4 border-gray-500">
+            <div class="text-3xl font-bold text-gray-400">{{ no_sample_flows }}</div>
+            <div class="text-sm text-gray-400 mt-1">Sans échantillon</div>
+        </div>
+    </div>
+
+    <!-- Missing Items Summary -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div class="glass rounded-xl p-6">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-lg bg-orange-500/20 flex items-center justify-center">
+                    <i data-lucide="book-x" class="w-6 h-6 text-orange-400"></i>
+                </div>
+                <div>
+                    <div class="text-2xl font-bold">{{ total_missing_refs }}</div>
+                    <div class="text-sm text-gray-400">Référentiels manquants</div>
+                </div>
+            </div>
+        </div>
+        <div class="glass rounded-xl p-6">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                    <i data-lucide="file-x" class="w-6 h-6 text-purple-400"></i>
+                </div>
+                <div>
+                    <div class="text-2xl font-bold">{{ total_missing_samples }}</div>
+                    <div class="text-sm text-gray-400">Flux sans échantillon</div>
+                </div>
+            </div>
+        </div>
+        <div class="glass rounded-xl p-6">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-lg bg-red-500/20 flex items-center justify-center">
+                    <i data-lucide="alert-triangle" class="w-6 h-6 text-red-400"></i>
+                </div>
+                <div>
+                    <div class="text-2xl font-bold">{{ total_missing_fields }}</div>
+                    <div class="text-sm text-gray-400">Champs non validés</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="glass rounded-xl p-6 mb-8">
+        <form method="get" class="flex flex-wrap gap-4 items-end">
+            <div>
+                <label class="block text-sm text-gray-400 mb-2">Système Source</label>
+                <select name="source" class="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white min-w-[200px]">
+                    <option value="">Tous</option>
+                    {% for system in systems %}
+                    <option value="{{ system.id }}" {% if selected_source == system.id|stringformat:"s" %}selected{% endif %}>{{ system.code }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm text-gray-400 mb-2">Système Cible</label>
+                <select name="target" class="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white min-w-[200px]">
+                    <option value="">Tous</option>
+                    {% for system in systems %}
+                    <option value="{{ system.id }}" {% if selected_target == system.id|stringformat:"s" %}selected{% endif %}>{{ system.code }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm text-gray-400 mb-2">Statut</label>
+                <select name="status" class="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white min-w-[200px]">
+                    <option value="">Tous les statuts</option>
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex-1">
+                <label class="block text-sm text-gray-400 mb-2">Flux spécifiques</label>
+                <select name="flows" multiple class="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white w-full min-h-[42px]">
+                    {% for flow in all_flows %}
+                    <option value="{{ flow.id }}" {% if flow.id|stringformat:"s" in selected_flows %}selected{% endif %}>
+                        {{ flow.source.code }} → {{ flow.target.code }}: {{ flow.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="bg-ah-red hover:bg-red-700 px-6 py-2 rounded-lg font-medium transition">
+                <i data-lucide="filter" class="w-4 h-4 inline mr-2"></i>
+                Filtrer
+            </button>
+            <a href="{% url 'cartography:data_gaps_report' %}" class="text-gray-400 hover:text-white px-4 py-2">
+                Réinitialiser
+            </a>
+        </form>
+    </div>
+
+    <!-- Flows Analysis -->
+    <div class="space-y-4">
+        {% for analysis in flows_analysis %}
+        <div class="glass rounded-xl overflow-hidden">
+            <!-- Flow Header -->
+            <div class="p-6 flex items-center justify-between cursor-pointer hover:bg-white/5" 
+                 onclick="toggleFlowDetails('flow-{{ analysis.flow.pk }}')">
+                <div class="flex items-center gap-4">
+                    <!-- Status Icon -->
+                    <div class="w-12 h-12 rounded-lg flex items-center justify-center
+                        {% if analysis.status == 'COMPLETE' %}bg-green-500/20
+                        {% elif analysis.status == 'PARTIAL' %}bg-yellow-500/20
+                        {% elif analysis.status == 'ISSUES' %}bg-red-500/20
+                        {% else %}bg-gray-500/20{% endif %}">
+                        {% if analysis.status == 'COMPLETE' %}
+                        <i data-lucide="check-circle" class="w-6 h-6 text-green-400"></i>
+                        {% elif analysis.status == 'PARTIAL' %}
+                        <i data-lucide="clock" class="w-6 h-6 text-yellow-400"></i>
+                        {% elif analysis.status == 'ISSUES' %}
+                        <i data-lucide="alert-circle" class="w-6 h-6 text-red-400"></i>
+                        {% else %}
+                        <i data-lucide="file-question" class="w-6 h-6 text-gray-400"></i>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <a href="{% url 'cartography:flow_detail' analysis.flow.pk %}" 
+                               class="font-bold text-lg hover:text-indigo-400" onclick="event.stopPropagation()">
+                                {{ analysis.flow.name }}
+                            </a>
+                            {% if analysis.flow.is_critical %}
+                            <span class="px-2 py-0.5 bg-red-500/20 text-red-400 rounded text-xs">Critique</span>
+                            {% endif %}
+                        </div>
+                        <div class="text-sm text-gray-400">
+                            {{ analysis.flow.source.code }} → {{ analysis.flow.target.code }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-6">
+                    <!-- Completeness Bar -->
+                    <div class="w-32">
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-gray-400">Complétude</span>
+                            <span class="font-medium">{{ analysis.completeness }}%</span>
+                        </div>
+                        <div class="h-2 bg-white/10 rounded-full overflow-hidden">
+                            <div class="h-full rounded-full transition-all
+                                {% if analysis.completeness >= 80 %}bg-green-500
+                                {% elif analysis.completeness >= 50 %}bg-yellow-500
+                                {% else %}bg-red-500{% endif %}"
+                                style="width: {{ analysis.completeness }}%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Stats -->
+                    <div class="flex items-center gap-4 text-sm">
+                        {% if analysis.missing_refs %}
+                        <span class="text-orange-400">
+                            <i data-lucide="book-x" class="w-4 h-4 inline"></i>
+                            {{ analysis.missing_refs|length }}
+                        </span>
+                        {% endif %}
+                        {% if analysis.pending_hypotheses %}
+                        <span class="text-yellow-400">
+                            <i data-lucide="help-circle" class="w-4 h-4 inline"></i>
+                            {{ analysis.pending_hypotheses|length }}
+                        </span>
+                        {% endif %}
+                        {% if analysis.incorrect_hypotheses %}
+                        <span class="text-red-400">
+                            <i data-lucide="x-circle" class="w-4 h-4 inline"></i>
+                            {{ analysis.incorrect_hypotheses|length }}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <i data-lucide="chevron-down" class="w-5 h-5 text-gray-400 transition-transform" id="chevron-flow-{{ analysis.flow.pk }}"></i>
+                </div>
+            </div>
+
+            <!-- Flow Details (Hidden by default) -->
+            <div id="flow-{{ analysis.flow.pk }}" class="hidden border-t border-white/10">
+                <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Missing Referentials -->
+                    <div>
+                        <h4 class="font-medium text-orange-400 mb-3 flex items-center gap-2">
+                            <i data-lucide="book-x" class="w-4 h-4"></i>
+                            Référentiels manquants ({{ analysis.missing_refs|length }})
+                        </h4>
+                        {% if analysis.missing_refs %}
+                        <ul class="space-y-2">
+                            {% for ref in analysis.missing_refs %}
+                            <li class="flex items-center gap-2 text-sm">
+                                <i data-lucide="x" class="w-4 h-4 text-red-400"></i>
+                                <a href="{% url 'cartography:referential_detail' ref.reference_data.pk %}" class="hover:text-indigo-400">
+                                    {{ ref.reference_data.code }}
+                                </a>
+                                {% if ref.field_name %}
+                                <span class="text-gray-500">({{ ref.field_name }})</span>
+                                {% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="text-sm text-gray-500">Aucun référentiel manquant</p>
+                        {% endif %}
+
+                        {% if analysis.present_refs %}
+                        <h4 class="font-medium text-green-400 mt-4 mb-3 flex items-center gap-2">
+                            <i data-lucide="book-check" class="w-4 h-4"></i>
+                            Référentiels présents ({{ analysis.present_refs|length }})
+                        </h4>
+                        <ul class="space-y-2">
+                            {% for ref in analysis.present_refs %}
+                            <li class="flex items-center gap-2 text-sm text-gray-400">
+                                <i data-lucide="check" class="w-4 h-4 text-green-400"></i>
+                                {{ ref.reference_data.code }}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </div>
+
+                    <!-- Field Hypotheses -->
+                    <div>
+                        <h4 class="font-medium text-yellow-400 mb-3 flex items-center gap-2">
+                            <i data-lucide="help-circle" class="w-4 h-4"></i>
+                            Champs en attente de validation ({{ analysis.pending_hypotheses|length }})
+                        </h4>
+                        {% if analysis.pending_hypotheses %}
+                        <ul class="space-y-2 max-h-40 overflow-y-auto">
+                            {% for hyp in analysis.pending_hypotheses %}
+                            <li class="flex items-center gap-2 text-sm">
+                                <i data-lucide="clock" class="w-4 h-4 text-yellow-400"></i>
+                                <span class="font-mono bg-white/10 px-2 py-0.5 rounded">{{ hyp.field_name }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="text-sm text-gray-500">Aucun champ en attente</p>
+                        {% endif %}
+
+                        {% if analysis.incorrect_hypotheses %}
+                        <h4 class="font-medium text-red-400 mt-4 mb-3 flex items-center gap-2">
+                            <i data-lucide="x-circle" class="w-4 h-4"></i>
+                            Champs incorrects ({{ analysis.incorrect_hypotheses|length }})
+                        </h4>
+                        <ul class="space-y-2">
+                            {% for hyp in analysis.incorrect_hypotheses %}
+                            <li class="flex items-center gap-2 text-sm">
+                                <i data-lucide="x" class="w-4 h-4 text-red-400"></i>
+                                <span class="font-mono bg-white/10 px-2 py-0.5 rounded">{{ hyp.field_name }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Sample Info -->
+                <div class="px-6 pb-6">
+                    <div class="bg-white/5 rounded-lg p-4">
+                        <h4 class="font-medium mb-2 flex items-center gap-2">
+                            <i data-lucide="file-text" class="w-4 h-4 text-gray-400"></i>
+                            Échantillons de données
+                        </h4>
+                        {% if analysis.has_sample %}
+                        <div class="flex flex-wrap gap-2">
+                            {% for validation in analysis.validations %}
+                            <a href="{% url 'cartography:sample_detail' validation.sample.pk %}" 
+                               class="px-3 py-1 bg-white/10 rounded-lg text-sm hover:bg-white/20 transition">
+                                {{ validation.sample.name }}
+                                <span class="text-gray-500 ml-1">{{ validation.sample.imported_at|date:"d/m/Y" }}</span>
+                            </a>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-sm text-gray-500">
+                            <i data-lucide="alert-triangle" class="w-4 h-4 inline text-yellow-400"></i>
+                            Aucun échantillon de données disponible pour ce flux
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="glass rounded-xl p-12 text-center">
+            <i data-lucide="check-circle-2" class="w-16 h-16 mx-auto text-green-500 mb-4"></i>
+            <h3 class="text-xl font-medium">Aucun flux à analyser</h3>
+            <p class="text-gray-400 mt-2">Modifiez les filtres pour voir les flux</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+function toggleFlowDetails(id) {
+    const details = document.getElementById(id);
+    const chevron = document.getElementById('chevron-' + id);
+    
+    if (details.classList.contains('hidden')) {
+        details.classList.remove('hidden');
+        chevron.style.transform = 'rotate(180deg)';
+    } else {
+        details.classList.add('hidden');
+        chevron.style.transform = 'rotate(0deg)';
+    }
+}
+</script>
+{% endblock %}

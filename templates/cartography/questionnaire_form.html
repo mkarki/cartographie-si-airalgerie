@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block title %}Formulaire — {{ questionnaire.system_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-question {
+        transition: all 0.2s ease;
+        border-left: 3px solid transparent;
+    }
+    .form-question:focus-within {
+        border-left-color: #c8102e;
+        background: rgba(200, 16, 46, 0.03);
+    }
+    .form-question.answered {
+        border-left-color: #22c55e;
+    }
+    .success-banner {
+        animation: slideDown 0.5s ease;
+    }
+    @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .section-anchor {
+        scroll-margin-top: 80px;
+    }
+    textarea {
+        resize: vertical;
+    }
+    .form-nav-item {
+        transition: all 0.2s ease;
+    }
+    .form-nav-item:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+    .form-nav-item.active {
+        background: rgba(200, 16, 46, 0.2);
+        border-left: 2px solid #c8102e;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="p-8 max-w-5xl mx-auto">
+    <!-- Success message -->
+    {% if saved %}
+    <div class="success-banner mb-6 bg-green-900/50 border border-green-700 rounded-xl p-4 flex items-center gap-3">
+        <i data-lucide="check-circle-2" class="w-6 h-6 text-green-400 flex-shrink-0"></i>
+        <div>
+            <p class="font-semibold text-green-300">Réponses enregistrées avec succès !</p>
+            <p class="text-sm text-green-400/70">Merci pour votre contribution. Vous pouvez modifier vos réponses à tout moment.</p>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if messages %}
+    <div class="mb-4">
+        {% for message in messages %}
+        <div class="success-banner bg-green-900/50 border border-green-700 text-green-300 px-4 py-3 rounded-lg flex items-center gap-2">
+            <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Header -->
+    <div class="glass rounded-xl p-6 mb-6">
+        <div class="flex items-start gap-4">
+            <div class="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0" style="background: {{ questionnaire.phase_color }}20; color: {{ questionnaire.phase_color }};">
+                <i data-lucide="clipboard-list" class="w-7 h-7"></i>
+            </div>
+            <div class="flex-1">
+                <div class="flex items-center gap-3 mb-1">
+                    <h1 class="text-2xl font-bold">{{ questionnaire.system_name }}</h1>
+                    <span class="text-xs font-mono px-2 py-0.5 rounded" style="background: {{ questionnaire.phase_color }}20; color: {{ questionnaire.phase_color }};">Phase {{ questionnaire.phase }}</span>
+                </div>
+                <p class="text-gray-400 text-sm mb-3">Questionnaire de cartographie SI — Air Algérie</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                    {% if questionnaire.editor %}
+                    <div>
+                        <span class="text-xs text-gray-500">Éditeur</span>
+                        <p>{{ questionnaire.editor }}</p>
+                    </div>
+                    {% endif %}
+                    {% if questionnaire.direction %}
+                    <div>
+                        <span class="text-xs text-gray-500">Direction</span>
+                        <p>{{ questionnaire.direction }}</p>
+                    </div>
+                    {% endif %}
+                    {% if questionnaire.key_users %}
+                    <div>
+                        <span class="text-xs text-gray-500">Key Users</span>
+                        <p>{{ questionnaire.key_users }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="glass rounded-xl p-4 mb-6">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-sm text-gray-400">Votre progression</span>
+            <span class="text-sm font-semibold" id="form-progress-text">{{ questionnaire.answered_questions }} / {{ questionnaire.total_questions }} questions répondues</span>
+        </div>
+        <div class="w-full bg-gray-700 rounded-full h-2.5">
+            <div class="h-2.5 rounded-full transition-all duration-700 {% if questionnaire.progress_percent == 100 %}bg-green-500{% elif questionnaire.progress_percent > 0 %}bg-blue-500{% else %}bg-gray-600{% endif %}" style="width: {{ questionnaire.progress_percent }}%;" id="form-progress-bar"></div>
+        </div>
+        <div class="mt-2 text-right">
+            <span class="text-xs text-gray-500" id="form-progress-pct">{{ questionnaire.progress_percent }}%</span>
+        </div>
+    </div>
+
+    <div class="flex gap-6">
+        <!-- Section navigation (sticky) -->
+        <div class="w-56 flex-shrink-0 hidden lg:block">
+            <div class="sticky top-4">
+                <div class="glass rounded-xl p-4">
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Sections</h3>
+                    <nav class="space-y-1">
+                        {% for section in sections %}
+                        <a href="#form-section-{{ section.pk }}" class="form-nav-item block px-3 py-2 rounded text-sm text-gray-300 hover:text-white">
+                            {{ section.title }}
+                            <span class="text-xs text-gray-600 ml-1">({{ section.questions.count }})</span>
+                        </a>
+                        {% endfor %}
+                    </nav>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form content -->
+        <div class="flex-1 min-w-0">
+            <form method="post" id="questionnaire-form">
+                {% csrf_token %}
+                {% if token %}<input type="hidden" name="token" value="{{ token }}">{% endif %}
+
+                {% for section in sections %}
+                <div id="form-section-{{ section.pk }}" class="section-anchor mb-8">
+                    <div class="flex items-center gap-3 mb-4 sticky top-0 z-10 py-3" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);">
+                        <div class="w-1.5 h-6 rounded" style="background: {{ questionnaire.phase_color }};"></div>
+                        <h2 class="text-lg font-bold">{{ section.title }}</h2>
+                        <span class="text-xs text-gray-500">({{ section.questions.count }} questions)</span>
+                    </div>
+
+                    <div class="space-y-4">
+                        {% for question in section.questions.all %}
+                        <div class="form-question glass rounded-xl p-5 {% if question.is_answered %}answered{% endif %}" id="fq-card-{{ question.pk }}">
+                            <div class="flex items-start gap-3 mb-3">
+                                <span class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold {% if question.is_answered %}bg-green-900/50 text-green-400{% else %}bg-white/5 text-gray-400{% endif %}" id="fq-badge-{{ question.pk }}">
+                                    {{ question.number }}
+                                </span>
+                                <p class="text-sm leading-relaxed pt-1">{{ question.text }}</p>
+                            </div>
+
+                            <div class="ml-11">
+                                <textarea 
+                                    name="answer_{{ question.pk }}" 
+                                    class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-ah-red min-h-[80px] placeholder-gray-600"
+                                    placeholder="Saisissez votre réponse ici..."
+                                    data-question-id="{{ question.pk }}"
+                                    oninput="updateFormProgress(this)"
+                                >{{ question.answer }}</textarea>
+
+                                <details class="mt-2">
+                                    <summary class="text-xs text-gray-500 cursor-pointer hover:text-gray-300">Ajouter une remarque</summary>
+                                    <textarea 
+                                        name="notes_{{ question.pk }}" 
+                                        class="w-full mt-1 bg-yellow-900/10 border border-yellow-900/20 rounded-lg px-4 py-2 text-yellow-200 text-xs focus:outline-none focus:border-yellow-700 min-h-[50px] placeholder-gray-600"
+                                        placeholder="Remarques complémentaires..."
+                                    >{{ question.notes }}</textarea>
+                                </details>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+
+                <!-- Submit -->
+                <div class="glass rounded-xl p-6 mb-8">
+                    <div class="flex items-center justify-between">
+                        <div class="text-sm text-gray-400">
+                            <p>Vos réponses seront sauvegardées et visibles par l'équipe projet.</p>
+                            <p class="text-xs text-gray-600 mt-1">Vous pouvez revenir modifier vos réponses à tout moment via ce lien.</p>
+                        </div>
+                        <button type="submit" class="bg-ah-red hover:bg-red-700 px-8 py-3 rounded-lg font-semibold transition flex items-center gap-2 flex-shrink-0">
+                            <i data-lucide="send" class="w-5 h-5"></i> Envoyer mes réponses
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    lucide.createIcons();
+
+    const totalQuestions = {{ questionnaire.total_questions }};
+    
+    function updateFormProgress(textarea) {
+        const card = textarea.closest('.form-question');
+        const badge = card.querySelector('[id^="fq-badge-"]');
+        const hasContent = textarea.value.trim().length > 0;
+        
+        if (hasContent) {
+            badge.classList.remove('bg-white/5', 'text-gray-400');
+            badge.classList.add('bg-green-900/50', 'text-green-400');
+            card.classList.add('answered');
+        } else {
+            badge.classList.add('bg-white/5', 'text-gray-400');
+            badge.classList.remove('bg-green-900/50', 'text-green-400');
+            card.classList.remove('answered');
+        }
+        
+        // Count answered
+        const answered = document.querySelectorAll('.form-question.answered').length;
+        const pct = totalQuestions > 0 ? Math.round((answered / totalQuestions) * 100) : 0;
+        
+        document.getElementById('form-progress-text').textContent = answered + ' / ' + totalQuestions + ' questions répondues';
+        document.getElementById('form-progress-pct').textContent = pct + '%';
+        document.getElementById('form-progress-bar').style.width = pct + '%';
+        
+        if (pct === 100) {
+            document.getElementById('form-progress-bar').className = 'h-2.5 rounded-full transition-all duration-700 bg-green-500';
+        } else if (pct > 0) {
+            document.getElementById('form-progress-bar').className = 'h-2.5 rounded-full transition-all duration-700 bg-blue-500';
+        }
+    }
+
+    // Highlight active section on scroll
+    const formSections = document.querySelectorAll('[id^="form-section-"]');
+    const formNavItems = document.querySelectorAll('.form-nav-item');
+    
+    const formObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const id = entry.target.id;
+                formNavItems.forEach(item => {
+                    item.classList.toggle('active', item.getAttribute('href') === '#' + id);
+                });
+            }
+        });
+    }, { threshold: 0.2 });
+    
+    formSections.forEach(s => formObserver.observe(s));
+</script>
+{% endblock %}

@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ referential.code }} - Référentiel{% endblock %}
+
+{% block content %}
+<div class="p-8">
+    <!-- Breadcrumb -->
+    <div class="flex items-center gap-2 text-sm text-gray-400 mb-6">
+        <a href="{% url 'cartography:referentials_list' %}" class="hover:text-white">Référentiels</a>
+        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        <span class="text-white">{{ referential.code }}</span>
+    </div>
+
+    <!-- Header -->
+    <div class="glass rounded-xl p-8 mb-8">
+        <div class="flex items-start justify-between">
+            <div class="flex items-center gap-6">
+                <div class="w-20 h-20 rounded-xl bg-indigo-500/20 flex items-center justify-center">
+                    <i data-lucide="book-open" class="w-10 h-10 text-indigo-400"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold">{{ referential.code }}</h1>
+                    <p class="text-xl text-gray-300 mt-1">{{ referential.name }}</p>
+                    <div class="flex items-center gap-4 mt-3">
+                        <span class="px-3 py-1 rounded-lg text-sm 
+                            {% if referential.referential_type == 'STANDARD' %}bg-blue-500/20 text-blue-400
+                            {% elif referential.referential_type == 'CODE' %}bg-green-500/20 text-green-400
+                            {% elif referential.referential_type == 'TABLE' %}bg-purple-500/20 text-purple-400
+                            {% elif referential.referential_type == 'ENUM' %}bg-yellow-500/20 text-yellow-400
+                            {% else %}bg-gray-500/20 text-gray-400{% endif %}">
+                            {{ referential.get_referential_type_display }}
+                        </span>
+                        {% if referential.standard %}
+                        <span class="px-3 py-1 bg-white/10 rounded-lg text-sm">{{ referential.standard }}</span>
+                        {% endif %}
+                        {% if referential.is_mandatory %}
+                        <span class="px-3 py-1 bg-red-500/20 text-red-400 rounded-lg text-sm">Obligatoire</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% if referential.documentation_url %}
+            <a href="{{ referential.documentation_url }}" target="_blank" 
+               class="bg-ah-green hover:bg-green-700 px-4 py-2 rounded-lg font-medium transition flex items-center gap-2">
+                <i data-lucide="external-link" class="w-4 h-4"></i>
+                Documentation
+            </a>
+            {% endif %}
+        </div>
+
+        {% if referential.description %}
+        <div class="mt-6 pt-6 border-t border-white/10">
+            <p class="text-gray-300">{{ referential.description }}</p>
+        </div>
+        {% endif %}
+
+        {% if referential.master_system %}
+        <div class="mt-6 pt-6 border-t border-white/10">
+            <div class="flex items-center gap-3">
+                <i data-lucide="server" class="w-5 h-5 text-gray-400"></i>
+                <span class="text-gray-400">Système maître:</span>
+                <a href="{% url 'cartography:system_detail' referential.master_system.pk %}" 
+                   class="text-indigo-400 hover:text-indigo-300">
+                    {{ referential.master_system.code }} - {{ referential.master_system.name }}
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Systems using this referential -->
+    <div class="glass rounded-xl p-6 mb-8">
+        <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+            <i data-lucide="server" class="w-5 h-5 text-gray-400"></i>
+            Systèmes utilisant ce référentiel
+            <span class="ml-2 px-2 py-1 bg-green-500/20 text-green-400 rounded text-sm font-normal">{{ confirmed_count }} confirmés</span>
+            <span class="px-2 py-1 bg-gray-500/20 text-gray-400 rounded text-sm font-normal">{{ potential_count }} potentiels</span>
+        </h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for usage in systems_usage %}
+            <div class="bg-white/5 rounded-lg p-4 {% if usage.confirmed %}border-l-4 border-green-500{% else %}border-l-4 border-gray-500{% endif %}">
+                <div class="flex items-start justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center" 
+                             style="background-color: {{ usage.system.category.color }}20;">
+                            <i data-lucide="server" class="w-5 h-5" style="color: {{ usage.system.category.color }};"></i>
+                        </div>
+                        <div>
+                            <a href="{% url 'cartography:system_detail' usage.system.pk %}" 
+                               class="font-medium hover:text-indigo-400">
+                                {{ usage.system.code }}
+                            </a>
+                            <p class="text-xs text-gray-400">{{ usage.system.name|truncatechars:30 }}</p>
+                        </div>
+                    </div>
+                    {% if usage.confirmed %}
+                    <span class="px-2 py-0.5 bg-green-500/20 text-green-400 rounded text-xs">Confirmé</span>
+                    {% else %}
+                    <span class="px-2 py-0.5 bg-gray-500/20 text-gray-400 rounded text-xs">Potentiel</span>
+                    {% endif %}
+                </div>
+                
+                {% if usage.via_flows %}
+                <div class="mt-3 pt-3 border-t border-white/10">
+                    <p class="text-xs text-gray-500 mb-2">Via les flux:</p>
+                    <div class="flex flex-wrap gap-1">
+                        {% for ref in usage.via_flows %}
+                        <a href="{% url 'cartography:flow_detail' ref.flow.pk %}" 
+                           class="text-xs px-2 py-0.5 bg-white/10 rounded hover:bg-white/20">
+                            {{ ref.flow.name|truncatechars:20 }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="mt-2 text-xs text-gray-500">
+                    {{ usage.system.category.name }}
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-span-full text-center py-8 text-gray-500">
+                <i data-lucide="server" class="w-12 h-12 mx-auto mb-2 opacity-50"></i>
+                <p>Aucun système identifié pour ce référentiel</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Example Values -->
+    {% if referential.example_values %}
+    <div class="glass rounded-xl p-6 mb-8">
+        <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+            <i data-lucide="list" class="w-5 h-5 text-gray-400"></i>
+            Exemples de valeurs
+        </h2>
+        <div class="flex flex-wrap gap-2">
+            {% for value in referential.example_values %}
+            <span class="px-3 py-1 bg-white/10 rounded-lg text-sm font-mono">{{ value }}</span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Flows using this referential -->
+    <div class="glass rounded-xl p-6">
+        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
+            <i data-lucide="arrow-right-left" class="w-5 h-5 text-gray-400"></i>
+            Flux utilisant ce référentiel
+            <span class="ml-2 px-2 py-1 bg-white/10 rounded text-sm font-normal">{{ flow_refs|length }}</span>
+        </h2>
+
+        {% if flow_refs %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="text-left text-gray-400 text-sm border-b border-white/10">
+                        <th class="pb-3 font-medium">Flux</th>
+                        <th class="pb-3 font-medium">Source → Cible</th>
+                        <th class="pb-3 font-medium">Champ</th>
+                        <th class="pb-3 font-medium">Usage</th>
+                        <th class="pb-3 font-medium">Présent</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    {% for ref in flow_refs %}
+                    <tr class="hover:bg-white/5">
+                        <td class="py-4">
+                            <a href="{% url 'cartography:flow_detail' ref.flow.pk %}" class="text-indigo-400 hover:text-indigo-300 font-medium">
+                                {{ ref.flow.name }}
+                            </a>
+                        </td>
+                        <td class="py-4 text-gray-300">
+                            {{ ref.flow.source.code }} → {{ ref.flow.target.code }}
+                        </td>
+                        <td class="py-4">
+                            {% if ref.field_name %}
+                            <span class="font-mono text-sm bg-white/10 px-2 py-1 rounded">{{ ref.field_name }}</span>
+                            {% else %}
+                            <span class="text-gray-500">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-4">
+                            <span class="px-2 py-1 rounded text-xs
+                                {% if ref.usage == 'INPUT' %}bg-blue-500/20 text-blue-400
+                                {% elif ref.usage == 'OUTPUT' %}bg-green-500/20 text-green-400
+                                {% elif ref.usage == 'VALIDATION' %}bg-yellow-500/20 text-yellow-400
+                                {% else %}bg-purple-500/20 text-purple-400{% endif %}">
+                                {{ ref.get_usage_display }}
+                            </span>
+                        </td>
+                        <td class="py-4">
+                            {% if ref.is_present_in_sample %}
+                            <span class="text-green-400"><i data-lucide="check-circle" class="w-5 h-5"></i></span>
+                            {% else %}
+                            <span class="text-red-400"><i data-lucide="x-circle" class="w-5 h-5"></i></span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-12">
+            <i data-lucide="arrow-right-left" class="w-12 h-12 mx-auto text-gray-600 mb-4"></i>
+            <p class="text-gray-400">Aucun flux n'utilise ce référentiel</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,772 @@
+{% extends 'base.html' %}
+
+{% block title %}Cartographie SI Air Algérie{% endblock %}
+
+{% block extra_css %}
+<style>
+    .table-card {
+        background: linear-gradient(180deg, #2d3748 0%, #1a202c 100%);
+        border: 1px solid #4a5568;
+        border-radius: 8px;
+        min-width: 200px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        position: absolute;
+        cursor: move;
+        user-select: none;
+    }
+    .table-card.highlighted {
+        border-color: #c8102e;
+        box-shadow: 0 0 20px rgba(200, 16, 46, 0.4);
+    }
+    .table-header {
+        background: linear-gradient(90deg, #4a5568 0%, #2d3748 100%);
+        padding: 10px 12px;
+        border-radius: 7px 7px 0 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid #4a5568;
+    }
+    .table-header.core { background: linear-gradient(90deg, #ef4444 0%, #b91c1c 100%); }
+    .table-header.distribution { background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%); }
+    .table-header.finance { background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%); }
+    .table-header.validation { background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%); }
+    .table-card.has-samples {
+        border-color: #22c55e;
+        box-shadow: 0 0 15px rgba(34, 197, 94, 0.3);
+    }
+    .sample-badge {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background: #22c55e;
+        color: white;
+        font-size: 10px;
+        font-weight: bold;
+        padding: 2px 6px;
+        border-radius: 10px;
+        z-index: 20;
+    }
+    .table-name {
+        font-weight: 600;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .table-fields {
+        padding: 8px 0;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    .table-field {
+        padding: 4px 12px;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #e2e8f0;
+    }
+    .table-field:hover {
+        background: rgba(255,255,255,0.05);
+    }
+    .field-icon {
+        width: 14px;
+        height: 14px;
+        flex-shrink: 0;
+    }
+    .field-pk { color: #fbbf24; }
+    .field-fk { color: #a78bfa; }
+    .field-normal { color: #94a3b8; }
+    .expand-btn {
+        font-size: 11px;
+        color: #94a3b8;
+        padding: 4px 12px;
+        cursor: pointer;
+    }
+    .expand-btn:hover {
+        color: #fff;
+    }
+    #schema-canvas {
+        position: relative;
+        width: 100%;
+        height: 700px;
+        overflow: auto;
+        background: 
+            linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+        background-size: 20px 20px;
+    }
+    #schema-inner {
+        position: relative;
+        width: 2000px;
+        height: 1200px;
+    }
+    .relation-line {
+        position: absolute;
+        pointer-events: none;
+    }
+    .cardinality {
+        position: absolute;
+        font-size: 11px;
+        font-weight: bold;
+        color: #94a3b8;
+        background: #1a202c;
+        padding: 2px 4px;
+        border-radius: 3px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="p-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold">Cartographie SI Air Algérie</h1>
+            <p class="text-gray-400 mt-1">Systèmes d'information et flux de données - Style Power BI</p>
+        </div>
+        <div class="flex items-center gap-4">
+            <span class="glass px-4 py-2 rounded-lg">
+                <span class="text-2xl font-bold text-ah-green">{{ tables|length }}</span>
+                <span class="text-gray-400 ml-2">systèmes</span>
+            </span>
+            <span class="glass px-4 py-2 rounded-lg">
+                <span class="text-2xl font-bold text-indigo-400">{{ relations|length }}</span>
+                <span class="text-gray-400 ml-2">flux</span>
+            </span>
+        </div>
+    </div>
+
+    <!-- View Toggle -->
+    <div class="flex gap-4 mb-8">
+        <button onclick="showView('diagram')" id="btn-diagram" 
+                class="px-6 py-3 rounded-lg font-medium transition bg-ah-red text-white">
+            <i data-lucide="git-branch" class="w-4 h-4 inline mr-2"></i>
+            Diagramme
+        </button>
+        <button onclick="showView('list')" id="btn-list" 
+                class="px-6 py-3 rounded-lg font-medium transition glass hover:bg-white/10">
+            <i data-lucide="list" class="w-4 h-4 inline mr-2"></i>
+            Liste des Tables
+        </button>
+    </div>
+
+    <!-- Filters & Legend -->
+    <div class="glass rounded-xl p-4 mb-4">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+            <!-- Filters -->
+            <div class="flex flex-wrap items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <label class="text-sm text-gray-400">Catégorie:</label>
+                    <select id="filter-category" class="bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 text-sm text-white">
+                        <option value="all">Toutes</option>
+                        <option value="core">Core Business</option>
+                        <option value="distribution">Distribution</option>
+                        <option value="finance">Finance</option>
+                        <option value="validation">RH & Autres</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-2">
+                    <label class="text-sm text-gray-400">Échantillons:</label>
+                    <select id="filter-samples" class="bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 text-sm text-white">
+                        <option value="all">Tous</option>
+                        <option value="with">Avec échantillons</option>
+                        <option value="without">Sans échantillons</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-2">
+                    <label class="text-sm text-gray-400">Criticité:</label>
+                    <select id="filter-criticality" class="bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 text-sm text-white">
+                        <option value="all">Toutes</option>
+                        <option value="CRITIQUE">Critique</option>
+                        <option value="HAUTE">Haute</option>
+                        <option value="MOYENNE">Moyenne</option>
+                        <option value="BASSE">Basse</option>
+                    </select>
+                </div>
+                <button onclick="applyFilters()" class="bg-ah-red hover:bg-red-700 px-4 py-1.5 rounded-lg text-sm font-medium transition">
+                    Filtrer
+                </button>
+                <button onclick="resetFilters()" class="text-gray-400 hover:text-white px-3 py-1.5 text-sm">
+                    Réinitialiser
+                </button>
+            </div>
+            
+            <!-- Stats -->
+            <div id="filter-stats" class="flex items-center gap-4 text-sm">
+                <span class="text-gray-400">Affichés: <span id="visible-count" class="text-white font-bold">0</span></span>
+                <span class="text-gray-400">Avec données: <span id="with-samples-count" class="text-green-400 font-bold">0</span></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="glass rounded-xl p-4 mb-4">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+            <!-- Category Legend -->
+            <div class="flex items-center gap-6">
+                <span class="text-sm text-gray-400 font-medium">Catégories:</span>
+                <div class="flex items-center gap-2">
+                    <span class="w-4 h-4 rounded" style="background: linear-gradient(90deg, #ef4444, #b91c1c);"></span>
+                    <span class="text-sm">Core Business</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-4 h-4 rounded" style="background: linear-gradient(90deg, #3b82f6, #1d4ed8);"></span>
+                    <span class="text-sm">Distribution</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-4 h-4 rounded" style="background: linear-gradient(90deg, #f59e0b, #d97706);"></span>
+                    <span class="text-sm">Finance</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-4 h-4 rounded" style="background: linear-gradient(90deg, #22c55e, #16a34a);"></span>
+                    <span class="text-sm">RH & Autres</span>
+                </div>
+            </div>
+            
+            <!-- Sample Legend -->
+            <div class="flex items-center gap-6">
+                <span class="text-sm text-gray-400 font-medium">Données:</span>
+                <div class="flex items-center gap-2">
+                    <span class="w-4 h-4 rounded border-2 border-green-500 bg-transparent" style="box-shadow: 0 0 8px rgba(34,197,94,0.5);"></span>
+                    <span class="text-sm">Avec échantillons</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-4 h-4 rounded border border-gray-600 bg-transparent"></span>
+                    <span class="text-sm">Sans échantillons</span>
+                </div>
+            </div>
+            
+            <!-- Relation Legend -->
+            <div class="flex items-center gap-6">
+                <span class="text-sm text-gray-400 font-medium">Flux:</span>
+                <div class="flex items-center gap-2">
+                    <span class="w-6 h-0.5 bg-gray-500"></span>
+                    <span class="text-sm">Standard</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-6 h-0.5 bg-green-500" style="background: repeating-linear-gradient(90deg, #22c55e, #22c55e 4px, transparent 4px, transparent 8px);"></span>
+                    <span class="text-sm">Critique</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Diagram View - Power BI Style -->
+    <div id="view-diagram" class="glass rounded-xl p-4">
+        <div id="schema-canvas">
+            <svg id="relations-svg" style="position: absolute; top: 0; left: 0; width: 2000px; height: 1200px; pointer-events: none; z-index: 1;"></svg>
+            <div id="schema-inner">
+                <!-- Tables will be rendered here by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- List View -->
+    <div id="view-list" class="hidden space-y-6">
+        {% for table in tables %}
+        <div class="glass rounded-xl overflow-hidden">
+            <div class="p-6 border-b border-white/10 flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-indigo-500/20 flex items-center justify-center">
+                        <i data-lucide="table-2" class="w-6 h-6 text-indigo-400"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg">{{ table.model_name }}</h3>
+                        <p class="text-sm text-gray-400 font-mono">{{ table.name }}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="px-3 py-1 bg-white/10 rounded-lg text-sm">
+                        {{ table.record_count }} enregistrements
+                    </span>
+                    <span class="px-3 py-1 bg-white/10 rounded-lg text-sm">
+                        {{ table.fields|length }} champs
+                    </span>
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="text-left text-gray-400 text-sm bg-white/5">
+                            <th class="px-6 py-3 font-medium">Champ</th>
+                            <th class="px-6 py-3 font-medium">Type</th>
+                            <th class="px-6 py-3 font-medium">Clé</th>
+                            <th class="px-6 py-3 font-medium">Nullable</th>
+                            <th class="px-6 py-3 font-medium">Relation</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5">
+                        {% for field in table.fields %}
+                        <tr class="hover:bg-white/5">
+                            <td class="px-6 py-3">
+                                <span class="font-mono text-sm">{{ field.name }}</span>
+                            </td>
+                            <td class="px-6 py-3">
+                                <span class="px-2 py-1 bg-blue-500/20 text-blue-400 rounded text-xs font-mono">
+                                    {{ field.type }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-3">
+                                {% if field.is_pk %}
+                                <span class="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-xs">PK</span>
+                                {% elif field.is_fk %}
+                                <span class="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs">FK</span>
+                                {% else %}
+                                <span class="text-gray-500">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-3">
+                                {% if field.is_nullable %}
+                                <span class="text-gray-400">Oui</span>
+                                {% else %}
+                                <span class="text-green-400">Non</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-3">
+                                {% if field.related_to %}
+                                <span class="text-indigo-400 font-mono text-sm">→ {{ field.related_to }}</span>
+                                {% else %}
+                                <span class="text-gray-500">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Relations entre Tables (filtrées dynamiquement) -->
+    <div class="mt-8 glass rounded-xl p-6" id="relations-table-section">
+        <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+            <i data-lucide="link" class="w-5 h-5 text-gray-400"></i>
+            Relations entre Tables
+            <span class="ml-2 px-2 py-1 bg-white/10 rounded text-sm font-normal" id="relations-count">{{ relations|length }} relations</span>
+        </h2>
+        <div class="overflow-x-auto">
+            <table class="w-full" id="relations-table">
+                <thead>
+                    <tr class="text-left text-gray-400 text-sm border-b border-white/10">
+                        <th class="pb-3 font-medium">Table Source</th>
+                        <th class="pb-3 font-medium">Champ / Relation</th>
+                        <th class="pb-3 font-medium">Type</th>
+                        <th class="pb-3 font-medium">Table Cible</th>
+                        <th class="pb-3 font-medium">Cardinalité</th>
+                        <th class="pb-3 font-medium">Échantillons</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5" id="relations-tbody">
+                    <!-- Rempli dynamiquement par JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// View toggle
+function showView(view) {
+    document.getElementById('view-diagram').classList.toggle('hidden', view !== 'diagram');
+    document.getElementById('view-list').classList.toggle('hidden', view !== 'list');
+    
+    document.getElementById('btn-diagram').classList.toggle('bg-ah-red', view === 'diagram');
+    document.getElementById('btn-diagram').classList.toggle('glass', view !== 'diagram');
+    document.getElementById('btn-list').classList.toggle('bg-ah-red', view === 'list');
+    document.getElementById('btn-list').classList.toggle('glass', view !== 'list');
+}
+
+// Global data storage for filtering
+let allNodes = [];
+let allEdges = [];
+let tableElements = {};
+
+// Filter functions
+function applyFilters() {
+    const categoryFilter = document.getElementById('filter-category').value;
+    const samplesFilter = document.getElementById('filter-samples').value;
+    const criticalityFilter = document.getElementById('filter-criticality').value;
+    
+    let visibleCount = 0;
+    let withSamplesCount = 0;
+    
+    allNodes.forEach(node => {
+        const card = tableElements[node.id];
+        if (!card) return;
+        
+        // Determine category
+        let category = 'core';
+        if (node.category_id === 2) category = 'distribution';
+        else if (node.category_id === 3) category = 'finance';
+        else if (node.category_id >= 4) category = 'validation';
+        
+        // Apply filters
+        let visible = true;
+        
+        if (categoryFilter !== 'all' && category !== categoryFilter) {
+            visible = false;
+        }
+        
+        if (samplesFilter === 'with' && !node.has_samples) {
+            visible = false;
+        } else if (samplesFilter === 'without' && node.has_samples) {
+            visible = false;
+        }
+        
+        if (criticalityFilter !== 'all' && node.criticality !== criticalityFilter) {
+            visible = false;
+        }
+        
+        // Show/hide card
+        card.style.display = visible ? 'block' : 'none';
+        
+        if (visible) {
+            visibleCount++;
+            if (node.has_samples) withSamplesCount++;
+        }
+    });
+    
+    // Update stats
+    document.getElementById('visible-count').textContent = visibleCount;
+    document.getElementById('with-samples-count').textContent = withSamplesCount;
+    
+    // Redraw relations
+    drawRelations();
+    
+    // Update relations table
+    updateRelationsTable();
+}
+
+// Update relations table based on visible systems
+function updateRelationsTable() {
+    const tbody = document.getElementById('relations-tbody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    let visibleRelations = 0;
+    
+    // Get visible system IDs
+    const visibleSystems = new Set();
+    allNodes.forEach(node => {
+        const card = tableElements[node.id];
+        if (card && card.style.display !== 'none') {
+            visibleSystems.add(node.id);
+        }
+    });
+    
+    // Build node lookup for samples info
+    const nodeById = {};
+    allNodes.forEach(node => {
+        nodeById[node.id] = node;
+    });
+    
+    allEdges.forEach(edge => {
+        // Only show relations where both source and target are visible
+        if (!visibleSystems.has(edge.source) || !visibleSystems.has(edge.target)) {
+            return;
+        }
+        
+        visibleRelations++;
+        const sourceNode = nodeById[edge.source];
+        const targetNode = nodeById[edge.target];
+        
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-white/5' + (edge.is_critical ? ' border-l-2 border-red-500' : '');
+        
+        // Determine relation type badge
+        let typeBadge = '';
+        if (edge.is_critical) {
+            typeBadge = '<span class="px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs">CRITIQUE</span>';
+        } else if (edge.type === 'M2M') {
+            typeBadge = '<span class="px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs">M2M</span>';
+        } else {
+            typeBadge = '<span class="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs">FK</span>';
+        }
+        
+        // Samples badges
+        let sourceSamples = sourceNode && sourceNode.has_samples 
+            ? `<span class="px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded text-xs">${sourceNode.samples_count}</span>` 
+            : '<span class="text-gray-600">-</span>';
+        let targetSamples = targetNode && targetNode.has_samples 
+            ? `<span class="px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded text-xs">${targetNode.samples_count}</span>` 
+            : '<span class="text-gray-600">-</span>';
+        
+        row.innerHTML = `
+            <td class="py-3">
+                <span class="font-mono text-sm bg-blue-500/20 text-blue-400 px-2 py-1 rounded">${sourceNode ? sourceNode.label : edge.source}</span>
+            </td>
+            <td class="py-3">
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                    <span class="font-medium text-sm">${edge.label}</span>
+                </div>
+            </td>
+            <td class="py-3">${typeBadge}</td>
+            <td class="py-3">
+                <span class="font-mono text-sm bg-indigo-500/20 text-indigo-400 px-2 py-1 rounded">${targetNode ? targetNode.label : edge.target}</span>
+            </td>
+            <td class="py-3">
+                <span class="text-sm text-gray-400">1 → *</span>
+            </td>
+            <td class="py-3">
+                <div class="flex items-center gap-2">
+                    ${sourceSamples}
+                    <span class="text-gray-600">→</span>
+                    ${targetSamples}
+                </div>
+            </td>
+        `;
+        
+        tbody.appendChild(row);
+    });
+    
+    // Update count
+    const countEl = document.getElementById('relations-count');
+    if (countEl) {
+        countEl.textContent = visibleRelations + ' relations';
+    }
+}
+
+function resetFilters() {
+    document.getElementById('filter-category').value = 'all';
+    document.getElementById('filter-samples').value = 'all';
+    document.getElementById('filter-criticality').value = 'all';
+    applyFilters();
+}
+
+// Power BI Style Schema Diagram
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('schema-inner');
+    const svg = document.getElementById('relations-svg');
+    
+    // Positions des systèmes Air Algérie par catégorie
+    const systemPositions = {
+        // Core Business - Colonne 1 (Rouge)
+        'sys_1': { x: 50, y: 50, category: 'core' },    // ALTEA
+        'sys_2': { x: 50, y: 280, category: 'core' },   // AIMS
+        'sys_3': { x: 50, y: 510, category: 'core' },   // JETPLAN
+        'sys_4': { x: 50, y: 740, category: 'core' },   // ACCELYA
+        'sys_5': { x: 50, y: 970, category: 'core' },   // ACARS
+        'sys_6': { x: 280, y: 50, category: 'core' },   // AMOS
+        
+        // Distribution - Colonne 2 (Bleu)
+        'sys_7': { x: 280, y: 280, category: 'distribution' },   // WORLDTRACER
+        'sys_8': { x: 280, y: 510, category: 'distribution' },   // VOCALCOM
+        'sys_9': { x: 280, y: 740, category: 'distribution' },   // SITEWEB
+        'sys_10': { x: 510, y: 50, category: 'distribution' },   // BSPLINK
+        'sys_11': { x: 510, y: 280, category: 'distribution' },  // ACCELYA-DIST
+        'sys_12': { x: 510, y: 510, category: 'distribution' },  // ATPCO
+        
+        // Finance - Colonne 3 (Orange)
+        'sys_13': { x: 740, y: 50, category: 'finance' },   // SAGE-STOCK
+        'sys_14': { x: 740, y: 280, category: 'finance' },  // SAGE-FIN-N
+        'sys_15': { x: 740, y: 510, category: 'finance' },  // SAGE-FIN-S
+        'sys_16': { x: 740, y: 740, category: 'finance' },  // ERP
+        'sys_17': { x: 970, y: 50, category: 'finance' },   // SYGEF
+        'sys_18': { x: 970, y: 280, category: 'finance' },  // DATAWINGS
+        
+        // RH & Autres - Colonne 4 (Vert)
+        'sys_19': { x: 970, y: 510, category: 'validation' },  // EVALCOM
+        'sys_20': { x: 1200, y: 50, category: 'validation' },
+        'sys_21': { x: 1200, y: 280, category: 'validation' },
+        'sys_22': { x: 1200, y: 510, category: 'validation' },
+        'sys_23': { x: 1200, y: 740, category: 'validation' },
+        'sys_24': { x: 1430, y: 50, category: 'core' },
+        'sys_25': { x: 1430, y: 280, category: 'distribution' },
+        'sys_26': { x: 1430, y: 510, category: 'finance' },
+        'sys_27': { x: 1430, y: 740, category: 'validation' },
+        'sys_28': { x: 1660, y: 50, category: 'core' },
+        'sys_29': { x: 1660, y: 280, category: 'distribution' },
+        'sys_30': { x: 1660, y: 510, category: 'finance' },
+    };
+    
+    // Position par défaut pour systèmes non mappés
+    let defaultX = 1660, defaultY = 740;
+    let defaultIndex = 0;
+    
+    fetch('{% url "cartography:api_database_schema" %}')
+        .then(response => response.json())
+        .then(data => {
+            tableElements = {};
+            
+            // Store data globally for filtering
+            allNodes = data.nodes;
+            allEdges = data.edges;
+            
+            // Create table cards
+            data.nodes.forEach((node, index) => {
+                // Déterminer la catégorie basée sur category_id
+                let category = 'core';
+                if (node.category_id === 2) category = 'distribution';
+                else if (node.category_id === 3) category = 'finance';
+                else if (node.category_id >= 4) category = 'validation';
+                
+                const pos = systemPositions[node.id] || { x: defaultX + (defaultIndex % 3) * 230, y: 50 + Math.floor(defaultIndex++ / 3) * 230, category: category };
+                
+                const card = document.createElement('div');
+                card.className = 'table-card' + (node.has_samples ? ' has-samples' : '');
+                card.id = 'table-' + node.id;
+                card.style.left = pos.x + 'px';
+                card.style.top = pos.y + 'px';
+                card.style.zIndex = 10;
+                
+                // Get key fields (PK and FK first, then limit others)
+                const pkFields = node.fields.filter(f => f.is_pk);
+                const fkFields = node.fields.filter(f => f.is_fk && !f.is_pk);
+                const otherFields = node.fields.filter(f => !f.is_pk && !f.is_fk).slice(0, 5);
+                const displayFields = [...pkFields, ...fkFields, ...otherFields];
+                const hiddenCount = node.fields.length - displayFields.length;
+                
+                card.innerHTML = `
+                    ${node.has_samples ? `<span class="sample-badge">${node.samples_count} échant.</span>` : ''}
+                    <div class="table-header ${category}">
+                        <span class="table-name">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="3" y1="9" x2="21" y2="9"></line>
+                                <line x1="9" y1="21" x2="9" y2="9"></line>
+                            </svg>
+                            ${node.label}
+                        </span>
+                        <span style="font-size: 10px; opacity: 0.7;">${node.record_count}</span>
+                    </div>
+                    <div class="table-fields">
+                        <div class="table-field" style="font-size: 10px; color: #94a3b8; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            ${node.name || ''} <span style="color: #64748b;">• ${node.vendor || ''}</span>
+                        </div>
+                        ${displayFields.map(f => `
+                            <div class="table-field">
+                                ${f.is_pk ? '<svg class="field-icon field-pk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>'
+                                    : f.is_fk ? '<svg class="field-icon field-fk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>'
+                                    : '<svg class="field-icon field-normal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg>'}
+                                <span>${f.name}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="expand-btn" style="display: flex; justify-content: space-between;">
+                        <span>${node.mode || ''}</span>
+                        <span>${node.criticality || ''}</span>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+                tableElements[node.id] = card;
+                
+                // Make draggable
+                makeDraggable(card);
+            });
+            
+            // Draw relations - make it global for filtering
+            window.drawRelations = function() {
+                svg.innerHTML = '';
+                
+                allEdges.forEach(edge => {
+                    const sourceEl = tableElements[edge.source];
+                    const targetEl = tableElements[edge.target];
+                    
+                    if (!sourceEl || !targetEl) return;
+                    
+                    // Skip if either source or target is hidden
+                    if (sourceEl.style.display === 'none' || targetEl.style.display === 'none') return;
+                    
+                    const sourceRect = {
+                        x: parseInt(sourceEl.style.left) + sourceEl.offsetWidth,
+                        y: parseInt(sourceEl.style.top) + sourceEl.offsetHeight / 2
+                    };
+                    const targetRect = {
+                        x: parseInt(targetEl.style.left),
+                        y: parseInt(targetEl.style.top) + targetEl.offsetHeight / 2
+                    };
+                    
+                    // Adjust connection points
+                    if (sourceRect.x > targetRect.x + targetEl.offsetWidth) {
+                        sourceRect.x = parseInt(sourceEl.style.left);
+                        targetRect.x = parseInt(targetEl.style.left) + targetEl.offsetWidth;
+                    }
+                    
+                    // Create path
+                    const midX = (sourceRect.x + targetRect.x) / 2;
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    path.setAttribute('d', `M ${sourceRect.x} ${sourceRect.y} C ${midX} ${sourceRect.y}, ${midX} ${targetRect.y}, ${targetRect.x} ${targetRect.y}`);
+                    path.setAttribute('stroke', edge.type === 'M2M' ? '#22c55e' : '#64748b');
+                    path.setAttribute('stroke-width', '2');
+                    path.setAttribute('fill', 'none');
+                    if (edge.type === 'M2M') {
+                        path.setAttribute('stroke-dasharray', '5,5');
+                    }
+                    svg.appendChild(path);
+                    
+                    // Add cardinality markers
+                    const sourceMarker = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    sourceMarker.setAttribute('x', sourceRect.x + 10);
+                    sourceMarker.setAttribute('y', sourceRect.y - 8);
+                    sourceMarker.setAttribute('fill', '#94a3b8');
+                    sourceMarker.setAttribute('font-size', '11');
+                    sourceMarker.setAttribute('font-weight', 'bold');
+                    sourceMarker.textContent = edge.type === 'M2M' ? '*' : '1';
+                    svg.appendChild(sourceMarker);
+                    
+                    const targetMarker = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    targetMarker.setAttribute('x', targetRect.x - 15);
+                    targetMarker.setAttribute('y', targetRect.y - 8);
+                    targetMarker.setAttribute('fill', '#94a3b8');
+                    targetMarker.setAttribute('font-size', '11');
+                    targetMarker.setAttribute('font-weight', 'bold');
+                    targetMarker.textContent = '*';
+                    svg.appendChild(targetMarker);
+                });
+            }
+            
+            drawRelations();
+            
+            // Initial stats update
+            applyFilters();
+            
+            // Populate relations table
+            updateRelationsTable();
+            
+            // Draggable functionality
+            function makeDraggable(el) {
+                let isDragging = false;
+                let startX, startY, initialX, initialY;
+                
+                el.addEventListener('mousedown', function(e) {
+                    if (e.target.closest('.expand-btn')) return;
+                    isDragging = true;
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    initialX = parseInt(el.style.left);
+                    initialY = parseInt(el.style.top);
+                    el.style.zIndex = 100;
+                    el.classList.add('highlighted');
+                });
+                
+                document.addEventListener('mousemove', function(e) {
+                    if (!isDragging) return;
+                    const dx = e.clientX - startX;
+                    const dy = e.clientY - startY;
+                    el.style.left = (initialX + dx) + 'px';
+                    el.style.top = (initialY + dy) + 'px';
+                    drawRelations();
+                });
+                
+                document.addEventListener('mouseup', function() {
+                    if (isDragging) {
+                        isDragging = false;
+                        el.style.zIndex = 10;
+                        el.classList.remove('highlighted');
+                    }
+                });
+            }
+        });
+});
+</script>
+{% endblock %}

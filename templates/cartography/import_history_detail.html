@@ -1,0 +1,235 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ import_record.title }} - Historique Import{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header avec navigation -->
+    <div class="flex items-center gap-4">
+        <a href="{% url 'cartography:import_history_list' %}" class="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+        </a>
+        <div class="flex-1">
+            <h1 class="text-2xl font-bold text-white">{{ import_record.title }}</h1>
+            <p class="text-gray-400 mt-1">Import du {{ import_record.date|date:"d F Y" }}</p>
+        </div>
+        <span class="px-3 py-1 rounded-full text-sm font-medium
+            {% if import_record.status == 'SUCCESS' %}bg-emerald-500/20 text-emerald-400
+            {% elif import_record.status == 'PARTIAL' %}bg-amber-500/20 text-amber-400
+            {% else %}bg-red-500/20 text-red-400{% endif %}">
+            {{ import_record.get_status_display }}
+        </span>
+    </div>
+
+    <!-- Résumé de l'import -->
+    <div class="bg-gradient-to-r from-blue-600/20 to-purple-600/20 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <h2 class="text-lg font-semibold text-white mb-3">Informations</h2>
+                <dl class="space-y-2">
+                    <div class="flex justify-between">
+                        <dt class="text-gray-400">Type d'import</dt>
+                        <dd class="text-white font-medium">{{ import_record.get_import_type_display }}</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-gray-400">Date</dt>
+                        <dd class="text-white font-medium">{{ import_record.date|date:"d/m/Y" }}</dd>
+                    </div>
+                    {% if import_record.source_folder %}
+                    <div class="flex justify-between">
+                        <dt class="text-gray-400">Dossier source</dt>
+                        <dd class="text-white font-medium text-sm truncate max-w-xs">{{ import_record.source_folder }}</dd>
+                    </div>
+                    {% endif %}
+                    <div class="flex justify-between">
+                        <dt class="text-gray-400">Créé le</dt>
+                        <dd class="text-white font-medium">{{ import_record.created_at|date:"d/m/Y H:i" }}</dd>
+                    </div>
+                </dl>
+            </div>
+            
+            <div>
+                <h2 class="text-lg font-semibold text-white mb-3">Apports</h2>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-white/5 rounded-lg p-3 text-center">
+                        <div class="text-2xl font-bold text-emerald-400">+{{ import_record.flows_added }}</div>
+                        <div class="text-xs text-gray-400">Flux</div>
+                    </div>
+                    <div class="bg-white/5 rounded-lg p-3 text-center">
+                        <div class="text-2xl font-bold text-amber-400">+{{ import_record.formats_added }}</div>
+                        <div class="text-xs text-gray-400">Formats</div>
+                    </div>
+                    <div class="bg-white/5 rounded-lg p-3 text-center">
+                        <div class="text-2xl font-bold text-cyan-400">+{{ import_record.fields_added }}</div>
+                        <div class="text-xs text-gray-400">Champs</div>
+                    </div>
+                    <div class="bg-white/5 rounded-lg p-3 text-center">
+                        <div class="text-2xl font-bold text-purple-400">+{{ import_record.systems_added }}</div>
+                        <div class="text-xs text-gray-400">Systèmes</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% if import_record.description %}
+        <div class="mt-4 pt-4 border-t border-white/10">
+            <h3 class="text-sm font-medium text-gray-400 mb-2">Description</h3>
+            <p class="text-white">{{ import_record.description }}</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Fichiers traités -->
+    {% if files_processed %}
+    <div class="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden">
+        <div class="p-4 border-b border-white/10">
+            <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+                <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                </svg>
+                Fichiers traités ({{ files_processed|length }})
+            </h2>
+        </div>
+        <div class="p-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                {% for file in files_processed %}
+                <div class="flex items-center gap-2 p-2 bg-white/5 rounded-lg">
+                    <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <span class="text-sm text-white truncate">{{ file }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Flux ajoutés -->
+    {% if flows_added %}
+    <div class="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden">
+        <div class="p-4 border-b border-white/10">
+            <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+                <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+                Flux de données ajoutés ({{ flows_added|length }})
+            </h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-white/5">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Nom</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Source → Cible</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Format</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Fréquence</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/10">
+                    {% for flow in flows_added %}
+                    <tr class="hover:bg-white/5">
+                        <td class="px-4 py-3">
+                            <span class="text-white font-medium">{{ flow.name }}</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="text-blue-400">{{ flow.source }}</span>
+                            <span class="text-gray-500 mx-1">→</span>
+                            <span class="text-emerald-400">{{ flow.target }}</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded text-xs">{{ flow.format|default:"-" }}</span>
+                        </td>
+                        <td class="px-4 py-3 text-gray-400 text-sm">{{ flow.frequency|default:"-" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Formats ajoutés -->
+    {% if formats_added %}
+    <div class="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden">
+        <div class="p-4 border-b border-white/10">
+            <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+                <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Formats de messages ajoutés ({{ formats_added|length }})
+            </h2>
+        </div>
+        <div class="p-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for format in formats_added %}
+                <div class="bg-white/5 rounded-lg p-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded text-xs font-mono">{{ format.code }}</span>
+                        <span class="text-white font-medium">{{ format.name }}</span>
+                    </div>
+                    <p class="text-gray-400 text-sm">{{ format.description|truncatewords:20 }}</p>
+                    {% if format.standard %}
+                    <div class="mt-2">
+                        <span class="text-xs text-gray-500">Standard: {{ format.standard }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Champs ajoutés -->
+    {% if fields_added %}
+    <div class="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden">
+        <div class="p-4 border-b border-white/10">
+            <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+                <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
+                </svg>
+                Champs documentés ({{ fields_added|length }})
+            </h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-white/5">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Format</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Champ</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Type</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Description</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/10">
+                    {% for field in fields_added %}
+                    <tr class="hover:bg-white/5">
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded text-xs font-mono">{{ field.format }}</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="text-white font-medium">{{ field.name }}</span>
+                        </td>
+                        <td class="px-4 py-3 text-gray-400 text-sm">{{ field.type|default:"-" }}</td>
+                        <td class="px-4 py-3 text-gray-400 text-sm">{{ field.description|truncatewords:10 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Notes -->
+    {% if import_record.notes %}
+    <div class="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-4">
+        <h2 class="text-lg font-semibold text-white mb-3">Notes</h2>
+        <p class="text-gray-300 whitespace-pre-wrap">{{ import_record.notes }}</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

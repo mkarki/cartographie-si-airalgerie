@@ -1,0 +1,352 @@
+{% extends 'base.html' %}
+{% load sample_filters %}
+
+{% block title %}{{ sample.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .data-table-container {
+        overflow-x: auto;
+        max-width: 100%;
+    }
+    .data-table {
+        font-size: 11px;
+        white-space: nowrap;
+    }
+    .data-table th, .data-table td {
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .column-card:hover {
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="p-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center gap-2 text-gray-400 text-sm mb-4">
+            <a href="{% url 'cartography:validation_dashboard' %}" class="hover:text-white">Validation</a>
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            <a href="{% url 'cartography:samples_list' %}" class="hover:text-white">Échantillons</a>
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            <span>{{ sample.name }}</span>
+        </div>
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold mb-2">{{ sample.name }}</h1>
+                <p class="text-gray-400">{{ sample.get_source_system_display }} - {{ sample.get_data_type_display }}</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="px-4 py-2 rounded-lg bg-blue-500/20 text-blue-400 font-bold text-lg">
+                    {{ columns|length }} colonnes
+                </span>
+                <span class="px-4 py-2 rounded-lg bg-green-500/20 text-green-400 font-bold text-lg">
+                    {{ sample.record_count }} lignes
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div class="glass rounded-xl p-5">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                    <i data-lucide="database" class="w-5 h-5 text-purple-400"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold">{{ sample.get_source_system_display }}</p>
+                    <p class="text-xs text-gray-400">Système source</p>
+                </div>
+            </div>
+        </div>
+        <div class="glass rounded-xl p-5">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                    <i data-lucide="file-spreadsheet" class="w-5 h-5 text-blue-400"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold">{{ sample.get_data_type_display }}</p>
+                    <p class="text-xs text-gray-400">Type de données</p>
+                </div>
+            </div>
+        </div>
+        <div class="glass rounded-xl p-5">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
+                    <i data-lucide="calendar" class="w-5 h-5 text-green-400"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold">{{ sample.sample_date|date:"d/m/Y"|default:"N/A" }}</p>
+                    <p class="text-xs text-gray-400">Date des données</p>
+                </div>
+            </div>
+        </div>
+        <div class="glass rounded-xl p-5">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center">
+                    <i data-lucide="clock" class="w-5 h-5 text-orange-400"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold">{{ sample.imported_at|date:"d/m/Y" }}</p>
+                    <p class="text-xs text-gray-400">Importé le</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Description -->
+    {% if sample.description %}
+    <div class="glass rounded-xl p-6 mb-8">
+        <h2 class="text-xl font-semibold mb-3 flex items-center gap-2">
+            <i data-lucide="info" class="w-5 h-5 text-blue-400"></i>
+            Description des données
+        </h2>
+        <p class="text-gray-300 leading-relaxed">{{ sample.description }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Aperçu des colonnes -->
+    {% if columns %}
+    <div class="glass rounded-xl p-6 mb-8">
+        <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+            <i data-lucide="columns" class="w-5 h-5 text-purple-400"></i>
+            Structure des données ({{ columns|length }} colonnes)
+        </h2>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+            {% for col in columns_with_stats %}
+            <div class="column-card bg-white/5 rounded-lg p-3 border border-white/10 hover:border-blue-500/50 transition-all cursor-pointer" title="{{ col.name }}">
+                <div class="flex items-center gap-2 mb-2">
+                    {% if col.type == 'INTEGER' or col.type == 'DECIMAL' %}
+                    <span class="w-6 h-6 rounded bg-blue-500/20 flex items-center justify-center text-xs text-blue-400 font-mono">#</span>
+                    {% elif col.type == 'DATETIME' %}
+                    <span class="w-6 h-6 rounded bg-green-500/20 flex items-center justify-center text-xs text-green-400">📅</span>
+                    {% else %}
+                    <span class="w-6 h-6 rounded bg-gray-500/20 flex items-center justify-center text-xs text-gray-400 font-mono">A</span>
+                    {% endif %}
+                    <span class="font-medium text-sm truncate flex-1" title="{{ col.name }}">{{ col.name|truncatechars:20 }}</span>
+                </div>
+                <div class="text-xs text-gray-500 space-y-1">
+                    <div class="flex justify-between">
+                        <span>Type:</span>
+                        <span class="text-gray-400">{{ col.type }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Valeurs:</span>
+                        <span class="text-gray-400">{{ col.unique_count }}</span>
+                    </div>
+                    {% if col.example %}
+                    <div class="mt-1 pt-1 border-t border-white/5">
+                        <span class="text-gray-500">Ex:</span>
+                        <span class="text-blue-400 font-mono text-xs">{{ col.example|truncatechars:15 }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Aperçu des données -->
+    {% if sample_rows %}
+    <div class="glass rounded-xl p-6 mb-8">
+        <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+            <i data-lucide="table" class="w-5 h-5 text-green-400"></i>
+            Aperçu des données ({{ sample_rows|length }} premières lignes)
+        </h2>
+        <div class="data-table-container">
+            <table class="data-table w-full">
+                <thead>
+                    <tr class="text-left text-gray-400 text-xs border-b border-white/10">
+                        {% for col in columns|slice:":15" %}
+                        <th class="pb-2 pr-4 font-medium">{{ col|truncatechars:20 }}</th>
+                        {% endfor %}
+                        {% if columns|length > 15 %}
+                        <th class="pb-2 pr-4 font-medium text-gray-500">+{{ columns|length|add:"-15" }} cols...</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    {% for row in sample_rows %}
+                    <tr class="hover:bg-white/5">
+                        {% for col in columns|slice:":15" %}
+                        <td class="py-2 pr-4 text-gray-300">
+                            {% with value=row|get_item:col %}
+                            {{ value|truncatechars:25|default:"-" }}
+                            {% endwith %}
+                        </td>
+                        {% endfor %}
+                        {% if columns|length > 15 %}
+                        <td class="py-2 pr-4 text-gray-500">...</td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Ce que ça implique -->
+    <div class="glass rounded-xl p-6 mb-8">
+        <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+            <i data-lucide="lightbulb" class="w-5 h-5 text-yellow-400"></i>
+            Ce que ces données impliquent
+        </h2>
+        
+        <!-- Barre de progression globale -->
+        <div class="bg-white/5 rounded-lg p-4 mb-6">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm text-gray-400">Complétion des données {{ sample.get_source_system_display }}</span>
+                <span class="text-lg font-bold {% if completion_pct >= 80 %}text-green-400{% elif completion_pct >= 40 %}text-yellow-400{% else %}text-red-400{% endif %}">{{ completion_pct }}%</span>
+            </div>
+            <div class="w-full h-3 bg-gray-700 rounded-full overflow-hidden">
+                <div class="h-full {% if completion_pct >= 80 %}bg-green-500{% elif completion_pct >= 40 %}bg-yellow-500{% else %}bg-red-500{% endif %} rounded-full transition-all" style="width: {{ completion_pct }}%"></div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">{{ tables_received }}/{{ tables_total }} tables reçues pour valider les flux {{ sample.get_source_system_display }}</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Flux concernés avec statut -->
+            <div class="bg-white/5 rounded-lg p-4">
+                <h3 class="font-semibold text-blue-400 mb-4 flex items-center gap-2">
+                    <i data-lucide="arrow-right-left" class="w-4 h-4"></i>
+                    Flux de données concernés
+                </h3>
+                <div class="space-y-3">
+                    {% for flow in expected_flows %}
+                    <div class="flex items-center justify-between p-3 rounded-lg {% if flow.status == 'received' %}bg-green-500/10 border border-green-500/30{% else %}bg-gray-500/10 border border-gray-500/20{% endif %}">
+                        <div class="flex items-center gap-3">
+                            {% if flow.status == 'received' %}
+                            <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+                                <i data-lucide="check" class="w-4 h-4 text-green-400"></i>
+                            </div>
+                            {% else %}
+                            <div class="w-8 h-8 rounded-full bg-gray-500/20 flex items-center justify-center">
+                                <i data-lucide="clock" class="w-4 h-4 text-gray-400"></i>
+                            </div>
+                            {% endif %}
+                            <div>
+                                <p class="font-medium text-sm">{{ flow.name }}</p>
+                                <p class="text-xs text-gray-500">{{ flow.source }} → {{ flow.target }}</p>
+                            </div>
+                        </div>
+                        {% if flow.status == 'received' %}
+                        <span class="px-2 py-1 rounded text-xs bg-green-500/20 text-green-400">Validable</span>
+                        {% else %}
+                        <span class="px-2 py-1 rounded text-xs bg-gray-500/20 text-gray-400">En attente</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Tables attendues -->
+            <div class="bg-white/5 rounded-lg p-4">
+                <h3 class="font-semibold text-purple-400 mb-4 flex items-center gap-2">
+                    <i data-lucide="table-2" class="w-4 h-4"></i>
+                    Tables attendues de {{ sample.get_source_system_display }}
+                </h3>
+                <div class="space-y-2">
+                    {% for table in expected_tables %}
+                    <div class="flex items-center justify-between p-2 rounded {% if table.received %}bg-green-500/10{% else %}bg-white/5{% endif %}">
+                        <div class="flex items-center gap-2">
+                            {% if table.received %}
+                            <i data-lucide="check-circle-2" class="w-4 h-4 text-green-400"></i>
+                            {% else %}
+                            <i data-lucide="circle-dashed" class="w-4 h-4 text-gray-500"></i>
+                            {% endif %}
+                            <div>
+                                <span class="font-mono text-xs px-1.5 py-0.5 rounded {% if table.received %}bg-green-500/20 text-green-400{% else %}bg-gray-500/20 text-gray-400{% endif %}">{{ table.code }}</span>
+                                <span class="text-sm ml-2 {% if table.received %}text-white{% else %}text-gray-400{% endif %}">{{ table.name }}</span>
+                            </div>
+                        </div>
+                        {% if table.received %}
+                        <span class="text-xs text-green-400">✓ Reçu</span>
+                        {% else %}
+                        <span class="text-xs text-gray-500">Manquant</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="mt-4 pt-3 border-t border-white/10">
+                    <p class="text-xs text-gray-500">
+                        <i data-lucide="info" class="w-3 h-3 inline mr-1"></i>
+                        Fournissez les tables manquantes pour compléter la validation des flux
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Colonnes clés identifiées -->
+        <div class="mt-6 bg-white/5 rounded-lg p-4">
+            <h3 class="font-semibold text-green-400 mb-3 flex items-center gap-2">
+                <i data-lucide="key" class="w-4 h-4"></i>
+                Colonnes clés identifiées dans cet échantillon
+            </h3>
+            <div class="flex flex-wrap gap-2">
+                {% for col in key_columns %}
+                <span class="px-2 py-1 rounded bg-green-500/10 border border-green-500/30 text-green-400 text-xs font-mono">{{ col }}</span>
+                {% empty %}
+                <span class="text-gray-500 text-sm">Analyse en cours...</span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Validations liées -->
+    <div class="glass rounded-xl p-6">
+        <h2 class="text-xl font-semibold mb-6 flex items-center gap-2">
+            <i data-lucide="git-compare" class="w-5 h-5 text-orange-400"></i>
+            Flux validés avec cet échantillon
+        </h2>
+        
+        {% if validations %}
+        <div class="space-y-4">
+            {% for v in validations %}
+            <a href="{% url 'cartography:flow_validation' v.flow.pk %}" class="block p-4 rounded-lg bg-white/5 hover:bg-white/10 transition">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg {% if v.status == 'VALIDATED' %}bg-green-500/20{% elif v.status == 'ISSUES' %}bg-red-500/20{% else %}bg-gray-500/20{% endif %} flex items-center justify-center">
+                            {% if v.status == 'VALIDATED' %}
+                            <i data-lucide="check-circle" class="w-5 h-5 text-green-400"></i>
+                            {% elif v.status == 'ISSUES' %}
+                            <i data-lucide="alert-circle" class="w-5 h-5 text-red-400"></i>
+                            {% else %}
+                            <i data-lucide="clock" class="w-5 h-5 text-gray-400"></i>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <p class="font-medium">{{ v.flow.name }}</p>
+                            <p class="text-sm text-gray-400">{{ v.flow.source.code }} → {{ v.flow.target.code }}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-6">
+                        <div class="text-center">
+                            <p class="text-2xl font-bold {% if v.match_percentage >= 80 %}text-green-400{% elif v.match_percentage >= 50 %}text-yellow-400{% else %}text-red-400{% endif %}">{{ v.match_percentage }}%</p>
+                            <p class="text-xs text-gray-400">Correspondance</p>
+                        </div>
+                        <div class="text-right text-sm">
+                            <p class="text-green-400">{{ v.fields_confirmed }} confirmés</p>
+                            <p class="text-red-400">{{ v.fields_with_issues }} problèmes</p>
+                        </div>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-8 bg-white/5 rounded-lg">
+            <i data-lucide="clipboard-list" class="w-12 h-12 text-gray-600 mx-auto mb-3"></i>
+            <p class="text-gray-400">Aucun flux validé avec cet échantillon</p>
+            <p class="text-sm text-gray-500 mt-1">Les données sont prêtes pour validation</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

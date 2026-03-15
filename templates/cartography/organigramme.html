@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}Organigramme SI{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dept-card { transition: all 0.2s ease; }
+    .dept-card:hover { box-shadow: 0 8px 25px rgba(0,0,0,0.3); }
+    .dept-detail { display: none; animation: fadeIn 0.3s ease; }
+    .dept-detail.open { display: block; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+    .sys-row { transition: background 0.15s ease; }
+    .sys-row:hover { background: rgba(255,255,255,0.06); }
+    .user-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 9999px; font-size: 11px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="p-8">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold">Organigramme par Direction</h1>
+            <p class="text-gray-400 text-sm mt-1">{{ total_structures }} directions · {{ total_systems }} systèmes · {{ total_key_users }} interlocuteurs</p>
+        </div>
+        <a href="{% url 'cartography:kpi_dashboard' %}" class="glass px-3 py-2 rounded-lg hover:bg-white/10 transition text-xs flex items-center gap-2">
+            <i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i> KPI
+        </a>
+    </div>
+
+    <!-- DG root -->
+    <div class="text-center mb-8">
+        <div class="inline-flex items-center gap-3 glass rounded-xl px-6 py-3 border border-ah-red/40">
+            <div class="w-9 h-9 rounded-lg bg-ah-red/20 flex items-center justify-center">
+                <i data-lucide="building" class="w-5 h-5 text-ah-red"></i>
+            </div>
+            <div class="text-left">
+                <h2 class="font-bold">Direction Générale — Air Algérie</h2>
+                <p class="text-[11px] text-gray-500">{{ total_structures }} Directions rattachées</p>
+            </div>
+        </div>
+        <div class="w-px h-6 bg-white/10 mx-auto"></div>
+    </div>
+
+    <!-- Departments Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {% for dept in departments %}
+        <div class="dept-card glass rounded-xl overflow-hidden" style="border-left: 3px solid {{ dept.color }};" id="dept-{{ dept.code }}">
+            
+            <!-- Department header (clickable) -->
+            <button type="button" onclick="toggleDept('{{ dept.code }}')" class="w-full text-left px-5 py-4 flex items-center justify-between hover:bg-white/[0.03] transition">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0" style="background: {{ dept.color }}20; color: {{ dept.color }};">
+                        {{ dept.code }}
+                    </div>
+                    <div class="min-w-0">
+                        <h3 class="font-semibold text-sm truncate">{{ dept.name }}</h3>
+                        <div class="flex items-center gap-2 text-[11px] text-gray-500 mt-0.5">
+                            <span>{{ dept.system_count }} système{{ dept.system_count|pluralize }}</span>
+                            <span class="text-gray-700">·</span>
+                            <span>{{ dept.key_users_count }} interlocuteur{{ dept.key_users_count|pluralize }}</span>
+                            {% if dept.critiques > 0 %}
+                            <span class="text-gray-700">·</span>
+                            <span class="text-red-400">{{ dept.critiques }} critique{{ dept.critiques|pluralize }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 flex-shrink-0 ml-3">
+                    <!-- Mini progress -->
+                    <div class="text-right hidden sm:block">
+                        <p class="text-xs font-mono {% if dept.progress == 100 %}text-green-400{% elif dept.progress > 0 %}text-blue-400{% else %}text-gray-600{% endif %}">{{ dept.progress }}%</p>
+                        <div class="w-16 bg-gray-700 rounded-full h-1 mt-1">
+                            <div class="h-1 rounded-full {% if dept.progress == 100 %}bg-green-500{% elif dept.progress > 0 %}bg-blue-500{% else %}bg-gray-700{% endif %}" style="width:{{ dept.progress }}%"></div>
+                        </div>
+                    </div>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-gray-600 dept-chevron-{{ dept.code }} transition-transform duration-200"></i>
+                </div>
+            </button>
+
+            <!-- Expandable detail -->
+            <div class="dept-detail" id="detail-{{ dept.code }}">
+                <!-- Stats bar -->
+                <div class="px-5 py-3 border-t border-white/5 grid grid-cols-4 gap-3 text-center">
+                    <div>
+                        <p class="text-lg font-bold" style="color:{{ dept.color }};">{{ dept.system_count }}</p>
+                        <p class="text-[10px] text-gray-500">Systèmes</p>
+                    </div>
+                    <div>
+                        <p class="text-lg font-bold text-gray-300">{{ dept.total_questions }}</p>
+                        <p class="text-[10px] text-gray-500">Questions</p>
+                    </div>
+                    <div>
+                        <p class="text-lg font-bold {% if dept.progress == 100 %}text-green-400{% elif dept.progress > 0 %}text-blue-400{% else %}text-gray-600{% endif %}">{{ dept.answered_questions }}</p>
+                        <p class="text-[10px] text-gray-500">Réponses</p>
+                    </div>
+                    <div>
+                        <p class="text-lg font-bold text-amber-400">{{ dept.key_users_count }}</p>
+                        <p class="text-[10px] text-gray-500">Interlocuteurs</p>
+                    </div>
+                </div>
+
+                <!-- Systems table -->
+                <div class="border-t border-white/5">
+                    <table class="w-full text-xs">
+                        <thead>
+                            <tr class="text-[10px] text-gray-500 uppercase border-b border-white/5">
+                                <th class="text-left px-5 py-2">Système</th>
+                                <th class="text-left px-2 py-2">Éditeur</th>
+                                <th class="text-left px-2 py-2">Mode</th>
+                                <th class="text-center px-2 py-2">Avancement</th>
+                                <th class="text-right px-5 py-2">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sys in dept.systems %}
+                            <tr class="sys-row border-b border-white/[0.03]">
+                                <td class="px-5 py-2.5">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:{{ sys.criticality_color }};"></span>
+                                        <div>
+                                            <p class="font-medium text-gray-200">{{ sys.code }}</p>
+                                            <p class="text-[10px] text-gray-500 truncate max-w-[140px]">{{ sys.name }}</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-2 py-2.5 text-gray-400">{{ sys.q_editor|default:sys.vendor }}</td>
+                                <td class="px-2 py-2.5 text-gray-500">{{ sys.mode }}</td>
+                                <td class="px-2 py-2.5 text-center">
+                                    {% if sys.q_status == 'COMPLETED' %}
+                                    <span class="inline-flex items-center gap-1 text-green-400"><i data-lucide="check-circle-2" class="w-3 h-3"></i> 100%</span>
+                                    {% elif sys.q_status == 'IN_PROGRESS' %}
+                                    <div class="flex items-center gap-1.5 justify-center">
+                                        <div class="w-12 bg-gray-700 rounded-full h-1">
+                                            <div class="h-1 rounded-full bg-blue-500" style="width:{{ sys.q_progress }}%"></div>
+                                        </div>
+                                        <span class="text-blue-400">{{ sys.q_progress }}%</span>
+                                    </div>
+                                    {% elif sys.q_pk %}
+                                    <span class="text-gray-600">0%</span>
+                                    {% else %}
+                                    <span class="text-gray-700">—</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-5 py-2.5 text-right">
+                                    {% if sys.q_pk %}
+                                    <a href="{% url 'cartography:questionnaire_detail' sys.q_pk %}" class="text-gray-400 hover:text-white transition" title="Ouvrir le questionnaire">
+                                        <i data-lucide="external-link" class="w-3.5 h-3.5 inline"></i>
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Key users -->
+                {% if dept.key_users %}
+                <div class="px-5 py-3 border-t border-white/5">
+                    <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Interlocuteurs clés</p>
+                    <div class="flex flex-wrap gap-1.5">
+                        {% for user in dept.key_users %}
+                        <span class="user-chip text-gray-300">
+                            <i data-lucide="user" class="w-2.5 h-2.5 text-gray-500"></i>
+                            {{ user }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    lucide.createIcons();
+    
+    function toggleDept(code) {
+        const detail = document.getElementById('detail-' + code);
+        const chevron = document.querySelector('.dept-chevron-' + code);
+        detail.classList.toggle('open');
+        if (detail.classList.contains('open')) {
+            chevron.style.transform = 'rotate(180deg)';
+        } else {
+            chevron.style.transform = 'rotate(0deg)';
+        }
+        // Re-init icons for newly visible content
+        lucide.createIcons();
+    }
+    
+    // Auto-open if ?dept= param
+    {% if selected_dept %}
+    toggleDept('{{ selected_dept.code }}');
+    document.getElementById('dept-{{ selected_dept.code }}').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    {% endif %}
+</script>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}Référentiels{% endblock %}
+
+{% block content %}
+<div class="p-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold">Référentiels de Données</h1>
+            <p class="text-gray-400 mt-1">Standards et codes de référence utilisés par les flux</p>
+        </div>
+        <div class="flex items-center gap-4">
+            <span class="glass px-4 py-2 rounded-lg">
+                <span class="text-2xl font-bold text-ah-green">{{ referentials|length }}</span>
+                <span class="text-gray-400 ml-2">référentiels</span>
+            </span>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="glass rounded-xl p-6 mb-8">
+        <form method="get" class="flex flex-wrap gap-4 items-end">
+            <div>
+                <label class="block text-sm text-gray-400 mb-2">Type</label>
+                <select name="type" class="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white min-w-[200px]">
+                    <option value="">Tous les types</option>
+                    {% for value, label in type_choices %}
+                    <option value="{{ value }}" {% if selected_type == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm text-gray-400 mb-2">Standard</label>
+                <input type="text" name="standard" value="{{ selected_standard|default:'' }}" 
+                       placeholder="IATA, ISO..." 
+                       class="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white">
+            </div>
+            <button type="submit" class="bg-ah-red hover:bg-red-700 px-6 py-2 rounded-lg font-medium transition">
+                <i data-lucide="filter" class="w-4 h-4 inline mr-2"></i>
+                Filtrer
+            </button>
+            <a href="{% url 'cartography:referentials_list' %}" class="text-gray-400 hover:text-white px-4 py-2">
+                Réinitialiser
+            </a>
+        </form>
+    </div>
+
+    <!-- Referentials Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for ref in referentials %}
+        <a href="{% url 'cartography:referential_detail' ref.pk %}" class="glass rounded-xl p-6 card-hover block">
+            <div class="flex items-start justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-lg bg-indigo-500/20 flex items-center justify-center">
+                        <i data-lucide="book-open" class="w-6 h-6 text-indigo-400"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg">{{ ref.code }}</h3>
+                        <p class="text-sm text-gray-400">{{ ref.name }}</p>
+                    </div>
+                </div>
+                <span class="px-2 py-1 rounded text-xs 
+                    {% if ref.referential_type == 'STANDARD' %}bg-blue-500/20 text-blue-400
+                    {% elif ref.referential_type == 'CODE' %}bg-green-500/20 text-green-400
+                    {% elif ref.referential_type == 'TABLE' %}bg-purple-500/20 text-purple-400
+                    {% elif ref.referential_type == 'ENUM' %}bg-yellow-500/20 text-yellow-400
+                    {% else %}bg-gray-500/20 text-gray-400{% endif %}">
+                    {{ ref.get_referential_type_display }}
+                </span>
+            </div>
+            
+            <p class="text-sm text-gray-300 mb-4 line-clamp-2">{{ ref.description|default:"Pas de description" }}</p>
+            
+            <div class="flex items-center justify-between text-sm">
+                <div class="flex items-center gap-2 text-gray-400">
+                    <i data-lucide="arrow-right-left" class="w-4 h-4"></i>
+                    <span>{{ ref.flows_count }} flux</span>
+                </div>
+                {% if ref.standard %}
+                <span class="px-2 py-1 bg-white/10 rounded text-xs">{{ ref.standard }}</span>
+                {% endif %}
+            </div>
+            
+            {% if ref.master_system %}
+            <div class="mt-4 pt-4 border-t border-white/10">
+                <div class="flex items-center gap-2 text-sm text-gray-400">
+                    <i data-lucide="server" class="w-4 h-4"></i>
+                    <span>Géré par: <span class="text-white">{{ ref.master_system.code }}</span></span>
+                </div>
+            </div>
+            {% endif %}
+        </a>
+        {% empty %}
+        <div class="col-span-full glass rounded-xl p-12 text-center">
+            <i data-lucide="book-open" class="w-16 h-16 mx-auto text-gray-600 mb-4"></i>
+            <h3 class="text-xl font-medium text-gray-400">Aucun référentiel trouvé</h3>
+            <p class="text-gray-500 mt-2">Les référentiels de données apparaîtront ici</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

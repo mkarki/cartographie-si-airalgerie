@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block title %}Flux de Données{% endblock %}
+
+{% block content %}
+<div class="p-8">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-3xl font-bold mb-2">Flux de Données</h1>
+            <p class="text-gray-400">{{ flows.count }} flux inter-systèmes</p>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="glass rounded-2xl p-4 mb-6">
+        <form method="get" class="flex flex-wrap items-center gap-4">
+            <select name="source" class="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Source: Tous</option>
+                {% for sys in systems %}
+                <option value="{{ sys.id }}" {% if selected_source == sys.id|stringformat:"s" %}selected{% endif %}>{{ sys.code }}</option>
+                {% endfor %}
+            </select>
+            
+            <select name="target" class="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Cible: Tous</option>
+                {% for sys in systems %}
+                <option value="{{ sys.id }}" {% if selected_target == sys.id|stringformat:"s" %}selected{% endif %}>{{ sys.code }}</option>
+                {% endfor %}
+            </select>
+            
+            <select name="frequency" class="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Fréquence: Toutes</option>
+                {% for code, label in frequencies %}
+                <option value="{{ code }}" {% if selected_frequency == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            
+            <select name="automated" class="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Automatisation: Tous</option>
+                <option value="true" {% if selected_automated == 'true' %}selected{% endif %}>Automatisé</option>
+                <option value="false" {% if selected_automated == 'false' %}selected{% endif %}>Manuel</option>
+            </select>
+            
+            <button type="submit" class="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg transition-all">
+                <i data-lucide="filter" class="w-4 h-4"></i>
+                Filtrer
+            </button>
+            
+            <a href="{% url 'cartography:flows_list' %}" class="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition-all">
+                <i data-lucide="x" class="w-4 h-4"></i>
+                Reset
+            </a>
+        </form>
+    </div>
+    
+    <!-- Flows Table -->
+    <div class="glass rounded-2xl overflow-hidden">
+        <table class="w-full">
+            <thead class="bg-white/5">
+                <tr>
+                    <th class="text-left px-6 py-4 text-sm font-semibold text-gray-400">Flux</th>
+                    <th class="text-left px-6 py-4 text-sm font-semibold text-gray-400">Source → Cible</th>
+                    <th class="text-left px-6 py-4 text-sm font-semibold text-gray-400">Fréquence</th>
+                    <th class="text-left px-6 py-4 text-sm font-semibold text-gray-400">Format</th>
+                    <th class="text-left px-6 py-4 text-sm font-semibold text-gray-400">Statut</th>
+                    <th class="text-right px-6 py-4 text-sm font-semibold text-gray-400">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+                {% for flow in flows %}
+                <tr class="hover:bg-white/5 transition-all">
+                    <td class="px-6 py-4">
+                        <p class="font-medium">{{ flow.name }}</p>
+                        {% if flow.volume %}
+                        <p class="text-xs text-gray-500">{{ flow.volume }}</p>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-2">
+                            <a href="{% url 'cartography:system_detail' flow.source.pk %}" class="text-blue-400 hover:underline">{{ flow.source.code }}</a>
+                            <i data-lucide="arrow-right" class="w-4 h-4 text-gray-500"></i>
+                            <a href="{% url 'cartography:system_detail' flow.target.pk %}" class="text-green-400 hover:underline">{{ flow.target.code }}</a>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="text-sm">{{ flow.get_frequency_display }}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="text-sm text-gray-400">{{ flow.format|default:"-" }}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-2">
+                            {% if flow.is_automated %}
+                            <span class="px-2 py-1 rounded text-xs bg-green-500/20 text-green-400">Auto</span>
+                            {% else %}
+                            <span class="px-2 py-1 rounded text-xs bg-yellow-500/20 text-yellow-400">Manuel</span>
+                            {% endif %}
+                            {% if flow.is_critical %}
+                            <span class="px-2 py-1 rounded text-xs bg-red-500/20 text-red-400">Critique</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <a href="{% url 'cartography:flow_detail' flow.pk %}" class="inline-flex items-center gap-1 text-sm text-blue-400 hover:text-blue-300">
+                            Détails
+                            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="px-6 py-12 text-center text-gray-400">
+                        <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-4 opacity-50"></i>
+                        <p>Aucun flux trouvé</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

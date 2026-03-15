@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block title %}Systèmes{% endblock %}
+
+{% block content %}
+<div class="p-8">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-3xl font-bold mb-2">Systèmes Informatiques</h1>
+            <p class="text-gray-400">Inventaire complet des {{ systems.count }} systèmes</p>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="glass rounded-2xl p-4 mb-6">
+        <form method="get" class="flex flex-wrap items-center gap-4">
+            <div class="flex-1 min-w-[200px]">
+                <input type="text" name="search" value="{{ search }}" placeholder="Rechercher..." 
+                       class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            
+            <select name="category" class="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Toutes catégories</option>
+                {% for cat in categories %}
+                <option value="{{ cat.id }}" {% if selected_category == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+                {% endfor %}
+            </select>
+            
+            <select name="structure" class="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Toutes structures</option>
+                {% for struct in structures %}
+                <option value="{{ struct.id }}" {% if selected_structure == struct.id|stringformat:"s" %}selected{% endif %}>{{ struct.code }}</option>
+                {% endfor %}
+            </select>
+            
+            <select name="criticality" class="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Toutes criticités</option>
+                {% for code, label in criticalities %}
+                <option value="{{ code }}" {% if selected_criticality == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            
+            <select name="country" class="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Tous pays</option>
+                <option value="DZ" {% if selected_country == 'DZ' %}selected{% endif %}>🇩🇿 Algérie</option>
+                <option value="foreign" {% if selected_country == 'foreign' %}selected{% endif %}>🌍 Étranger</option>
+                {% for code, label in countries %}
+                {% if code != 'DZ' %}
+                <option value="{{ code }}" {% if selected_country == code %}selected{% endif %}>{{ label }}</option>
+                {% endif %}
+                {% endfor %}
+            </select>
+            
+            <button type="submit" class="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg transition-all">
+                <i data-lucide="search" class="w-4 h-4"></i>
+                Filtrer
+            </button>
+            
+            <a href="{% url 'cartography:systems_list' %}" class="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition-all">
+                <i data-lucide="x" class="w-4 h-4"></i>
+                Reset
+            </a>
+        </form>
+    </div>
+    
+    <!-- Systems Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for system in systems %}
+        <a href="{% url 'cartography:system_detail' system.pk %}" class="glass rounded-2xl p-5 card-hover block">
+            <div class="flex items-start justify-between mb-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: {{ system.criticality_color }}20">
+                        <i data-lucide="server" class="w-5 h-5" style="color: {{ system.criticality_color }}"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold">{{ system.code }}</h3>
+                        <p class="text-xs text-gray-400">{{ system.vendor }}</p>
+                    </div>
+                </div>
+                <div class="flex flex-col items-end gap-1">
+                    <span class="text-xs px-2 py-1 rounded-full" style="background: {{ system.criticality_color }}30; color: {{ system.criticality_color }}">
+                        {{ system.criticality }}
+                    </span>
+                    {% if system.country != 'DZ' %}
+                    <span class="text-xs px-2 py-1 rounded-full bg-orange-500/20 text-orange-400" title="Système étranger - {{ system.get_country_display }}">
+                        🌍 {{ system.country }}
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <p class="text-sm text-gray-300 mb-3 line-clamp-2">{{ system.name }}</p>
+            
+            <div class="flex items-center justify-between text-xs text-gray-400">
+                <span class="flex items-center gap-1">
+                    <i data-lucide="building-2" class="w-3 h-3"></i>
+                    {{ system.structure.code }}
+                </span>
+                <span class="flex items-center gap-1">
+                    <i data-lucide="folder" class="w-3 h-3"></i>
+                    {{ system.category.name|truncatechars:15 }}
+                </span>
+            </div>
+        </a>
+        {% empty %}
+        <div class="col-span-full text-center py-12 text-gray-400">
+            <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-4 opacity-50"></i>
+            <p>Aucun système trouvé</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

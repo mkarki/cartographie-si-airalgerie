@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Questionnaires Entretiens{% endblock %}
+
+{% block content %}
+<div class="p-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold">Questionnaires Entretiens</h1>
+                <p class="text-gray-400 mt-1">Support d'entretien avec les Key Users — {{ total }} systèmes</p>
+            </div>
+            <div class="flex items-center gap-2 text-sm">
+                <span class="px-3 py-1 rounded-full bg-gray-700 text-gray-300">{{ not_started }} non commencés</span>
+                <span class="px-3 py-1 rounded-full bg-blue-900 text-blue-300">{{ in_progress }} en cours</span>
+                <span class="px-3 py-1 rounded-full bg-green-900 text-green-300">{{ completed }} terminés</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global progress -->
+    <div class="glass rounded-xl p-6 mb-8">
+        <div class="flex items-center justify-between mb-3">
+            <span class="text-sm text-gray-400">Progression globale</span>
+            <span class="text-sm font-semibold">{{ total_answered }} / {{ total_questions }} questions répondues ({{ global_progress }}%)</span>
+        </div>
+        <div class="w-full bg-gray-700 rounded-full h-3">
+            <div class="h-3 rounded-full transition-all duration-500" style="width: {{ global_progress }}%; background: linear-gradient(90deg, #c8102e, #f97316, #22c55e);"></div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="glass rounded-xl p-4 mb-8">
+        <form method="get" class="flex items-center gap-4">
+            <div class="flex-1">
+                <input type="text" name="search" value="{{ search }}" placeholder="Rechercher un système, éditeur, key user..." class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-ah-red">
+            </div>
+            <select name="phase" class="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white">
+                <option value="">Toutes les phases</option>
+                <option value="1" {% if selected_phase == '1' %}selected{% endif %}>Phase 1 🔴 Critique</option>
+                <option value="2" {% if selected_phase == '2' %}selected{% endif %}>Phase 2 🟠 Important</option>
+                <option value="3" {% if selected_phase == '3' %}selected{% endif %}>Phase 3 🟢 Standard</option>
+            </select>
+            <select name="status" class="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white">
+                <option value="">Tous les statuts</option>
+                <option value="NOT_STARTED" {% if selected_status == 'NOT_STARTED' %}selected{% endif %}>Non commencé</option>
+                <option value="IN_PROGRESS" {% if selected_status == 'IN_PROGRESS' %}selected{% endif %}>En cours</option>
+                <option value="COMPLETED" {% if selected_status == 'COMPLETED' %}selected{% endif %}>Terminé</option>
+            </select>
+            <button type="submit" class="bg-ah-red hover:bg-red-700 px-6 py-2 rounded-lg font-medium transition">Filtrer</button>
+            {% if search or selected_phase or selected_status %}
+            <a href="{% url 'cartography:questionnaires_list' %}" class="text-gray-400 hover:text-white text-sm">Réinitialiser</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Phase sections -->
+    {% for phase_label, phase_color, phase_bg, phase_items in phases %}
+    {% if phase_items %}
+    <div class="mb-10">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-3 h-3 rounded-full" style="background: {{ phase_color }};"></div>
+            <h2 class="text-xl font-bold">{{ phase_label }}</h2>
+            <span class="text-sm text-gray-400">({{ phase_items|length }} systèmes)</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {% for q in phase_items %}
+            <a href="{% url 'cartography:questionnaire_detail' q.pk %}" class="glass rounded-xl p-5 card-hover block">
+                <div class="flex items-start justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-mono px-2 py-0.5 rounded" style="background: {{ phase_color }}20; color: {{ phase_color }};">#{{ q.priority_in_phase }}</span>
+                        <h3 class="font-semibold text-lg">{{ q.system_name }}</h3>
+                    </div>
+                    {% if q.status == 'COMPLETED' %}
+                    <span class="flex items-center gap-1 text-xs text-green-400">
+                        <i data-lucide="check-circle-2" class="w-4 h-4"></i> Terminé
+                    </span>
+                    {% elif q.status == 'IN_PROGRESS' %}
+                    <span class="flex items-center gap-1 text-xs text-blue-400">
+                        <i data-lucide="loader" class="w-4 h-4"></i> En cours
+                    </span>
+                    {% else %}
+                    <span class="flex items-center gap-1 text-xs text-gray-500">
+                        <i data-lucide="circle" class="w-4 h-4"></i> Non commencé
+                    </span>
+                    {% endif %}
+                </div>
+
+                {% if q.editor %}
+                <p class="text-sm text-gray-400 mb-1"><span class="text-gray-500">Éditeur :</span> {{ q.editor }}</p>
+                {% endif %}
+                {% if q.key_users %}
+                <p class="text-sm text-gray-400 mb-3 truncate"><span class="text-gray-500">Key Users :</span> {{ q.key_users }}</p>
+                {% endif %}
+
+                <!-- Progress bar -->
+                <div class="mt-3">
+                    <div class="flex items-center justify-between text-xs text-gray-500 mb-1">
+                        <span>{{ q.answered_questions }} / {{ q.total_questions }} questions</span>
+                        <span>{{ q.progress_percent }}%</span>
+                    </div>
+                    <div class="w-full bg-gray-700 rounded-full h-1.5">
+                        <div class="h-1.5 rounded-full transition-all duration-500 {% if q.progress_percent == 100 %}bg-green-500{% elif q.progress_percent > 0 %}bg-blue-500{% else %}bg-gray-600{% endif %}" style="width: {{ q.progress_percent }}%;"></div>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+
+    {% if not questionnaires %}
+    <div class="glass rounded-xl p-12 text-center">
+        <i data-lucide="clipboard-list" class="w-16 h-16 mx-auto text-gray-600 mb-4"></i>
+        <h3 class="text-xl font-semibold text-gray-400 mb-2">Aucun questionnaire</h3>
+        <p class="text-gray-500">Exécutez la commande <code class="bg-white/10 px-2 py-1 rounded text-sm">python manage.py populate_questionnaires</code> pour générer les questionnaires depuis les fiches systèmes.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    lucide.createIcons();
+</script>
+{% endblock %}

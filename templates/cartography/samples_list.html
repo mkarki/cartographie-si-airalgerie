@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %}Échantillons de Données{% endblock %}
+
+{% block content %}
+<div class="p-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center gap-2 text-gray-400 text-sm mb-4">
+            <a href="{% url 'cartography:validation_dashboard' %}" class="hover:text-white">Validation</a>
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            <span>Échantillons</span>
+        </div>
+        <h1 class="text-3xl font-bold mb-2">Échantillons de Données</h1>
+        <p class="text-gray-400">Données réelles importées pour validation des hypothèses</p>
+    </div>
+
+    <!-- Filtres -->
+    <div class="glass rounded-xl p-4 mb-6">
+        <form method="get" class="flex flex-wrap gap-4 items-end">
+            <div>
+                <label class="block text-sm text-gray-400 mb-1">Système source</label>
+                <select name="source" class="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white">
+                    <option value="">Tous</option>
+                    {% for value, label in source_choices %}
+                    <option value="{{ value }}" {% if selected_source == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm text-gray-400 mb-1">Type de données</label>
+                <select name="data_type" class="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white">
+                    <option value="">Tous</option>
+                    {% for value, label in data_type_choices %}
+                    <option value="{{ value }}" {% if selected_data_type == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="px-4 py-2 bg-ah-red rounded-lg hover:bg-red-700 transition">
+                Filtrer
+            </button>
+            <a href="{% url 'cartography:samples_list' %}" class="px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition">
+                Reset
+            </a>
+        </form>
+    </div>
+
+    <!-- Liste des échantillons -->
+    {% if samples %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for sample in samples %}
+        <a href="{% url 'cartography:sample_detail' sample.pk %}" class="glass rounded-xl p-6 card-hover block">
+            <div class="flex items-start justify-between mb-4">
+                <div class="w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                    {% if sample.source_system == 'AIMS' %}
+                    <i data-lucide="plane" class="w-6 h-6 text-blue-400"></i>
+                    {% elif sample.source_system == 'AMADEUS' %}
+                    <i data-lucide="ticket" class="w-6 h-6 text-purple-400"></i>
+                    {% elif sample.source_system == 'RAPID' %}
+                    <i data-lucide="banknote" class="w-6 h-6 text-green-400"></i>
+                    {% else %}
+                    <i data-lucide="file-spreadsheet" class="w-6 h-6 text-gray-400"></i>
+                    {% endif %}
+                </div>
+                <span class="px-2 py-1 rounded text-xs bg-white/10">{{ sample.get_source_system_display }}</span>
+            </div>
+            
+            <h3 class="font-semibold text-lg mb-2">{{ sample.name }}</h3>
+            <p class="text-sm text-gray-400 mb-4">{{ sample.get_data_type_display }}</p>
+            
+            <div class="flex items-center justify-between text-sm">
+                <span class="text-gray-400">{{ sample.record_count }} enregistrements</span>
+                <span class="text-gray-500">{{ sample.imported_at|date:"d/m/Y" }}</span>
+            </div>
+            
+            {% if sample.sample_date %}
+            <div class="mt-3 pt-3 border-t border-white/10 text-sm text-gray-400">
+                Données du {{ sample.sample_date|date:"d/m/Y" }}
+            </div>
+            {% endif %}
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="glass rounded-xl p-12 text-center">
+        <i data-lucide="inbox" class="w-20 h-20 text-gray-600 mx-auto mb-6"></i>
+        <h3 class="text-xl font-semibold mb-2">Aucun échantillon</h3>
+        <p class="text-gray-400 mb-6">Aucun échantillon de données n'a été importé</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

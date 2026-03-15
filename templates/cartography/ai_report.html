@@ -1,0 +1,227 @@
+{% extends 'base.html' %}
+
+{% block title %}Rapport IA - Cartographie SI{% endblock %}
+
+{% block content %}
+<div class="p-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold">Rapport IA - Analyse Cartographie SI</h1>
+            <p class="text-gray-400 mt-1">Génération automatique avec Claude AI</p>
+        </div>
+        <div class="flex items-center gap-4">
+            <span class="glass px-4 py-2 rounded-lg">
+                <span class="text-2xl font-bold text-ah-green">{{ stats.total_systemes }}</span>
+                <span class="text-gray-400 ml-2">systèmes</span>
+            </span>
+            <span class="glass px-4 py-2 rounded-lg">
+                <span class="text-2xl font-bold text-indigo-400">{{ stats.total_echantillons }}</span>
+                <span class="text-gray-400 ml-2">échantillons</span>
+            </span>
+        </div>
+    </div>
+
+    {% if error %}
+    <div class="glass rounded-xl p-6 border border-red-500/50 bg-red-500/10 mb-8">
+        <div class="flex items-center gap-3">
+            <i data-lucide="alert-circle" class="w-6 h-6 text-red-400"></i>
+            <div>
+                <h3 class="font-bold text-red-400">Erreur de génération</h3>
+                <p class="text-gray-300">{{ error }}</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Generate Report Form -->
+    <div class="glass rounded-xl p-6 mb-8">
+        <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+            <i data-lucide="sparkles" class="w-5 h-5 text-yellow-400"></i>
+            Générer un nouveau rapport
+        </h2>
+        <form method="post" id="report-form">
+            {% csrf_token %}
+            <div class="flex items-end gap-4">
+                <div class="flex-1">
+                    <label class="block text-sm text-gray-400 mb-2">Focus du rapport (optionnel)</label>
+                    <select name="focus" class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white">
+                        <option value="all">Analyse complète</option>
+                        <option value="gaps">Focus sur les données manquantes</option>
+                        <option value="samples">Focus sur les échantillons reçus</option>
+                        <option value="critical">Focus sur les flux critiques</option>
+                    </select>
+                </div>
+                <button type="submit" class="bg-ah-red hover:bg-red-700 px-6 py-2 rounded-lg font-medium transition flex items-center gap-2" id="generate-btn">
+                    <i data-lucide="wand-2" class="w-4 h-4"></i>
+                    Générer le rapport
+                </button>
+            </div>
+        </form>
+    </div>
+
+    {% if report %}
+    <!-- Report Display -->
+    <div class="glass rounded-xl overflow-hidden mb-8">
+        <div class="p-4 border-b border-white/10 flex items-center justify-between bg-white/5">
+            <div class="flex items-center gap-3">
+                <i data-lucide="file-text" class="w-5 h-5 text-ah-green"></i>
+                <span class="font-bold">Rapport généré le {{ report_date }}</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="window.print()" class="glass hover:bg-white/10 px-4 py-2 rounded-lg text-sm flex items-center gap-2">
+                    <i data-lucide="printer" class="w-4 h-4"></i>
+                    Imprimer
+                </button>
+                <a href="{% url 'cartography:ai_report_pdf' %}" class="bg-ah-red hover:bg-red-700 px-4 py-2 rounded-lg text-sm flex items-center gap-2">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    Télécharger PDF
+                </a>
+            </div>
+        </div>
+        <div class="p-6 prose prose-invert max-w-none" id="report-content">
+            {{ report|safe }}
+        </div>
+    </div>
+    {% else %}
+    <!-- No Report Yet -->
+    <div class="glass rounded-xl p-12 text-center">
+        <i data-lucide="file-question" class="w-16 h-16 mx-auto text-gray-600 mb-4"></i>
+        <h3 class="text-xl font-medium text-gray-400">Aucun rapport généré</h3>
+        <p class="text-gray-500 mt-2">Cliquez sur "Générer le rapport" pour créer une analyse IA de votre cartographie SI</p>
+    </div>
+    {% endif %}
+
+    <!-- Localisation Summary -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+        <div class="glass rounded-xl p-6 border border-green-500/30">
+            <h3 class="font-bold mb-4 flex items-center gap-2">
+                <span class="text-xl">🇩🇿</span>
+                Systèmes en Algérie
+            </h3>
+            <div class="text-3xl font-bold text-green-400 mb-2">{{ stats.systemes_algerie }}</div>
+            <p class="text-sm text-gray-400">Hébergés localement (on-premise)</p>
+        </div>
+        
+        <div class="glass rounded-xl p-6 border border-blue-500/30">
+            <h3 class="font-bold mb-4 flex items-center gap-2">
+                <span class="text-xl">🇫🇷</span>
+                Systèmes en France
+            </h3>
+            <div class="text-3xl font-bold text-blue-400 mb-2">{{ stats.systemes_france }}</div>
+            <p class="text-sm text-gray-400">Hébergés chez l'éditeur</p>
+            <div class="mt-3 space-y-1">
+                {% for sys in systems_france %}
+                <div class="text-xs bg-blue-500/10 px-2 py-1 rounded">{{ sys.code }} - {{ sys.vendor }}</div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="glass rounded-xl p-6 border border-orange-500/30">
+            <h3 class="font-bold mb-4 flex items-center gap-2">
+                <span class="text-xl">🌍</span>
+                Cloud International
+            </h3>
+            <div class="text-3xl font-bold text-orange-400 mb-2">{{ stats.systemes_international }}</div>
+            <p class="text-sm text-gray-400">SaaS / Cloud mondial</p>
+            <div class="mt-3 space-y-1">
+                {% for sys in systems_international %}
+                <div class="text-xs bg-orange-500/10 px-2 py-1 rounded">{{ sys.code }}</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Knowledge Summary -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+        <div class="glass rounded-xl p-6">
+            <h3 class="font-bold mb-4 flex items-center gap-2">
+                <i data-lucide="server" class="w-5 h-5 text-blue-400"></i>
+                Systèmes avec échantillons
+            </h3>
+            <div class="space-y-2">
+                {% for sys in systems_with_samples %}
+                <div class="flex items-center justify-between p-2 bg-white/5 rounded-lg">
+                    <span class="font-mono text-sm">{{ sys.code }}</span>
+                    <span class="px-2 py-0.5 bg-green-500/20 text-green-400 rounded text-xs">{{ sys.sample_count }} fichiers</span>
+                </div>
+                {% empty %}
+                <p class="text-gray-500 text-sm">Aucun système avec échantillons</p>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="glass rounded-xl p-6">
+            <h3 class="font-bold mb-4 flex items-center gap-2">
+                <i data-lucide="alert-triangle" class="w-5 h-5 text-red-400"></i>
+                Flux critiques
+            </h3>
+            <div class="space-y-2">
+                {% for flow in critical_flows %}
+                <div class="p-2 bg-white/5 rounded-lg">
+                    <div class="flex items-center gap-2 text-sm">
+                        <span class="text-blue-400">{{ flow.source.code }}</span>
+                        <i data-lucide="arrow-right" class="w-3 h-3 text-gray-500"></i>
+                        <span class="text-indigo-400">{{ flow.target.code }}</span>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">{{ flow.name }}</p>
+                </div>
+                {% empty %}
+                <p class="text-gray-500 text-sm">Aucun flux critique</p>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="glass rounded-xl p-6">
+            <h3 class="font-bold mb-4 flex items-center gap-2">
+                <i data-lucide="file-warning" class="w-5 h-5 text-yellow-400"></i>
+                Systèmes sans données
+            </h3>
+            <div class="space-y-2 max-h-48 overflow-y-auto">
+                {% for sys in systems_without_samples %}
+                <div class="flex items-center justify-between p-2 bg-white/5 rounded-lg">
+                    <span class="font-mono text-sm">{{ sys.code }}</span>
+                    <span class="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded text-xs">{{ sys.criticality }}</span>
+                </div>
+                {% empty %}
+                <p class="text-gray-500 text-sm">Tous les systèmes ont des données</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @media print {
+        .sidebar, nav, button, form, .no-print {
+            display: none !important;
+        }
+        .glass {
+            background: white !important;
+            color: black !important;
+        }
+        .prose {
+            color: black !important;
+        }
+    }
+    
+    .prose h1 { font-size: 1.5rem; font-weight: bold; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #f8fafc; }
+    .prose h2 { font-size: 1.25rem; font-weight: bold; margin-top: 1.25rem; margin-bottom: 0.5rem; color: #e2e8f0; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; }
+    .prose h3 { font-size: 1.1rem; font-weight: 600; margin-top: 1rem; margin-bottom: 0.5rem; color: #cbd5e1; }
+    .prose p { margin-bottom: 0.75rem; line-height: 1.6; }
+    .prose ul, .prose ol { margin-left: 1.5rem; margin-bottom: 0.75rem; }
+    .prose li { margin-bottom: 0.25rem; }
+    .prose strong { color: #f8fafc; }
+    .prose table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    .prose th, .prose td { border: 1px solid rgba(255,255,255,0.1); padding: 0.5rem; text-align: left; }
+    .prose th { background: rgba(255,255,255,0.05); }
+</style>
+
+<script>
+document.getElementById('report-form')?.addEventListener('submit', function() {
+    const btn = document.getElementById('generate-btn');
+    btn.innerHTML = '<svg class="animate-spin w-4 h-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Génération en cours...';
+    btn.disabled = true;
+});
+</script>
+{% endblock %}

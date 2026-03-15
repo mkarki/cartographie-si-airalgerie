@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Structures{% endblock %}
+
+{% block content %}
+<div class="p-8">
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold mb-2">Structures Organisationnelles</h1>
+        <p class="text-gray-400">{{ structures.count }} structures responsables de systèmes</p>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for structure in structures %}
+        <div class="glass rounded-2xl p-5 card-hover">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                        <i data-lucide="building-2" class="w-6 h-6 text-blue-400"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg">{{ structure.code }}</h3>
+                        <p class="text-sm text-gray-400">{{ structure.name }}</p>
+                    </div>
+                </div>
+                <span class="text-2xl font-bold text-blue-400">{{ structure.system_count }}</span>
+            </div>
+            
+            {% if structure.description %}
+            <p class="text-sm text-gray-400 mb-4">{{ structure.description }}</p>
+            {% endif %}
+            
+            <div class="space-y-2">
+                {% for system in structure.systems.all %}
+                <a href="{% url 'cartography:system_detail' system.pk %}" class="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 transition-all">
+                    <span class="text-sm">{{ system.code }}</span>
+                    <span class="w-2 h-2 rounded-full" style="background: {{ system.criticality_color }}"></span>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full text-center py-12 text-gray-400">
+            <p>Aucune structure définie</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

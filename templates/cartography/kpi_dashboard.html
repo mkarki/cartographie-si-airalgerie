@@ -1,0 +1,416 @@
+{% extends "base.html" %}
+
+{% block title %}KPI Avancement Cartographie{% endblock %}
+
+{% block extra_css %}
+<style>
+    .kpi-card {
+        transition: all 0.3s ease;
+    }
+    .kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+    .progress-ring {
+        transform: rotate(-90deg);
+    }
+    .phase-bar {
+        transition: width 1s ease;
+    }
+    @keyframes countUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-in {
+        animation: countUp 0.5s ease forwards;
+    }
+    .live-dot {
+        width: 8px; height: 8px; border-radius: 50%; background: #22c55e;
+        animation: pulse-live 2s infinite;
+    }
+    @keyframes pulse-live {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+        50% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="p-8">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-bold">KPI Avancement Cartographie</h1>
+            <p class="text-gray-400 mt-1">Suivi en temps réel vs Roadmap — Projet SI Air Algérie</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 glass px-4 py-2 rounded-lg">
+                <div class="live-dot"></div>
+                <span class="text-xs text-green-400">Temps réel</span>
+            </div>
+            <a href="{% url 'cartography:organigramme' %}" class="glass px-4 py-2 rounded-lg hover:bg-white/10 transition text-sm flex items-center gap-2">
+                <i data-lucide="network" class="w-4 h-4"></i> Organigramme
+            </a>
+        </div>
+    </div>
+
+    <!-- ═══ TOP KPI CARDS ═══ -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <!-- Systèmes inventoriés -->
+        <div class="kpi-card glass rounded-xl p-5">
+            <div class="flex items-center justify-between mb-3">
+                <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                    <i data-lucide="server" class="w-5 h-5 text-blue-400"></i>
+                </div>
+                <span class="text-2xl font-bold" id="kpi-systems">{{ total_systems }}</span>
+            </div>
+            <p class="text-xs text-gray-400">Systèmes inventoriés</p>
+            <div class="mt-2 flex items-center gap-2">
+                <div class="flex-1 bg-gray-700 rounded-full h-1.5">
+                    <div class="h-1.5 rounded-full bg-blue-500" style="width: 100%"></div>
+                </div>
+                <span class="text-xs text-blue-400">100%</span>
+            </div>
+        </div>
+
+        <!-- Systèmes avec flux -->
+        <div class="kpi-card glass rounded-xl p-5">
+            <div class="flex items-center justify-between mb-3">
+                <div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
+                    <i data-lucide="arrow-right-left" class="w-5 h-5 text-green-400"></i>
+                </div>
+                <span class="text-2xl font-bold" id="kpi-with-data">{{ systems_with_data }}</span>
+            </div>
+            <p class="text-xs text-gray-400">Systèmes avec flux documentés</p>
+            <div class="mt-2 flex items-center gap-2">
+                {% widthratio systems_with_data total_systems 100 as coverage %}
+                <div class="flex-1 bg-gray-700 rounded-full h-1.5">
+                    <div class="h-1.5 rounded-full bg-green-500" style="width: {% widthratio systems_with_data total_systems 100 %}%"></div>
+                </div>
+                <span class="text-xs text-green-400">{% widthratio systems_with_data total_systems 100 %}%</span>
+            </div>
+        </div>
+
+        <!-- Questionnaires remplis -->
+        <div class="kpi-card glass rounded-xl p-5">
+            <div class="flex items-center justify-between mb-3">
+                <div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                    <i data-lucide="clipboard-check" class="w-5 h-5 text-purple-400"></i>
+                </div>
+                <span class="text-2xl font-bold" id="kpi-q-progress">{{ questionnaire_progress }}%</span>
+            </div>
+            <p class="text-xs text-gray-400">Questions répondues</p>
+            <div class="mt-2 flex items-center gap-2">
+                <div class="flex-1 bg-gray-700 rounded-full h-1.5">
+                    <div class="h-1.5 rounded-full bg-purple-500" style="width: {{ questionnaire_progress }}%"></div>
+                </div>
+                <span class="text-xs text-gray-500">{{ total_answered }}/{{ total_questions }}</span>
+            </div>
+        </div>
+
+        <!-- Entretiens terminés -->
+        <div class="kpi-card glass rounded-xl p-5">
+            <div class="flex items-center justify-between mb-3">
+                <div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                    <i data-lucide="check-circle-2" class="w-5 h-5 text-amber-400"></i>
+                </div>
+                <span class="text-2xl font-bold" id="kpi-q-done">{{ q_completed }}/{{ total_questionnaires }}</span>
+            </div>
+            <p class="text-xs text-gray-400">Entretiens terminés</p>
+            <div class="mt-2 flex items-center gap-2">
+                {% if total_questionnaires > 0 %}
+                <div class="flex-1 bg-gray-700 rounded-full h-1.5">
+                    <div class="h-1.5 rounded-full bg-amber-500" style="width: {% widthratio q_completed total_questionnaires 100 %}%"></div>
+                </div>
+                <span class="text-xs text-amber-400">{% widthratio q_completed total_questionnaires 100 %}%</span>
+                {% else %}
+                <span class="text-xs text-gray-500">N/A</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Flux documentés -->
+        <div class="kpi-card glass rounded-xl p-5">
+            <div class="flex items-center justify-between mb-3">
+                <div class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
+                    <i data-lucide="activity" class="w-5 h-5 text-red-400"></i>
+                </div>
+                <span class="text-2xl font-bold">{{ total_flows }}</span>
+            </div>
+            <p class="text-xs text-gray-400">Flux de données</p>
+            <div class="mt-2 flex items-center gap-2 text-xs text-gray-500">
+                <span class="text-green-400">{{ automated_flows }} auto</span>
+                <span>·</span>
+                <span class="text-yellow-400">{{ manual_flows }} manuels</span>
+                <span>·</span>
+                <span class="text-red-400">{{ critical_flows }} critiques</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ PHASE PROGRESS vs ROADMAP ═══ -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        {% for phase in phase_data %}
+        <div class="glass rounded-xl p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full {% if phase.phase == 1 %}bg-red-500{% elif phase.phase == 2 %}bg-orange-500{% else %}bg-green-500{% endif %}"></div>
+                    <h3 class="font-semibold">{{ phase.label }}</h3>
+                </div>
+                <span class="text-xs text-gray-500">{{ phase.total_systems }} systèmes</span>
+            </div>
+
+            <!-- Circular progress -->
+            <div class="flex items-center gap-6 mb-4">
+                <div class="relative w-20 h-20">
+                    <svg class="w-20 h-20 progress-ring" viewBox="0 0 80 80">
+                        <circle cx="40" cy="40" r="35" stroke="rgba(255,255,255,0.1)" stroke-width="6" fill="none"/>
+                        <circle cx="40" cy="40" r="35" stroke="{% if phase.phase == 1 %}#ef4444{% elif phase.phase == 2 %}#f97316{% else %}#22c55e{% endif %}" stroke-width="6" fill="none"
+                            stroke-dasharray="{{ phase.progress|floatformat:0 }}{% if phase.progress > 0 %} {% endif %}220"
+                            stroke-dashoffset="0"
+                            stroke-linecap="round"
+                            style="stroke-dasharray: {% widthratio phase.progress 100 220 %} 220;"/>
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span class="text-lg font-bold">{{ phase.progress }}%</span>
+                    </div>
+                </div>
+                <div class="flex-1 space-y-2">
+                    <div class="flex justify-between text-xs">
+                        <span class="text-gray-400">Répondu</span>
+                        <span>{{ phase.answered }}/{{ phase.total_questions }}</span>
+                    </div>
+                    <div class="flex justify-between text-xs">
+                        <span class="text-gray-400">Validé</span>
+                        <span>{{ phase.validated }}/{{ phase.total_questions }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status breakdown -->
+            <div class="grid grid-cols-3 gap-2 text-center">
+                <div class="bg-green-900/20 rounded-lg p-2">
+                    <p class="text-lg font-bold text-green-400">{{ phase.completed }}</p>
+                    <p class="text-xs text-gray-500">Terminés</p>
+                </div>
+                <div class="bg-blue-900/20 rounded-lg p-2">
+                    <p class="text-lg font-bold text-blue-400">{{ phase.in_progress }}</p>
+                    <p class="text-xs text-gray-500">En cours</p>
+                </div>
+                <div class="bg-gray-700/30 rounded-lg p-2">
+                    <p class="text-lg font-bold text-gray-400">{{ phase.not_started }}</p>
+                    <p class="text-xs text-gray-500">À faire</p>
+                </div>
+            </div>
+
+            <!-- Roadmap target -->
+            <div class="mt-4 pt-3 border-t border-white/5">
+                <p class="text-xs text-gray-500">
+                    <i data-lucide="target" class="w-3 h-3 inline"></i>
+                    Objectif : {% if phase.phase == 1 %}{{ roadmap.phase1_target }}{% elif phase.phase == 2 %}{{ roadmap.phase2_target }}{% else %}{{ roadmap.phase3_target }}{% endif %}
+                </p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- ═══ DETAILED SYSTEM TABLE ═══ -->
+    <div class="glass rounded-xl p-6 mb-8">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold flex items-center gap-2">
+                <i data-lucide="table-2" class="w-5 h-5 text-blue-400"></i>
+                Avancement détaillé par système
+            </h3>
+            <div class="flex items-center gap-2 text-xs text-gray-500">
+                <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span> Terminé</span>
+                <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-500 inline-block"></span> En cours</span>
+                <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-gray-500 inline-block"></span> Non commencé</span>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-white/10 text-left text-xs text-gray-500 uppercase">
+                        <th class="pb-3 pr-4">Phase</th>
+                        <th class="pb-3 pr-4">Système</th>
+                        <th class="pb-3 pr-4">Direction</th>
+                        <th class="pb-3 pr-4">Key Users</th>
+                        <th class="pb-3 pr-4">Questions</th>
+                        <th class="pb-3 pr-4">Avancement</th>
+                        <th class="pb-3 pr-4">Flux</th>
+                        <th class="pb-3 pr-4">Données</th>
+                        <th class="pb-3 pr-4">Statut</th>
+                        <th class="pb-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in system_progress %}
+                    <tr class="border-b border-white/5 hover:bg-white/5 transition">
+                        <td class="py-3 pr-4">
+                            <span class="text-xs font-mono px-2 py-0.5 rounded {% if item.questionnaire.phase == 1 %}bg-red-900/30 text-red-400{% elif item.questionnaire.phase == 2 %}bg-orange-900/30 text-orange-400{% else %}bg-green-900/30 text-green-400{% endif %}">P{{ item.questionnaire.phase }}</span>
+                        </td>
+                        <td class="py-3 pr-4 font-medium">{{ item.questionnaire.system_name }}</td>
+                        <td class="py-3 pr-4 text-gray-400 text-xs">{{ item.questionnaire.direction|default:"—" }}</td>
+                        <td class="py-3 pr-4 text-gray-400 text-xs truncate max-w-[120px]">{{ item.questionnaire.key_users|default:"—" }}</td>
+                        <td class="py-3 pr-4 text-xs">{{ item.questionnaire.answered_questions }}/{{ item.questionnaire.total_questions }}</td>
+                        <td class="py-3 pr-4">
+                            <div class="flex items-center gap-2">
+                                <div class="w-20 bg-gray-700 rounded-full h-1.5">
+                                    <div class="h-1.5 rounded-full {% if item.questionnaire.progress_percent == 100 %}bg-green-500{% elif item.questionnaire.progress_percent > 0 %}bg-blue-500{% else %}bg-gray-600{% endif %}" style="width: {{ item.questionnaire.progress_percent }}%"></div>
+                                </div>
+                                <span class="text-xs text-gray-400">{{ item.questionnaire.progress_percent }}%</span>
+                            </div>
+                        </td>
+                        <td class="py-3 pr-4 text-xs text-gray-400">{{ item.total_flows }}</td>
+                        <td class="py-3 pr-4">
+                            {% if item.has_data %}
+                            <span class="text-xs text-green-400 flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Oui</span>
+                            {% else %}
+                            <span class="text-xs text-gray-500 flex items-center gap-1"><i data-lucide="x" class="w-3 h-3"></i> Non</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 pr-4">
+                            {% if item.questionnaire.status == 'COMPLETED' %}
+                            <span class="px-2 py-0.5 rounded-full bg-green-900/50 text-green-300 text-xs">Terminé</span>
+                            {% elif item.questionnaire.status == 'IN_PROGRESS' %}
+                            <span class="px-2 py-0.5 rounded-full bg-blue-900/50 text-blue-300 text-xs">En cours</span>
+                            {% else %}
+                            <span class="px-2 py-0.5 rounded-full bg-gray-700 text-gray-400 text-xs">À faire</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3">
+                            <div class="flex items-center gap-1">
+                                <a href="{% url 'cartography:questionnaire_detail' item.questionnaire.pk %}" class="p-1 rounded hover:bg-white/10 transition" title="Voir questionnaire">
+                                    <i data-lucide="eye" class="w-4 h-4 text-gray-400"></i>
+                                </a>
+                                <a href="{% url 'cartography:questionnaire_form' item.questionnaire.pk %}" class="p-1 rounded hover:bg-white/10 transition" title="Formulaire key user">
+                                    <i data-lucide="external-link" class="w-4 h-4 text-gray-400"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" class="py-8 text-center text-gray-500">Aucun questionnaire configuré. Exécutez <code class="bg-white/10 px-2 py-1 rounded text-xs">python manage.py populate_questionnaires</code></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ═══ ROADMAP vs RÉALITÉ ═══ -->
+    <div class="glass rounded-xl p-6">
+        <h3 class="text-lg font-semibold flex items-center gap-2 mb-4">
+            <i data-lucide="gantt-chart" class="w-5 h-5 text-amber-400"></i>
+            Roadmap vs Réalité
+        </h3>
+        <div class="space-y-4">
+            <!-- Phase 1 -->
+            <div>
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-sm font-medium">Phase 1 — Diagnostic & Inventaire</span>
+                    <span class="text-xs text-gray-400">Cible : Mois 1-2</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <p class="text-xs text-gray-500 mb-1">Objectif</p>
+                        <div class="w-full bg-gray-700 rounded-full h-2">
+                            <div class="h-2 rounded-full bg-red-500/50" style="width: 100%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 mb-1">Réalisé</p>
+                        <div class="w-full bg-gray-700 rounded-full h-2">
+                            {% for phase in phase_data %}{% if phase.phase == 1 %}
+                            <div class="h-2 rounded-full bg-red-500" style="width: {{ phase.progress }}%"></div>
+                            {% endif %}{% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Phase 2 -->
+            <div>
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-sm font-medium">Phase 2 — Connecteurs & Intégration</span>
+                    <span class="text-xs text-gray-400">Cible : Mois 3-4</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <p class="text-xs text-gray-500 mb-1">Objectif</p>
+                        <div class="w-full bg-gray-700 rounded-full h-2">
+                            <div class="h-2 rounded-full bg-orange-500/50" style="width: 100%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 mb-1">Réalisé</p>
+                        <div class="w-full bg-gray-700 rounded-full h-2">
+                            {% for phase in phase_data %}{% if phase.phase == 2 %}
+                            <div class="h-2 rounded-full bg-orange-500" style="width: {{ phase.progress }}%"></div>
+                            {% endif %}{% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Phase 3 -->
+            <div>
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-sm font-medium">Phase 3 — Automatisation & MDM</span>
+                    <span class="text-xs text-gray-400">Cible : Mois 5-6</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <p class="text-xs text-gray-500 mb-1">Objectif</p>
+                        <div class="w-full bg-gray-700 rounded-full h-2">
+                            <div class="h-2 rounded-full bg-green-500/50" style="width: 100%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 mb-1">Réalisé</p>
+                        <div class="w-full bg-gray-700 rounded-full h-2">
+                            {% for phase in phase_data %}{% if phase.phase == 3 %}
+                            <div class="h-2 rounded-full bg-green-500" style="width: {{ phase.progress }}%"></div>
+                            {% endif %}{% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-6 pt-4 border-t border-white/5 grid grid-cols-3 gap-4 text-center">
+            <div>
+                <p class="text-2xl font-bold text-blue-400">{{ roadmap.total_jh }}</p>
+                <p class="text-xs text-gray-500">Jours-homme total</p>
+            </div>
+            <div>
+                <p class="text-2xl font-bold text-amber-400">{{ roadmap.duration_months }}</p>
+                <p class="text-xs text-gray-500">Mois de durée contrat</p>
+            </div>
+            <div>
+                <p class="text-2xl font-bold text-green-400">{{ total_samples }}</p>
+                <p class="text-xs text-gray-500">Échantillons collectés</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    lucide.createIcons();
+
+    // Auto-refresh KPI every 30 seconds
+    setInterval(() => {
+        fetch('{% url "cartography:api_kpi_stats" %}')
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('kpi-systems').textContent = data.total_systems;
+                document.getElementById('kpi-with-data').textContent = data.systems_with_data;
+                document.getElementById('kpi-q-progress').textContent = data.questionnaire_progress + '%';
+                document.getElementById('kpi-q-done').textContent = data.questionnaires_completed + '/' + data.total_questionnaires;
+            })
+            .catch(err => console.log('KPI refresh error:', err));
+    }, 30000);
+</script>
+{% endblock %}

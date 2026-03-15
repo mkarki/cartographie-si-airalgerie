@@ -1,0 +1,968 @@
+{% extends 'base.html' %}
+
+{% block title %}Cartographie Interactive{% endblock %}
+
+{% block extra_css %}
+<style>
+    #cy {
+        width: 100% !important;
+        height: 700px !important;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 1rem;
+        display: block;
+    }
+    
+    .node-tooltip {
+        position: absolute;
+        background: rgba(26, 26, 46, 0.95);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 16px;
+        max-width: 350px;
+        z-index: 1000;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    }
+    
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 0;
+    }
+    
+    .legend-color {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+    }
+    
+    .legend-rect {
+        width: 16px;
+        height: 12px;
+        border-radius: 3px;
+        border: 2px solid;
+    }
+    
+    .toggle-btn {
+        transition: all 0.2s;
+    }
+    .toggle-btn.active {
+        background: rgba(59, 130, 246, 0.3);
+        border-color: #3b82f6;
+    }
+    
+    .active-filter {
+        background: rgba(59, 130, 246, 0.3) !important;
+        border-radius: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="p-8 h-full flex flex-col">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-3xl font-bold mb-2">Cartographie Interactive</h1>
+            <p class="text-gray-400">Visualisation des systèmes et flux de données</p>
+        </div>
+        
+        <!-- Controls -->
+        <div class="flex items-center gap-4">
+            <select id="categoryFilter" class="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Toutes les catégories</option>
+                {% for cat in categories %}
+                <option value="{{ cat.id }}">{{ cat.name }}</option>
+                {% endfor %}
+            </select>
+            
+            <select id="structureFilter" class="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Toutes les structures</option>
+                {% for struct in structures %}
+                <option value="{{ struct.id }}">{{ struct.code }} - {{ struct.name }}</option>
+                {% endfor %}
+            </select>
+            
+            <button id="toggleStructures" class="toggle-btn active flex items-center gap-2 bg-white/10 border border-white/20 hover:bg-white/20 px-4 py-2 rounded-lg">
+                <i data-lucide="layout-grid" class="w-4 h-4"></i>
+                Structures
+            </button>
+            
+            <button id="toggleValidation" class="toggle-btn flex items-center gap-2 bg-white/10 border border-white/20 hover:bg-white/20 px-4 py-2 rounded-lg">
+                <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                Validation
+            </button>
+            
+            <button id="resetBtn" class="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition-all">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                Reset
+            </button>
+            
+            <button id="fitBtn" class="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg transition-all">
+                <i data-lucide="maximize-2" class="w-4 h-4"></i>
+                Ajuster
+            </button>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="flex-1 flex gap-6">
+        <!-- Graph Container -->
+        <div class="flex-1 glass rounded-2xl p-4">
+            <div id="cy"></div>
+        </div>
+        
+        <!-- Side Panel -->
+        <div class="w-80 space-y-4">
+            <!-- Legend Structures -->
+            <div class="glass rounded-2xl p-4">
+                <h3 class="font-semibold mb-3 flex items-center gap-2">
+                    <i data-lucide="building-2" class="w-4 h-4"></i>
+                    Structures
+                    <button id="clearStructFilter" class="ml-auto text-xs text-gray-400 hover:text-white hidden">✕ Reset</button>
+                </h3>
+                <div id="structLegend" class="space-y-1 text-xs max-h-64 overflow-y-auto">
+                    {% for struct in structures %}
+                    <div class="legend-item cursor-pointer hover:bg-white/10 rounded px-1 py-0.5 transition-all filter-struct" data-struct-id="{{ struct.id }}" data-struct-code="{{ struct.code }}">
+                        <div class="legend-rect" style="background: {{ struct.color }}20; border-color: {{ struct.color }}"></div>
+                        <span>{{ struct.code }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Legend Criticité -->
+            <div class="glass rounded-2xl p-4">
+                <h3 class="font-semibold mb-3 flex items-center gap-2">
+                    <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                    Criticité
+                    <button id="clearCritFilter" class="ml-auto text-xs text-gray-400 hover:text-white hidden">✕ Reset</button>
+                </h3>
+                <div id="critLegend" class="space-y-2 text-sm">
+                    <div class="legend-item cursor-pointer hover:bg-white/10 rounded px-1 py-0.5 transition-all filter-crit" data-crit="CRITIQUE">
+                        <div class="legend-color" style="background: #ef4444"></div>
+                        <span>Critique</span>
+                    </div>
+                    <div class="legend-item cursor-pointer hover:bg-white/10 rounded px-1 py-0.5 transition-all filter-crit" data-crit="HAUTE">
+                        <div class="legend-color" style="background: #f97316"></div>
+                        <span>Haute</span>
+                    </div>
+                    <div class="legend-item cursor-pointer hover:bg-white/10 rounded px-1 py-0.5 transition-all filter-crit" data-crit="MOYENNE">
+                        <div class="legend-color" style="background: #eab308"></div>
+                        <span>Moyenne</span>
+                    </div>
+                    <div class="legend-item cursor-pointer hover:bg-white/10 rounded px-1 py-0.5 transition-all filter-crit" data-crit="BASSE">
+                        <div class="legend-color" style="background: #22c55e"></div>
+                        <span>Basse</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Legend Flux -->
+            <div class="glass rounded-2xl p-4">
+                <h3 class="font-semibold mb-3 flex items-center gap-2">
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    Types de Flux
+                    <button id="clearFlowFilter" class="ml-auto text-xs text-gray-400 hover:text-white hidden">✕ Reset</button>
+                </h3>
+                <div id="flowLegend" class="space-y-2 text-sm">
+                    <div class="legend-item cursor-pointer hover:bg-white/10 rounded px-1 py-0.5 transition-all filter-flow" data-flow="critical">
+                        <div class="w-8 h-0.5 bg-red-500"></div>
+                        <span>Critique</span>
+                    </div>
+                    <div class="legend-item cursor-pointer hover:bg-white/10 rounded px-1 py-0.5 transition-all filter-flow" data-flow="automated">
+                        <div class="w-8 h-0.5 bg-orange-400"></div>
+                        <span>Automatisé</span>
+                    </div>
+                    <div class="legend-item cursor-pointer hover:bg-white/10 rounded px-1 py-0.5 transition-all filter-flow" data-flow="manual">
+                        <div class="w-8 h-0.5 bg-yellow-500" style="border-top: 2px dashed #eab308"></div>
+                        <span>Manuel</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Legend Validation (hidden by default) -->
+            <div id="validationLegend" class="glass rounded-2xl p-4 hidden">
+                <h3 class="font-semibold mb-3 flex items-center gap-2">
+                    <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                    Statut Validation
+                </h3>
+                <div class="space-y-2 text-sm">
+                    <div class="legend-item">
+                        <div class="w-8 h-1 bg-green-500 rounded"></div>
+                        <span>Validé (100%)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="w-8 h-1 bg-yellow-500 rounded"></div>
+                        <span>Partiel (50-99%)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="w-8 h-1 bg-red-500 rounded"></div>
+                        <span>Problèmes détectés</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="w-8 h-1 bg-gray-500 rounded"></div>
+                        <span>Non validé</span>
+                    </div>
+                </div>
+                <div class="mt-4 pt-3 border-t border-white/10">
+                    <a href="{% url 'cartography:validation_dashboard' %}" class="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1">
+                        <i data-lucide="external-link" class="w-3 h-3"></i>
+                        Voir le dashboard validation
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Selected Node Info -->
+            <div id="nodeInfo" class="glass rounded-2xl p-4 hidden">
+                <h3 class="font-semibold mb-3 flex items-center gap-2">
+                    <i data-lucide="server" class="w-4 h-4"></i>
+                    <span id="nodeTitle">Système</span>
+                </h3>
+                <div id="nodeContent" class="space-y-3 text-sm">
+                    <!-- Dynamic content -->
+                </div>
+                <a id="nodeLink" href="#" class="mt-4 flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg transition-all text-sm">
+                    <i data-lucide="external-link" class="w-4 h-4"></i>
+                    Voir détails
+                </a>
+            </div>
+            
+            <!-- Selected Edge Info -->
+            <div id="edgeInfo" class="glass rounded-2xl p-4 hidden">
+                <h3 class="font-semibold mb-3 flex items-center gap-2">
+                    <i data-lucide="arrow-right-left" class="w-4 h-4"></i>
+                    <span id="edgeTitle">Flux</span>
+                </h3>
+                <div id="edgeContent" class="space-y-3 text-sm">
+                    <!-- Dynamic content -->
+                </div>
+                <a id="edgeLink" href="#" class="mt-4 flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 px-4 py-2 rounded-lg transition-all text-sm">
+                    <i data-lucide="external-link" class="w-4 h-4"></i>
+                    Voir détails
+                </a>
+            </div>
+            
+            <!-- Stats -->
+            <div class="glass rounded-2xl p-4">
+                <h3 class="font-semibold mb-3 flex items-center gap-2">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+                    Statistiques
+                </h3>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Nœuds affichés</span>
+                        <span id="nodeCount" class="font-semibold">0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Flux affichés</span>
+                        <span id="edgeCount" class="font-semibold">0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Instructions -->
+            <div class="glass rounded-2xl p-4">
+                <h3 class="font-semibold mb-3 flex items-center gap-2">
+                    <i data-lucide="mouse-pointer-click" class="w-4 h-4"></i>
+                    Interactions
+                </h3>
+                <ul class="space-y-2 text-sm text-gray-400">
+                    <li>• Cliquez sur un nœud pour voir les détails</li>
+                    <li>• Cliquez sur un flux pour voir les champs</li>
+                    <li>• Glissez pour déplacer la vue</li>
+                    <li>• Molette pour zoomer</li>
+                    <li>• Double-clic pour centrer</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let cy = null;
+    let showStructures = true;
+    
+    function initGraph(data) {
+        const container = document.getElementById('cy');
+        if (!container) {
+            console.error('Container #cy not found');
+            return;
+        }
+        
+        // Build elements array
+        const elements = [];
+        
+        // Add structure nodes as regular nodes (not compound parents)
+        if (showStructures) {
+            data.nodes.filter(n => n.type === 'structure').forEach(node => {
+                elements.push({
+                    data: {
+                        id: node.id,
+                        label: node.label,
+                        name: node.name,
+                        nodeType: 'structure',
+                        color: node.color || '#3b82f6',
+                        system_count: node.system_count,
+                        description: node.description || '',
+                    }
+                });
+            });
+        }
+        
+        // Add system nodes WITH parent (compound nodes)
+        data.nodes.filter(n => n.type === 'system').forEach(node => {
+            const el = {
+                data: {
+                    id: node.id,
+                    label: node.label,
+                    name: node.name,
+                    nodeType: 'system',
+                    category: node.category || '',
+                    structure: node.structure || '',
+                    criticality: node.criticality || 'MOYENNE',
+                    color: node.color || '#6b7280',
+                    vendor: node.vendor || '',
+                    mode: node.mode || '',
+                }
+            };
+            if (showStructures && node.parent) {
+                el.data.parent = node.parent;
+            }
+            elements.push(el);
+        });
+        
+        // Add data flow edges
+        data.edges.forEach(edge => {
+            elements.push({
+                data: {
+                    id: edge.id,
+                    source: edge.source,
+                    target: edge.target,
+                    label: edge.label,
+                    frequency: edge.frequency,
+                    protocol: edge.protocol,
+                    automated: edge.is_automated,
+                    critical: edge.is_critical,
+                    format: edge.format || '',
+                }
+            });
+        });
+        
+        // Create cytoscape instance
+        cy = cytoscape({
+            container: container,
+            elements: elements,
+            wheelSensitivity: 0.3,
+            minZoom: 0.1,
+            maxZoom: 3,
+            style: [
+                {
+                    selector: 'node[nodeType="structure"]',
+                    style: {
+                        'shape': 'roundrectangle',
+                        'background-color': 'data(color)',
+                        'background-opacity': 0.2,
+                        'border-width': 3,
+                        'border-color': 'data(color)',
+                        'border-opacity': 1,
+                        'label': 'data(label)',
+                        'color': '#ffffff',
+                        'text-valign': 'top',
+                        'text-halign': 'center',
+                        'font-size': '11px',
+                        'font-weight': 'bold',
+                        'padding': '25px',
+                        'text-margin-y': -5,
+                        'text-background-color': 'data(color)',
+                        'text-background-opacity': 1,
+                        'text-background-padding': '5px',
+                        'text-background-shape': 'roundrectangle',
+                    }
+                },
+                {
+                    selector: 'node[nodeType="system"]',
+                    style: {
+                        'background-color': 'data(color)',
+                        'label': 'data(label)',
+                        'color': '#ffffff',
+                        'text-valign': 'bottom',
+                        'text-margin-y': 5,
+                        'font-size': '9px',
+                        'font-weight': '600',
+                        'width': 40,
+                        'height': 40,
+                        'border-width': 2,
+                        'border-color': '#ffffff',
+                        'border-opacity': 0.5,
+                        'text-outline-width': 1,
+                        'text-outline-color': '#000',
+                    }
+                },
+                {
+                    selector: 'node:selected',
+                    style: {
+                        'border-width': 4,
+                        'border-color': '#ffffff',
+                        'border-opacity': 1,
+                    }
+                },
+                {
+                    selector: 'edge[?isStructureLink]',
+                    style: {
+                        'width': 1,
+                        'line-color': 'data(color)',
+                        'opacity': 0.3,
+                        'curve-style': 'bezier',
+                        'line-style': 'dotted',
+                        'target-arrow-shape': 'none',
+                    }
+                },
+                {
+                    selector: 'edge',
+                    style: {
+                        'width': 2,
+                        'line-color': '#f59e0b',
+                        'target-arrow-color': '#f59e0b',
+                        'target-arrow-shape': 'triangle',
+                        'curve-style': 'bezier',
+                        'opacity': 0.7,
+                        'arrow-scale': 1,
+                        'line-style': 'dashed',
+                    }
+                },
+                {
+                    selector: 'edge[?critical]',
+                    style: {
+                        'line-color': '#f59e0b',
+                        'target-arrow-color': '#f59e0b',
+                        'width': 2,
+                        'opacity': 0.9,
+                    }
+                },
+                {
+                    selector: 'edge[!automated]',
+                    style: {
+                        'line-style': 'dashed',
+                        'line-color': '#f59e0b',
+                        'target-arrow-color': '#f59e0b',
+                    }
+                },
+                {
+                    selector: 'edge:selected',
+                    style: {
+                        'width': 3,
+                        'line-color': '#22c55e',
+                        'target-arrow-color': '#22c55e',
+                        'opacity': 1,
+                    }
+                },
+                {
+                    selector: '.faded',
+                    style: {
+                        'opacity': 0.15,
+                    }
+                },
+                {
+                    selector: '.highlighted',
+                    style: {
+                        'opacity': 1,
+                        'border-width': 4,
+                    }
+                }
+            ],
+        });
+        
+        // Use cose-bilkent layout
+        cy.layout({
+            name: 'cose-bilkent',
+            animate: false,
+            fit: true,
+            padding: 30,
+            nodeRepulsion: 4500,
+            idealEdgeLength: 70,
+            edgeElasticity: 0.45,
+            nestingFactor: 0.1,
+            gravity: 0.25,
+            numIter: 2500,
+            tile: true,
+            tilingPaddingVertical: 20,
+            tilingPaddingHorizontal: 20,
+            gravityRangeCompound: 1.5,
+            gravityCompound: 1.0,
+            gravityRange: 3.8,
+            randomize: true,
+        }).run();
+        
+        // Update stats
+        const sysCount = data.nodes.filter(n => n.type === 'system').length;
+        const strCount = data.nodes.filter(n => n.type === 'structure').length;
+        document.getElementById('nodeCount').textContent = showStructures ? `${sysCount} / ${strCount}` : sysCount;
+        document.getElementById('edgeCount').textContent = data.edges.length;
+        
+        // Click handlers - use side panel
+        cy.on('tap', 'node', function(evt) {
+            const d = evt.target.data();
+            document.getElementById('edgeInfo').classList.add('hidden');
+            document.getElementById('nodeInfo').classList.remove('hidden');
+            
+            if (d.nodeType === 'structure') {
+                document.getElementById('nodeTitle').textContent = d.label + ' (Structure)';
+                document.getElementById('nodeContent').innerHTML = `
+                    <p><span class="text-gray-400">Nom:</span> ${d.name}</p>
+                    <p><span class="text-gray-400">Systèmes:</span> ${d.system_count}</p>
+                    <p class="text-gray-400 text-xs mt-2">${d.description || ''}</p>
+                `;
+                document.getElementById('nodeLink').classList.add('hidden');
+            } else {
+                document.getElementById('nodeTitle').textContent = d.label;
+                document.getElementById('nodeContent').innerHTML = `
+                    <p><span class="text-gray-400">Nom:</span> ${d.name}</p>
+                    <p><span class="text-gray-400">Structure:</span> ${d.structure}</p>
+                    <p><span class="text-gray-400">Catégorie:</span> ${d.category}</p>
+                    <p><span class="text-gray-400">Fournisseur:</span> ${d.vendor || 'N/A'}</p>
+                    <p><span class="text-gray-400">Mode:</span> ${d.mode || 'N/A'}</p>
+                    <p><span class="text-gray-400">Criticité:</span> <span style="background:${d.color}" class="px-2 py-0.5 rounded text-xs">${d.criticality}</span></p>
+                `;
+                document.getElementById('nodeLink').classList.remove('hidden');
+                document.getElementById('nodeLink').href = '/systems/' + d.id.replace('sys_', '') + '/';
+            }
+        });
+        
+        cy.on('tap', 'edge', function(evt) {
+            const d = evt.target.data();
+            if (!d.label) return;
+            
+            document.getElementById('nodeInfo').classList.add('hidden');
+            document.getElementById('edgeInfo').classList.remove('hidden');
+            document.getElementById('edgeTitle').textContent = d.label;
+            document.getElementById('edgeContent').innerHTML = `
+                <p><span class="text-gray-400">Fréquence:</span> ${d.frequency || 'N/A'}</p>
+                <p><span class="text-gray-400">Protocole:</span> ${d.protocol || 'N/A'}</p>
+                <p><span class="text-gray-400">Format:</span> ${d.format || 'N/A'}</p>
+                <p><span class="text-gray-400">Automatisé:</span> ${d.automated ? 'Oui' : 'Non'}</p>
+                <p><span class="text-gray-400">Critique:</span> ${d.critical ? 'Oui' : 'Non'}</p>
+            `;
+            document.getElementById('edgeLink').href = '/flows/' + d.id.replace('flow_', '') + '/';
+        });
+        
+        cy.on('tap', function(evt) {
+            if (evt.target === cy) {
+                document.getElementById('nodeInfo').classList.add('hidden');
+                document.getElementById('edgeInfo').classList.add('hidden');
+            }
+        });
+    }
+    
+    function loadData() {
+        const cat = document.getElementById('categoryFilter').value;
+        const str = document.getElementById('structureFilter').value;
+        let url = '/api/graph-data/?show_structures=' + showStructures;
+        if (cat) url += '&category=' + cat;
+        if (str) url += '&structure=' + str;
+        
+        fetch(url)
+            .then(r => {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            })
+            .then(data => {
+                if (cy) cy.destroy();
+                initGraph(data);
+                console.log('Graph initialized with', data.nodes.length, 'nodes');
+            })
+            .catch(err => console.error('Error loading graph:', err));
+    }
+    
+    document.getElementById('categoryFilter').addEventListener('change', loadData);
+    document.getElementById('structureFilter').addEventListener('change', loadData);
+    document.getElementById('toggleStructures').addEventListener('click', function() {
+        showStructures = !showStructures;
+        this.classList.toggle('active', showStructures);
+        loadData();
+    });
+    document.getElementById('resetBtn').addEventListener('click', function() {
+        document.getElementById('categoryFilter').value = '';
+        document.getElementById('structureFilter').value = '';
+        showStructures = true;
+        document.getElementById('toggleStructures').classList.add('active');
+        clearAllFilters();
+        loadData();
+    });
+    document.getElementById('fitBtn').addEventListener('click', function() {
+        if (cy) cy.fit(50);
+    });
+    
+    // Legend filter functions
+    function clearAllFilters() {
+        if (!cy) return;
+        cy.elements().removeClass('faded highlighted');
+        document.querySelectorAll('.filter-struct, .filter-crit, .filter-flow').forEach(el => el.classList.remove('active-filter'));
+        document.getElementById('clearStructFilter').classList.add('hidden');
+        document.getElementById('clearCritFilter').classList.add('hidden');
+        document.getElementById('clearFlowFilter').classList.add('hidden');
+    }
+    
+    // Structure filter
+    document.querySelectorAll('.filter-struct').forEach(item => {
+        item.addEventListener('click', function() {
+            if (!cy) return;
+            const structCode = this.dataset.structCode;
+            clearAllFilters();
+            this.classList.add('active-filter');
+            document.getElementById('clearStructFilter').classList.remove('hidden');
+            
+            cy.elements().addClass('faded');
+            cy.nodes().filter(n => n.data('structure') === structCode || n.data('label') === structCode).removeClass('faded').addClass('highlighted');
+            cy.nodes().filter(n => n.data('structure') === structCode || n.data('label') === structCode).connectedEdges().removeClass('faded');
+        });
+    });
+    
+    document.getElementById('clearStructFilter').addEventListener('click', function(e) {
+        e.stopPropagation();
+        clearAllFilters();
+    });
+    
+    // Criticality filter
+    document.querySelectorAll('.filter-crit').forEach(item => {
+        item.addEventListener('click', function() {
+            if (!cy) return;
+            const crit = this.dataset.crit;
+            clearAllFilters();
+            this.classList.add('active-filter');
+            document.getElementById('clearCritFilter').classList.remove('hidden');
+            
+            cy.elements().addClass('faded');
+            cy.nodes('[nodeType="system"]').filter(n => n.data('criticality') === crit).removeClass('faded').addClass('highlighted');
+            cy.nodes('[nodeType="system"]').filter(n => n.data('criticality') === crit).connectedEdges().removeClass('faded');
+            // Show parent structures
+            cy.nodes('[nodeType="system"]').filter(n => n.data('criticality') === crit).parent().removeClass('faded');
+        });
+    });
+    
+    document.getElementById('clearCritFilter').addEventListener('click', function(e) {
+        e.stopPropagation();
+        clearAllFilters();
+    });
+    
+    // Flow type filter
+    document.querySelectorAll('.filter-flow').forEach(item => {
+        item.addEventListener('click', function() {
+            if (!cy) return;
+            const flowType = this.dataset.flow;
+            clearAllFilters();
+            this.classList.add('active-filter');
+            document.getElementById('clearFlowFilter').classList.remove('hidden');
+            
+            cy.elements().addClass('faded');
+            let edges;
+            if (flowType === 'critical') {
+                edges = cy.edges().filter(e => e.data('critical') === true);
+            } else if (flowType === 'automated') {
+                edges = cy.edges().filter(e => e.data('automated') === true);
+            } else if (flowType === 'manual') {
+                edges = cy.edges().filter(e => e.data('automated') === false);
+            }
+            edges.removeClass('faded').addClass('highlighted');
+            edges.connectedNodes().removeClass('faded');
+            edges.connectedNodes().parent().removeClass('faded');
+        });
+    });
+    
+    document.getElementById('clearFlowFilter').addEventListener('click', function(e) {
+        e.stopPropagation();
+        clearAllFilters();
+    });
+    
+    // Validation mode toggle
+    let showValidation = false;
+    document.getElementById('toggleValidation').addEventListener('click', function() {
+        showValidation = !showValidation;
+        this.classList.toggle('active', showValidation);
+        document.getElementById('validationLegend').classList.toggle('hidden', !showValidation);
+        
+        if (showValidation) {
+            loadDataWithValidation();
+        } else {
+            loadData();
+        }
+    });
+    
+    function loadDataWithValidation() {
+        const category = document.getElementById('categoryFilter').value;
+        const structure = document.getElementById('structureFilter').value;
+        
+        let url = '{% url "cartography:api_graph_data_validation" %}?show_validation=true';
+        if (category) url += '&category=' + category;
+        if (structure) url += '&structure=' + structure;
+        url += '&show_structures=' + showStructures;
+        
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                initGraphWithValidation(data);
+                updateStats();
+            })
+            .catch(error => console.error('Error loading validation data:', error));
+    }
+    
+    function initGraphWithValidation(data) {
+        const container = document.getElementById('cy');
+        if (!container) return;
+        
+        const elements = [];
+        
+        // Add structure nodes
+        if (showStructures) {
+            data.nodes.filter(n => n.type === 'structure').forEach(node => {
+                elements.push({
+                    data: {
+                        id: node.id,
+                        label: node.label,
+                        name: node.name,
+                        nodeType: 'structure',
+                        color: node.color || '#3b82f6',
+                    }
+                });
+            });
+        }
+        
+        // Add system nodes
+        data.nodes.filter(n => n.type === 'system').forEach(node => {
+            const el = {
+                data: {
+                    id: node.id,
+                    label: node.label,
+                    name: node.name,
+                    nodeType: 'system',
+                    category: node.category || '',
+                    structure: node.structure || '',
+                    criticality: node.criticality || 'MOYENNE',
+                    color: node.color || '#6b7280',
+                    vendor: node.vendor || '',
+                    mode: node.mode || '',
+                }
+            };
+            if (showStructures && node.parent) {
+                el.data.parent = node.parent;
+            }
+            elements.push(el);
+        });
+        
+        // Add edges with validation status
+        data.edges.forEach(edge => {
+            let validationColor = '#6b7280'; // gray - not validated
+            if (edge.validation_status === 'VALIDATED') {
+                validationColor = '#22c55e'; // green
+            } else if (edge.validation_status === 'PARTIAL') {
+                validationColor = '#eab308'; // yellow
+            } else if (edge.validation_status === 'ISSUES') {
+                validationColor = '#ef4444'; // red
+            } else if (edge.validation_status === 'PENDING') {
+                validationColor = '#3b82f6'; // blue
+            }
+            
+            elements.push({
+                data: {
+                    id: edge.id,
+                    source: edge.source,
+                    target: edge.target,
+                    label: edge.label,
+                    frequency: edge.frequency,
+                    protocol: edge.protocol,
+                    automated: edge.is_automated,
+                    critical: edge.is_critical,
+                    format: edge.format || '',
+                    validationStatus: edge.validation_status,
+                    matchRate: edge.match_rate,
+                    validationColor: validationColor,
+                    totalFields: edge.total_fields,
+                    confirmedFields: edge.confirmed_fields,
+                    issuesFields: edge.issues_fields,
+                }
+            });
+        });
+        
+        // Create cytoscape with validation styling
+        cy = cytoscape({
+            container: container,
+            elements: elements,
+            wheelSensitivity: 0.3,
+            minZoom: 0.1,
+            maxZoom: 3,
+            style: [
+                {
+                    selector: 'node[nodeType="structure"]',
+                    style: {
+                        'shape': 'roundrectangle',
+                        'background-color': 'data(color)',
+                        'background-opacity': 0.2,
+                        'border-width': 3,
+                        'border-color': 'data(color)',
+                        'label': 'data(label)',
+                        'color': '#ffffff',
+                        'text-valign': 'top',
+                        'text-halign': 'center',
+                        'font-size': '11px',
+                        'font-weight': 'bold',
+                        'padding': '25px',
+                    }
+                },
+                {
+                    selector: 'node[nodeType="system"]',
+                    style: {
+                        'shape': 'roundrectangle',
+                        'background-color': 'data(color)',
+                        'width': 90,
+                        'height': 45,
+                        'label': 'data(label)',
+                        'color': '#ffffff',
+                        'text-valign': 'center',
+                        'text-halign': 'center',
+                        'font-size': '10px',
+                        'font-weight': 'bold',
+                        'border-width': 2,
+                        'border-color': '#ffffff',
+                        'border-opacity': 0.3,
+                    }
+                },
+                {
+                    selector: 'edge',
+                    style: {
+                        'width': 4,
+                        'line-color': 'data(validationColor)',
+                        'target-arrow-color': 'data(validationColor)',
+                        'target-arrow-shape': 'triangle',
+                        'curve-style': 'bezier',
+                        'arrow-scale': 1.2,
+                    }
+                },
+                {
+                    selector: 'edge[validationStatus="ISSUES"]',
+                    style: {
+                        'line-style': 'dashed',
+                        'width': 5,
+                    }
+                },
+                {
+                    selector: '.faded',
+                    style: { 'opacity': 0.15 }
+                },
+                {
+                    selector: '.highlighted',
+                    style: { 'opacity': 1 }
+                }
+            ],
+            layout: {
+                name: 'cose-bilkent',
+                animate: false,
+                nodeDimensionsIncludeLabels: true,
+                idealEdgeLength: 150,
+                nodeRepulsion: 8000,
+                padding: 50,
+            }
+        });
+        
+        // Click handlers for validation mode
+        cy.on('tap', 'edge', function(evt) {
+            const edge = evt.target;
+            const data = edge.data();
+            
+            document.getElementById('nodeInfo').classList.add('hidden');
+            document.getElementById('edgeInfo').classList.remove('hidden');
+            document.getElementById('edgeTitle').textContent = data.label;
+            
+            let statusBadge = '';
+            if (data.validationStatus === 'VALIDATED') {
+                statusBadge = '<span class="px-2 py-1 rounded bg-green-500/20 text-green-400 text-xs">Validé</span>';
+            } else if (data.validationStatus === 'PARTIAL') {
+                statusBadge = '<span class="px-2 py-1 rounded bg-yellow-500/20 text-yellow-400 text-xs">Partiel</span>';
+            } else if (data.validationStatus === 'ISSUES') {
+                statusBadge = '<span class="px-2 py-1 rounded bg-red-500/20 text-red-400 text-xs">Problèmes</span>';
+            } else {
+                statusBadge = '<span class="px-2 py-1 rounded bg-gray-500/20 text-gray-400 text-xs">Non validé</span>';
+            }
+            
+            let matchRateHtml = '';
+            if (data.matchRate !== null && data.matchRate !== undefined) {
+                const color = data.matchRate >= 80 ? 'green' : data.matchRate >= 50 ? 'yellow' : 'red';
+                matchRateHtml = `
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-400">Correspondance</span>
+                        <span class="font-bold text-${color}-400">${data.matchRate}%</span>
+                    </div>
+                    <div class="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+                        <div class="h-full bg-${color}-500 rounded-full" style="width: ${data.matchRate}%"></div>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('edgeContent').innerHTML = `
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-400">Statut</span>
+                    ${statusBadge}
+                </div>
+                ${matchRateHtml}
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Champs confirmés</span>
+                    <span class="text-green-400">${data.confirmedFields || 0}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Problèmes</span>
+                    <span class="text-red-400">${data.issuesFields || 0}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Fréquence</span>
+                    <span>${data.frequency}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Protocole</span>
+                    <span>${data.protocol}</span>
+                </div>
+            `;
+            
+            const flowId = data.id.replace('flow_', '');
+            document.getElementById('edgeLink').href = '/validation/flow/' + flowId + '/';
+            document.getElementById('edgeLink').innerHTML = '<i data-lucide="check-circle-2" class="w-4 h-4"></i> Voir validation';
+            lucide.createIcons();
+        });
+        
+        cy.on('tap', 'node[nodeType="system"]', function(evt) {
+            const node = evt.target;
+            const data = node.data();
+            
+            document.getElementById('edgeInfo').classList.add('hidden');
+            document.getElementById('nodeInfo').classList.remove('hidden');
+            document.getElementById('nodeTitle').textContent = data.name;
+            
+            document.getElementById('nodeContent').innerHTML = `
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Code</span>
+                    <span class="font-mono">${data.label}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Structure</span>
+                    <span>${data.structure}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Catégorie</span>
+                    <span>${data.category}</span>
+                </div>
+            `;
+            
+            const sysId = data.id.replace('sys_', '');
+            document.getElementById('nodeLink').href = '/systems/' + sysId + '/';
+            lucide.createIcons();
+        });
+    }
+    
+    // Initial load
+    loadData();
+});
+</script>
+{% endblock %}

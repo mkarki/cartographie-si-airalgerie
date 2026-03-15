@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+
+{% block title %}Validation - {{ flow.name }}{% endblock %}
+
+{% block content %}
+<div class="p-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center gap-2 text-gray-400 text-sm mb-4">
+            <a href="{% url 'cartography:validation_dashboard' %}" class="hover:text-white">Validation</a>
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            <span>{{ flow.name }}</span>
+        </div>
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold mb-2">{{ flow.name }}</h1>
+                <p class="text-gray-400">{{ flow.source.code }} → {{ flow.target.code }}</p>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="{% url 'cartography:flow_detail' flow.pk %}" class="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition flex items-center gap-2">
+                    <i data-lucide="external-link" class="w-4 h-4"></i>
+                    Voir le flux
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats de validation -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div class="glass rounded-xl p-6">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-gray-400">Champs analysés</span>
+                <span class="text-2xl font-bold">{{ total_fields }}</span>
+            </div>
+            <div class="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+                <div class="h-full bg-blue-500 rounded-full" style="width: 100%"></div>
+            </div>
+        </div>
+        
+        <div class="glass rounded-xl p-6">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-gray-400">Confirmés</span>
+                <span class="text-2xl font-bold text-green-400">{{ confirmed_fields }}</span>
+            </div>
+            <div class="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+                <div class="h-full bg-green-500 rounded-full" style="width: {% if total_fields > 0 %}{{ confirmed_fields|divisibleby:total_fields }}{% else %}0{% endif %}%"></div>
+            </div>
+        </div>
+        
+        <div class="glass rounded-xl p-6">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-gray-400">Problèmes</span>
+                <span class="text-2xl font-bold text-red-400">{{ issues_fields }}</span>
+            </div>
+            <div class="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+                <div class="h-full bg-red-500 rounded-full" style="width: {% if total_fields > 0 %}{{ issues_fields|divisibleby:total_fields }}{% else %}0{% endif %}%"></div>
+            </div>
+        </div>
+        
+        <div class="glass rounded-xl p-6">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-gray-400">Taux de correspondance</span>
+                <span class="text-2xl font-bold {% if match_rate >= 80 %}text-green-400{% elif match_rate >= 50 %}text-yellow-400{% else %}text-red-400{% endif %}">{{ match_rate }}%</span>
+            </div>
+            <div class="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+                <div class="h-full {% if match_rate >= 80 %}bg-green-500{% elif match_rate >= 50 %}bg-yellow-500{% else %}bg-red-500{% endif %} rounded-full" style="width: {{ match_rate }}%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Infos du flux -->
+    <div class="glass rounded-xl p-6 mb-8">
+        <h2 class="text-xl font-semibold mb-4">Informations du Flux</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div>
+                <p class="text-gray-400 text-sm mb-1">Fréquence</p>
+                <p class="font-medium">{{ flow.get_frequency_display }}</p>
+            </div>
+            <div>
+                <p class="text-gray-400 text-sm mb-1">Protocole</p>
+                <p class="font-medium">{{ flow.get_protocol_display }}</p>
+            </div>
+            <div>
+                <p class="text-gray-400 text-sm mb-1">Format</p>
+                <p class="font-medium">{{ flow.format|default:"-" }}</p>
+            </div>
+            <div>
+                <p class="text-gray-400 text-sm mb-1">Volume</p>
+                <p class="font-medium">{{ flow.volume|default:"-" }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tableau de comparaison Hypothèse vs Réalité -->
+    <div class="glass rounded-xl p-6 mb-8">
+        <h2 class="text-xl font-semibold mb-6">Comparaison Hypothèse vs Réalité</h2>
+        
+        {% if hypotheses %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="text-left text-gray-400 text-sm border-b border-white/10">
+                        <th class="pb-3 font-medium">Champ</th>
+                        <th class="pb-3 font-medium">Statut</th>
+                        <th class="pb-3 font-medium">Type (Hypothèse)</th>
+                        <th class="pb-3 font-medium">Type (Réel)</th>
+                        <th class="pb-3 font-medium">Format (Hypothèse)</th>
+                        <th class="pb-3 font-medium">Format (Réel)</th>
+                        <th class="pb-3 font-medium">Exemple Réel</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    {% for h in hypotheses %}
+                    <tr class="hover:bg-white/5 {% if h.status == 'INCORRECT' %}bg-red-500/5{% elif h.status == 'CONFIRMED' %}bg-green-500/5{% endif %}">
+                        <td class="py-4 font-medium">{{ h.field_name }}</td>
+                        <td class="py-4">
+                            {% if h.status == 'CONFIRMED' %}
+                            <span class="px-2 py-1 rounded bg-green-500/20 text-green-400 text-sm flex items-center gap-1 w-fit">
+                                <i data-lucide="check" class="w-3 h-3"></i> Confirmé
+                            </span>
+                            {% elif h.status == 'PARTIAL' %}
+                            <span class="px-2 py-1 rounded bg-yellow-500/20 text-yellow-400 text-sm flex items-center gap-1 w-fit">
+                                <i data-lucide="alert-circle" class="w-3 h-3"></i> Partiel
+                            </span>
+                            {% elif h.status == 'INCORRECT' %}
+                            <span class="px-2 py-1 rounded bg-red-500/20 text-red-400 text-sm flex items-center gap-1 w-fit">
+                                <i data-lucide="x" class="w-3 h-3"></i> Incorrect
+                            </span>
+                            {% else %}
+                            <span class="px-2 py-1 rounded bg-gray-500/20 text-gray-400 text-sm flex items-center gap-1 w-fit">
+                                <i data-lucide="help-circle" class="w-3 h-3"></i> Hypothèse
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="py-4 text-gray-400">{{ h.hypothesis_type|default:"-" }}</td>
+                        <td class="py-4 {% if h.hypothesis_type != h.real_type and h.real_type %}text-yellow-400{% endif %}">
+                            {{ h.real_type|default:"-" }}
+                            {% if h.hypothesis_type != h.real_type and h.real_type %}
+                            <i data-lucide="alert-triangle" class="w-4 h-4 inline ml-1"></i>
+                            {% endif %}
+                        </td>
+                        <td class="py-4 text-gray-400">{{ h.hypothesis_format|default:"-" }}</td>
+                        <td class="py-4 {% if h.hypothesis_format != h.real_format and h.real_format %}text-yellow-400{% endif %}">
+                            {{ h.real_format|default:"-" }}
+                            {% if h.hypothesis_format != h.real_format and h.real_format %}
+                            <i data-lucide="alert-triangle" class="w-4 h-4 inline ml-1"></i>
+                            {% endif %}
+                        </td>
+                        <td class="py-4 font-mono text-sm text-gray-400">{{ h.real_example|default:"-"|truncatechars:30 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-12">
+            <i data-lucide="file-question" class="w-16 h-16 text-gray-600 mx-auto mb-4"></i>
+            <p class="text-gray-400">Aucune hypothèse définie pour ce flux</p>
+            <p class="text-sm text-gray-500 mt-2">Importez des données pour générer les hypothèses</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Historique des validations -->
+    <div class="glass rounded-xl p-6">
+        <h2 class="text-xl font-semibold mb-6">Historique des Validations</h2>
+        
+        {% if validations %}
+        <div class="space-y-4">
+            {% for v in validations %}
+            <div class="p-4 rounded-lg bg-white/5">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg {% if v.status == 'VALIDATED' %}bg-green-500/20{% elif v.status == 'ISSUES' %}bg-red-500/20{% else %}bg-gray-500/20{% endif %} flex items-center justify-center">
+                            {% if v.status == 'VALIDATED' %}
+                            <i data-lucide="check-circle" class="w-5 h-5 text-green-400"></i>
+                            {% elif v.status == 'ISSUES' %}
+                            <i data-lucide="alert-circle" class="w-5 h-5 text-red-400"></i>
+                            {% else %}
+                            <i data-lucide="clock" class="w-5 h-5 text-gray-400"></i>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <p class="font-medium">{{ v.sample.name }}</p>
+                            <p class="text-sm text-gray-400">{{ v.validated_at|date:"d/m/Y H:i" }}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="text-right">
+                            <p class="text-sm text-gray-400">Correspondance</p>
+                            <p class="font-bold {% if v.match_percentage >= 80 %}text-green-400{% elif v.match_percentage >= 50 %}text-yellow-400{% else %}text-red-400{% endif %}">{{ v.match_percentage }}%</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-4 text-sm">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-green-500"></span>
+                        <span class="text-gray-400">{{ v.fields_confirmed }} confirmés</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-red-500"></span>
+                        <span class="text-gray-400">{{ v.fields_with_issues }} problèmes</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+                        <span class="text-gray-400">{{ v.fields_new_discovered }} nouveaux</span>
+                    </div>
+                </div>
+                {% if v.notes %}
+                <p class="mt-3 text-sm text-gray-400 border-t border-white/10 pt-3">{{ v.notes }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-8">
+            <p class="text-gray-400">Aucune validation effectuée</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

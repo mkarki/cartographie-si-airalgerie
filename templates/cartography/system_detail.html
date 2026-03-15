@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ system.code }}{% endblock %}
+
+{% block content %}
+<div class="p-8">
+    <!-- Breadcrumb -->
+    <div class="flex items-center gap-2 text-sm text-gray-400 mb-6">
+        <a href="{% url 'cartography:systems_list' %}" class="hover:text-white">Systèmes</a>
+        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        <span class="text-white">{{ system.code }}</span>
+    </div>
+    
+    <!-- Header -->
+    <div class="glass rounded-2xl p-6 mb-6">
+        <div class="flex items-start justify-between">
+            <div class="flex items-center gap-4">
+                <div class="w-16 h-16 rounded-2xl flex items-center justify-center" style="background: {{ system.criticality_color }}20">
+                    <i data-lucide="server" class="w-8 h-8" style="color: {{ system.criticality_color }}"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold">{{ system.code }}</h1>
+                    <p class="text-gray-400">{{ system.name }}</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="px-3 py-1 rounded-full text-sm" style="background: {{ system.criticality_color }}30; color: {{ system.criticality_color }}">
+                    {{ system.criticality }}
+                </span>
+                <span class="px-3 py-1 rounded-full text-sm bg-white/10">
+                    {{ system.get_mode_display }}
+                </span>
+                {% if system.country != 'DZ' %}
+                <span class="px-3 py-1 rounded-full text-sm bg-orange-500/20 text-orange-400">
+                    🌍 {{ system.get_country_display }}
+                </span>
+                {% else %}
+                <span class="px-3 py-1 rounded-full text-sm bg-green-500/20 text-green-400">
+                    🇩🇿 Algérie
+                </span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Info Card -->
+        <div class="glass rounded-2xl p-6">
+            <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                <i data-lucide="info" class="w-5 h-5 text-blue-400"></i>
+                Informations
+            </h3>
+            <div class="space-y-4">
+                <div>
+                    <p class="text-xs text-gray-400 mb-1">Fournisseur</p>
+                    <p class="font-medium">{{ system.vendor }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-400 mb-1">Catégorie</p>
+                    <p class="font-medium">{{ system.category.name }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-400 mb-1">Structure Responsable</p>
+                    <p class="font-medium">{{ system.structure.code }} - {{ system.structure.name }}</p>
+                </div>
+                {% if system.inventory_id %}
+                <div>
+                    <p class="text-xs text-gray-400 mb-1">ID Inventaire</p>
+                    <p class="font-medium">#{{ system.inventory_id }}</p>
+                </div>
+                {% endif %}
+                {% if system.version %}
+                <div>
+                    <p class="text-xs text-gray-400 mb-1">Version</p>
+                    <p class="font-medium">{{ system.version }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Description -->
+        <div class="lg:col-span-2 glass rounded-2xl p-6">
+            <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                <i data-lucide="file-text" class="w-5 h-5 text-green-400"></i>
+                Description
+            </h3>
+            <p class="text-gray-300 leading-relaxed">{{ system.description }}</p>
+            
+            {% if system.is_master_for %}
+            <div class="mt-6 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                <h4 class="text-sm font-semibold text-blue-400 mb-2 flex items-center gap-2">
+                    <i data-lucide="database" class="w-4 h-4"></i>
+                    Système Maître pour
+                </h4>
+                <p class="text-sm text-gray-300">{{ system.is_master_for }}</p>
+            </div>
+            {% endif %}
+            
+            {% if system.modules %}
+            <div class="mt-6">
+                <h4 class="text-sm font-semibold text-gray-400 mb-3">Modules</h4>
+                <div class="flex flex-wrap gap-2">
+                    {% for module in system.modules %}
+                    <span class="px-3 py-1 rounded-full text-xs bg-white/10">{{ module }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Flows -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <!-- Incoming Flows -->
+        <div class="glass rounded-2xl p-6">
+            <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                <i data-lucide="arrow-down-left" class="w-5 h-5 text-green-400"></i>
+                Flux Entrants
+                <span class="ml-auto text-sm bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">{{ incoming_flows.count }}</span>
+            </h3>
+            <div class="space-y-3">
+                {% for flow in incoming_flows %}
+                <a href="{% url 'cartography:flow_detail' flow.pk %}" class="block p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-all">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="font-medium text-blue-400">{{ flow.source.code }}</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4 text-gray-500"></i>
+                            <span class="font-medium text-green-400">{{ system.code }}</span>
+                        </div>
+                        {% if not flow.is_automated %}
+                        <span class="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded">Manuel</span>
+                        {% endif %}
+                    </div>
+                    <p class="text-sm text-gray-400">{{ flow.name }}</p>
+                    <div class="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                        <span>{{ flow.get_frequency_display }}</span>
+                        <span>{{ flow.format }}</span>
+                    </div>
+                </a>
+                {% empty %}
+                <p class="text-gray-500 text-sm text-center py-4">Aucun flux entrant</p>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Outgoing Flows -->
+        <div class="glass rounded-2xl p-6">
+            <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                <i data-lucide="arrow-up-right" class="w-5 h-5 text-blue-400"></i>
+                Flux Sortants
+                <span class="ml-auto text-sm bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">{{ outgoing_flows.count }}</span>
+            </h3>
+            <div class="space-y-3">
+                {% for flow in outgoing_flows %}
+                <a href="{% url 'cartography:flow_detail' flow.pk %}" class="block p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-all">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="font-medium text-blue-400">{{ system.code }}</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4 text-gray-500"></i>
+                            <span class="font-medium text-green-400">{{ flow.target.code }}</span>
+                        </div>
+                        {% if not flow.is_automated %}
+                        <span class="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded">Manuel</span>
+                        {% endif %}
+                    </div>
+                    <p class="text-sm text-gray-400">{{ flow.name }}</p>
+                    <div class="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                        <span>{{ flow.get_frequency_display }}</span>
+                        <span>{{ flow.format }}</span>
+                    </div>
+                </a>
+                {% empty %}
+                <p class="text-gray-500 text-sm text-center py-4">Aucun flux sortant</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Data Domains -->
+    {% if mastered_domains or consumed_domains %}
+    <div class="glass rounded-2xl p-6 mt-6">
+        <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+            <i data-lucide="database" class="w-5 h-5 text-purple-400"></i>
+            Domaines de Données
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {% if mastered_domains %}
+            <div>
+                <h4 class="text-sm font-semibold text-green-400 mb-3">Système Maître</h4>
+                <div class="space-y-2">
+                    {% for domain in mastered_domains %}
+                    <div class="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                        <p class="font-medium">{{ domain.name }}</p>
+                        <p class="text-xs text-gray-400 mt-1">{{ domain.description }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if consumed_domains %}
+            <div>
+                <h4 class="text-sm font-semibold text-blue-400 mb-3">Consommateur</h4>
+                <div class="space-y-2">
+                    {% for domain in consumed_domains %}
+                    <div class="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                        <p class="font-medium">{{ domain.name }}</p>
+                        <p class="text-xs text-gray-400 mt-1">Master: {{ domain.master_system.code }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
