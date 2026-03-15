@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="fr" class="h-full">
 <head>
@@ -114,7 +115,7 @@
             <!-- Logo -->
             <div class="px-4 py-4 border-b border-white/10 flex-shrink-0">
                 <div class="flex items-center gap-2.5">
-                    <img src="/static/logo.png" alt="Air Algérie" class="w-8 h-8 rounded-lg object-contain">
+                    <img src="{% static 'logo.png' %}" alt="Air Algérie" class="w-8 h-8 rounded-lg object-contain bg-white p-0.5">
                     <div>
                         <h1 class="font-bold text-sm leading-tight">Air Algérie</h1>
                         <p class="text-[10px] text-gray-400">Cartographie SI</p>
