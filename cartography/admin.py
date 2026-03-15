@@ -2,7 +2,7 @@ from django.contrib import admin
 from .models import (
     Structure, SystemCategory, System, DataFlow, 
     DataField, MessageFormat, MessageField, DataDomain,
-    Questionnaire, QuestionSection, Question
+    Questionnaire, QuestionSection, Question, KeyUserAccess
 )
 
 
@@ -81,3 +81,11 @@ class QuestionSectionAdmin(admin.ModelAdmin):
     list_display = ['questionnaire', 'title', 'order']
     list_filter = ['questionnaire']
     inlines = [QuestionInline]
+
+
+@admin.register(KeyUserAccess)
+class KeyUserAccessAdmin(admin.ModelAdmin):
+    list_display = ['name', 'questionnaire', 'email', 'token', 'is_active', 'last_accessed']
+    list_filter = ['is_active', 'questionnaire']
+    search_fields = ['name', 'email', 'token']
+    readonly_fields = ['token', 'created_at', 'last_accessed']

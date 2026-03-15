@@ -225,9 +225,22 @@
                 </div>
             </nav>
             
-            <!-- Footer -->
-            <div class="px-4 py-3 border-t border-white/10 flex-shrink-0">
-                <p class="text-[10px] text-gray-600">v1.0 · © 2026 Air Algérie DSI</p>
+            <!-- Footer / User -->
+            <div class="px-3 py-3 border-t border-white/10 flex-shrink-0">
+                {% if user.is_authenticated %}
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <div class="w-6 h-6 rounded-full bg-ah-red/20 flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="user" class="w-3 h-3 text-ah-red"></i>
+                        </div>
+                        <span class="text-xs text-gray-400 truncate">{{ user.username }}</span>
+                    </div>
+                    <a href="{% url 'cartography:logout' %}" class="text-gray-600 hover:text-red-400 transition" title="Déconnexion">
+                        <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+                    </a>
+                </div>
+                {% endif %}
+                <p class="text-[10px] text-gray-700 mt-1.5">v1.0 · © 2026 Air Algérie DSI</p>
             </div>
         </aside>
         

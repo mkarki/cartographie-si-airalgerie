@@ -4,6 +4,11 @@ from . import views
 app_name = 'cartography'
 
 urlpatterns = [
+    # Auth
+    path('login/', views.login_view, name='login'),
+    path('logout/', views.logout_view, name='logout'),
+    path('key-user/', views.key_user_login, name='key_user_login'),
+    
     path('', views.dashboard, name='dashboard'),
     path('systems/', views.systems_list, name='systems_list'),
     path('systems/<int:pk>/', views.system_detail, name='system_detail'),

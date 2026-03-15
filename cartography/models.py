@@ -515,6 +515,31 @@ class Question(models.Model):
         super().save(*args, **kwargs)
 
 
+class KeyUserAccess(models.Model):
+    """Accès key user — token unique pour remplir un questionnaire"""
+    questionnaire = models.ForeignKey(Questionnaire, on_delete=models.CASCADE, related_name='access_tokens')
+    name = models.CharField(max_length=200, help_text="Nom du key user")
+    email = models.EmailField(blank=True)
+    token = models.CharField(max_length=64, unique=True, db_index=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_accessed = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['questionnaire', 'name']
+        verbose_name = "Accès Key User"
+        verbose_name_plural = "Accès Key Users"
+    
+    def __str__(self):
+        return f"{self.name} → {self.questionnaire.system_name}"
+    
+    def save(self, *args, **kwargs):
+        if not self.token:
+            import secrets
+            self.token = secrets.token_urlsafe(32)
+        super().save(*args, **kwargs)
+
+
 class FlowValidation(models.Model):
     """Validation d'un flux complet basée sur des échantillons"""
     STATUS_CHOICES = [

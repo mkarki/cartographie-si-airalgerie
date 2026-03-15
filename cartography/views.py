@@ -3,7 +3,10 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse, HttpResponse
 from django.db.models import Count, Q, Avg
 from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from django.template.loader import render_to_string
+from django.utils import timezone
 from datetime import datetime
 import markdown
 from .models import (
@@ -11,10 +14,54 @@ from .models import (
     DataField, MessageFormat, MessageField, DataDomain,
     DataSample, FlowFieldHypothesis, FlowValidation,
     ReferenceData, FlowReferential, DataImportHistory, COUNTRY_CHOICES,
-    Questionnaire, QuestionSection, Question
+    Questionnaire, QuestionSection, Question, KeyUserAccess
 )
 
 
+# ─── Auth views ───────────────────────────────────────────────────────────
+
+def login_view(request):
+    """Page de connexion admin + accès key user"""
+    if request.user.is_authenticated:
+        return redirect('cartography:dashboard')
+    error = None
+    if request.method == 'POST':
+        username = request.POST.get('username', '')
+        password = request.POST.get('password', '')
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            next_url = request.GET.get('next', '/')
+            return redirect(next_url)
+        else:
+            error = 'Identifiants incorrects.'
+    return render(request, 'cartography/login.html', {'error': error})
+
+
+def logout_view(request):
+    """Déconnexion"""
+    logout(request)
+    return redirect('cartography:login')
+
+
+def key_user_login(request):
+    """Accès key user via token — redirige vers le questionnaire"""
+    token = request.GET.get('token', '').strip()
+    if not token:
+        return redirect('cartography:login')
+    try:
+        access = KeyUserAccess.objects.select_related('questionnaire').get(token=token, is_active=True)
+        access.last_accessed = timezone.now()
+        access.save(update_fields=['last_accessed'])
+        request.session['key_user_token'] = token
+        request.session['key_user_name'] = access.name
+        request.session['key_user_questionnaire_id'] = access.questionnaire.pk
+        return redirect('cartography:questionnaire_form', pk=access.questionnaire.pk)
+    except KeyUserAccess.DoesNotExist:
+        return render(request, 'cartography/login.html', {'error': 'Code d\'accès invalide ou désactivé.'})
+
+
+@login_required(login_url='/login/')
 def dashboard(request):
     """Dashboard principal avec statistiques"""
     context = {
@@ -31,6 +78,7 @@ def dashboard(request):
     return render(request, 'cartography/dashboard.html', context)
 
 
+@login_required(login_url='/login/')
 def systems_list(request):
     """Liste des systèmes avec filtres"""
     systems = System.objects.select_related('category', 'structure').all()
@@ -74,6 +122,7 @@ def systems_list(request):
     return render(request, 'cartography/systems_list.html', context)
 
 
+@login_required(login_url='/login/')
 def system_detail(request, pk):
     """Détail d'un système avec ses flux"""
     system = get_object_or_404(System.objects.select_related('category', 'structure'), pk=pk)
@@ -91,6 +140,7 @@ def system_detail(request, pk):
     return render(request, 'cartography/system_detail.html', context)
 
 
+@login_required(login_url='/login/')
 def flows_list(request):
     """Liste des flux de données"""
     flows = DataFlow.objects.select_related('source', 'target').all()
@@ -121,6 +171,7 @@ def flows_list(request):
     return render(request, 'cartography/flows_list.html', context)
 
 
+@login_required(login_url='/login/')
 def flow_detail(request, pk):
     """Détail d'un flux avec ses champs"""
     flow = get_object_or_404(
@@ -135,6 +186,7 @@ def flow_detail(request, pk):
     return render(request, 'cartography/flow_detail.html', context)
 
 
+@login_required(login_url='/login/')
 def graph_view(request):
     """Vue graphique interactive de la cartographie"""
     categories = SystemCategory.objects.all()
@@ -147,6 +199,7 @@ def graph_view(request):
     return render(request, 'cartography/graph.html', context)
 
 
+@login_required(login_url='/login/')
 def structures_list(request):
     """Liste des structures organisationnelles"""
     structures = Structure.objects.annotate(
@@ -159,6 +212,7 @@ def structures_list(request):
     return render(request, 'cartography/structures_list.html', context)
 
 
+@login_required(login_url='/login/')
 def messages_list(request):
     """Liste des formats de messages standards"""
     messages = MessageFormat.objects.prefetch_related('fields').all()
@@ -169,6 +223,7 @@ def messages_list(request):
     return render(request, 'cartography/messages_list.html', context)
 
 
+@login_required(login_url='/login/')
 def message_detail(request, pk):
     """Détail d'un format de message"""
     message = get_object_or_404(MessageFormat.objects.prefetch_related('fields'), pk=pk)
@@ -180,6 +235,7 @@ def message_detail(request, pk):
     return render(request, 'cartography/message_detail.html', context)
 
 
+@login_required(login_url='/login/')
 def domains_list(request):
     """Liste des domaines de données avec système maître"""
     domains = DataDomain.objects.select_related('master_system').prefetch_related('consumer_systems')
@@ -340,6 +396,7 @@ def api_flow_detail(request, pk):
 # VALIDATION - Hypothèse vs Réalité
 # ============================================
 
+@login_required(login_url='/login/')
 def validation_dashboard(request):
     """Dashboard de validation des données - comparaison hypothèse vs réalité"""
     samples = DataSample.objects.all()[:10]
@@ -372,6 +429,7 @@ def validation_dashboard(request):
     return render(request, 'cartography/validation_dashboard.html', context)
 
 
+@login_required(login_url='/login/')
 def samples_list(request):
     """Liste des échantillons de données importés"""
     samples = DataSample.objects.all()
@@ -394,6 +452,7 @@ def samples_list(request):
     return render(request, 'cartography/samples_list.html', context)
 
 
+@login_required(login_url='/login/')
 def sample_detail(request, pk):
     """Détail d'un échantillon avec ses validations"""
     sample = get_object_or_404(DataSample, pk=pk)
@@ -526,6 +585,7 @@ def sample_detail(request, pk):
     return render(request, 'cartography/sample_detail.html', context)
 
 
+@login_required(login_url='/login/')
 def flow_validation_view(request, flow_pk):
     """Vue de validation d'un flux - comparaison hypothèse vs réalité"""
     flow = get_object_or_404(DataFlow.objects.select_related('source', 'target'), pk=flow_pk)
@@ -578,6 +638,7 @@ def api_validation_stats(request):
     return JsonResponse({'flows': flows_data})
 
 
+@login_required(login_url='/login/')
 def data_discovery_view(request):
     """Vue synthèse des données découvertes dans les échantillons"""
     samples = DataSample.objects.all().order_by('source_system', 'data_type')
@@ -625,6 +686,7 @@ def data_discovery_view(request):
     return render(request, 'cartography/data_discovery.html', context)
 
 
+@login_required(login_url='/login/')
 def referentials_list(request):
     """Liste des référentiels de données"""
     referentials = ReferenceData.objects.select_related('master_system').annotate(
@@ -648,6 +710,7 @@ def referentials_list(request):
     return render(request, 'cartography/referentials_list.html', context)
 
 
+@login_required(login_url='/login/')
 def referential_detail(request, pk):
     """Détail d'un référentiel avec ses flux associés"""
     referential = get_object_or_404(ReferenceData.objects.select_related('master_system'), pk=pk)
@@ -706,6 +769,7 @@ def referential_detail(request, pk):
     return render(request, 'cartography/referential_detail.html', context)
 
 
+@login_required(login_url='/login/')
 def data_gaps_report(request):
     """Rapport des éléments manquants dans les échantillons de données pour les flux"""
     # Récupérer tous les flux avec leurs référentiels et échantillons
@@ -823,6 +887,7 @@ def data_gaps_report(request):
     return render(request, 'cartography/data_gaps_report.html', context)
 
 
+@login_required(login_url='/login/')
 def database_schema_view(request):
     """Vue du schéma de base de données - Systèmes Air Algérie réels"""
     
@@ -1128,6 +1193,7 @@ def api_graph_data_with_validation(request):
 CLAUDE_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
 
 
+@login_required(login_url='/login/')
 def ai_report_view(request):
     """Vue pour générer et afficher le rapport IA"""
     from .services.report_generator import ReportGenerator
@@ -1228,6 +1294,7 @@ def ai_report_view(request):
     return render(request, 'cartography/ai_report.html', context)
 
 
+@login_required(login_url='/login/')
 def ai_report_pdf_view(request):
     """Génère le rapport en PDF"""
     from weasyprint import HTML
@@ -1264,6 +1331,7 @@ def ai_report_pdf_view(request):
 # HISTORIQUE DES IMPORTS DE DONNÉES
 # ============================================
 
+@login_required(login_url='/login/')
 def import_history_list(request):
     """Liste de l'historique des imports de données"""
     imports = DataImportHistory.objects.all()
@@ -1316,6 +1384,7 @@ def import_history_list(request):
     return render(request, 'cartography/import_history_list.html', context)
 
 
+@login_required(login_url='/login/')
 def import_history_detail(request, pk):
     """Détail d'un import avec tous les éléments ajoutés"""
     import_record = get_object_or_404(DataImportHistory, pk=pk)
@@ -1336,6 +1405,7 @@ def import_history_detail(request, pk):
 
 # ─── Questionnaires ─────────────────────────────────────────────────────────
 
+@login_required(login_url='/login/')
 def questionnaires_list(request):
     """Liste des questionnaires par phase avec filtres et progression"""
     questionnaires = Questionnaire.objects.prefetch_related('sections__questions').all()
@@ -1391,6 +1461,7 @@ def questionnaires_list(request):
     return render(request, 'cartography/questionnaires_list.html', context)
 
 
+@login_required(login_url='/login/')
 def questionnaire_detail(request, pk):
     """Détail d'un questionnaire — formulaire interactif pour l'entretien"""
     questionnaire = get_object_or_404(
@@ -1529,6 +1600,7 @@ def api_save_answer(request):
 
 # ─── Organigramme ──────────────────────────────────────────────────────────
 
+@login_required(login_url='/login/')
 def organigramme_view(request):
     """Organigramme par département — fiche détaillée de chaque direction"""
     structures = Structure.objects.prefetch_related(
@@ -1641,6 +1713,7 @@ def organigramme_view(request):
 
 # ─── KPI Dashboard ─────────────────────────────────────────────────────────
 
+@login_required(login_url='/login/')
 def kpi_dashboard_view(request):
     """Dashboard KPI avec avancement cartographie en temps réel vs roadmap"""
     import json as json_module
@@ -1699,6 +1772,55 @@ def kpi_dashboard_view(request):
     
     total_samples = DataSample.objects.count()
     
+    # ── Flow validation — Hypothèse vs Réalité (données réelles)
+    total_hypotheses = FlowFieldHypothesis.objects.count()
+    hyp_confirmed = FlowFieldHypothesis.objects.filter(status='CONFIRMED').count()
+    hyp_partial = FlowFieldHypothesis.objects.filter(status='PARTIAL').count()
+    hyp_incorrect = FlowFieldHypothesis.objects.filter(status='INCORRECT').count()
+    hyp_pending = FlowFieldHypothesis.objects.filter(status='HYPOTHESIS').count()
+    hyp_validated_pct = int(((hyp_confirmed + hyp_partial) / total_hypotheses * 100)) if total_hypotheses > 0 else 0
+    
+    total_flow_validations = FlowValidation.objects.count()
+    fv_validated = FlowValidation.objects.filter(status='VALIDATED').count()
+    fv_partial = FlowValidation.objects.filter(status='PARTIAL').count()
+    fv_issues = FlowValidation.objects.filter(status='ISSUES').count()
+    
+    # Flows with at least one sample (data received)
+    flows_with_samples = DataFlow.objects.filter(
+        Q(source__code__in=[s.source_system for s in DataSample.objects.all()]) |
+        Q(field_hypotheses__validated_from_sample__isnull=False)
+    ).distinct().count()
+    
+    # Per-system: which systems have real data samples
+    systems_with_samples = set(DataSample.objects.values_list('source_system', flat=True))
+    
+    # Build flow validation detail table
+    flow_validation_data = []
+    for flow in DataFlow.objects.select_related('source', 'target').prefetch_related('field_hypotheses', 'validations'):
+        hyps = flow.field_hypotheses.all()
+        h_total = hyps.count()
+        if h_total == 0:
+            continue
+        h_confirmed = hyps.filter(status='CONFIRMED').count()
+        h_partial_f = hyps.filter(status='PARTIAL').count()
+        h_incorrect = hyps.filter(status='INCORRECT').count()
+        h_pending_f = hyps.filter(status='HYPOTHESIS').count()
+        has_sample = hyps.filter(validated_from_sample__isnull=False).exists()
+        latest_v = flow.validations.first()
+        
+        flow_validation_data.append({
+            'flow': flow,
+            'total_fields': h_total,
+            'confirmed': h_confirmed,
+            'partial': h_partial_f,
+            'incorrect': h_incorrect,
+            'pending': h_pending_f,
+            'has_sample': has_sample,
+            'match_pct': int(((h_confirmed + h_partial_f) / h_total * 100)) if h_total > 0 else 0,
+            'validation_status': latest_v.status if latest_v else 'PENDING',
+        })
+    flow_validation_data.sort(key=lambda x: x['confirmed'], reverse=True)
+    
     # ── Per-system progress for the table
     system_progress = []
     for q in Questionnaire.objects.prefetch_related('sections__questions').order_by('phase', 'priority_in_phase'):
@@ -1748,6 +1870,20 @@ def kpi_dashboard_view(request):
         'system_progress': system_progress,
         'roadmap': roadmap,
         'phase_data_json': json_module.dumps(phase_data),
+        # Flow validation data
+        'total_hypotheses': total_hypotheses,
+        'hyp_confirmed': hyp_confirmed,
+        'hyp_partial': hyp_partial,
+        'hyp_incorrect': hyp_incorrect,
+        'hyp_pending': hyp_pending,
+        'hyp_validated_pct': hyp_validated_pct,
+        'total_flow_validations': total_flow_validations,
+        'fv_validated': fv_validated,
+        'fv_partial': fv_partial,
+        'fv_issues': fv_issues,
+        'flows_with_samples': flows_with_samples,
+        'systems_with_samples': systems_with_samples,
+        'flow_validation_data': flow_validation_data,
     }
     return render(request, 'cartography/kpi_dashboard.html', context)
 
@@ -1801,13 +1937,20 @@ def api_kpi_stats(request):
 
 
 def questionnaire_form_view(request, pk):
-    """Formulaire public de questionnaire — pour les key users (accès par lien)"""
+    """Formulaire de questionnaire — accès admin ou key user via token de session"""
+    # Auth check: admin OU key user avec le bon questionnaire en session
+    is_admin = request.user.is_authenticated
+    session_q_id = request.session.get('key_user_questionnaire_id')
+    key_user_name = request.session.get('key_user_name', '')
+    
+    if not is_admin and session_q_id != pk:
+        return redirect('cartography:login')
+    
     questionnaire = get_object_or_404(
         Questionnaire.objects.prefetch_related('sections__questions'),
         pk=pk
     )
     
-    # Token-based access check placeholder (for future smart access)
     token = request.GET.get('token', '')
     
     if request.method == 'POST':
@@ -1849,5 +1992,7 @@ def questionnaire_form_view(request, pk):
         'sections': questionnaire.sections.prefetch_related('questions').all(),
         'token': token,
         'saved': saved,
+        'key_user_name': key_user_name,
+        'is_admin': is_admin,
     }
     return render(request, 'cartography/questionnaire_form.html', context)

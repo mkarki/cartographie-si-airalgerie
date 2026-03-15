@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion — Cartographie SI Air Algérie</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { 'ah-red': '#c8102e', 'ah-green': '#00843d', 'ah-dark': '#1a1a2e' } } }
+        }
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); }
+        .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+    </style>
+</head>
+<body class="h-full flex items-center justify-center text-white">
+    <div class="w-full max-w-md px-6">
+        <!-- Logo -->
+        <div class="text-center mb-8">
+            <img src="/static/logo.png" alt="Air Algérie" class="w-16 h-16 mx-auto mb-4 rounded-xl object-contain">
+            <h1 class="text-2xl font-bold">Cartographie SI</h1>
+            <p class="text-gray-400 text-sm mt-1">Air Algérie — Espace sécurisé</p>
+        </div>
+
+        <!-- Login form -->
+        <div class="glass rounded-2xl p-8">
+            <h2 class="text-lg font-semibold mb-6 flex items-center gap-2">
+                <i data-lucide="log-in" class="w-5 h-5 text-ah-red"></i>
+                Connexion Admin
+            </h2>
+
+            {% if error %}
+            <div class="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-sm">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1.5">Nom d'utilisateur</label>
+                    <input type="text" name="username" required autofocus
+                        class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-ah-red/50 focus:ring-1 focus:ring-ah-red/30 transition"
+                        placeholder="admin">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1.5">Mot de passe</label>
+                    <input type="password" name="password" required
+                        class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-ah-red/50 focus:ring-1 focus:ring-ah-red/30 transition"
+                        placeholder="••••••••">
+                </div>
+                <button type="submit"
+                    class="w-full bg-ah-red hover:bg-red-700 transition rounded-lg py-2.5 text-sm font-semibold mt-2">
+                    Se connecter
+                </button>
+            </form>
+        </div>
+
+        <!-- Key user access -->
+        <div class="glass rounded-2xl p-6 mt-4">
+            <h3 class="text-sm font-semibold mb-3 flex items-center gap-2">
+                <i data-lucide="key" class="w-4 h-4 text-amber-400"></i>
+                Accès Key User
+            </h3>
+            <p class="text-xs text-gray-500 mb-3">Vous êtes un interlocuteur métier ? Entrez votre code d'accès personnel.</p>
+            <form method="get" action="{% url 'cartography:key_user_login' %}" class="flex gap-2">
+                <input type="text" name="token" required
+                    class="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-amber-500/50 transition"
+                    placeholder="Votre code d'accès">
+                <button type="submit" class="bg-amber-600 hover:bg-amber-700 transition rounded-lg px-4 py-2 text-sm font-semibold">
+                    Accéder
+                </button>
+            </form>
+        </div>
+
+        <p class="text-center text-[10px] text-gray-700 mt-6">© 2026 Air Algérie DSI · Alpha Aero Systems</p>
+    </div>
+    <script>lucide.createIcons();</script>
+</body>
+</html>
