@@ -1,0 +1,369 @@
+{
+  "source": "/tmp/questionnaires.html (scrapé le 28/03/2026 à ~20h33)",
+  "total_questionnaires": 40,
+  "total_answered": 69,
+  "completed": 7,
+  "in_progress": 1,
+  "questionnaires": [
+    {
+      "name": "SUITE ALTÉA AMADEUS",
+      "phase": 0,
+      "direction": "",
+      "status": "NOT_STARTED",
+      "answered": 0,
+      "total": 18,
+      "progress": 0
+    },
+    {
+      "name": "AIMS",
+      "phase": 0,
+      "direction": "",
+      "status": "NOT_STARTED",
+      "answered": 0,
+      "total": 17,
+      "progress": 0
+    },
+    {
+      "name": "AMOS",
+      "phase": 0,
+      "direction": "",
+      "status": "NOT_STARTED",
+      "answered": 0,
+      "total": 17,
+      "progress": 0
+    },
+    {
+      "name": "RAPID PASSAGERS",
+      "phase": 0,
+      "direction": "",
+      "status": "NOT_STARTED",
+      "answered": 0,
+      "total": 13,
+      "progress": 0
+    },
+    {
+      "name": "SITATEX ONLINE",
+      "phase": 0,
+      "direction": "",
+      "status": "NOT_STARTED",
+      "answered": 0,
+      "total": 12,
+      "progress": 0
+    },
+    {
+      "name": "ACARS / HERMES",
+      "phase": 0,
+      "direction": "",
+      "status": "NOT_STARTED",
+      "answered": 0,
+      "total": 12,
+      "progress": 0
+    },
+    {
+      "name": "Questions Techniques — Tous Systèmes",
+      "phase": 2,
+      "direction": "",
+      "status": "NOT_STARTED",
+      "answered": 0,
+      "total": 243,
+      "progress": 0
+    },
+    {
+      "name": "SAGE STOCK",
+      "phase": 0,
+      "direction": "",
+      "status": "COMPLETED",
+      "answered": 13,
+      "total": 13,
+      "progress": 100
+    },
+    {
+      "name": "ATPCO",
+      "phase": 0,
+      "direction": "",
+      "status": "COMPLETED",
+      "answered": 10,
+      "total": 10,
+      "progress": 100
+    },
+    {
+      "name": "BAC (Amadeus)",
+      "phase": 0,
+      "direction": "",
+      "status": "NOT_STARTED",
+      "answered": 0,
+      "total": 8,
+      "progress": 0
+    },
+    {
+      "name": "Dashboards CCO + Suivi Irrégularités",
+      "phase": 0,
+      "direction": "",
+      "status": "NOT_STARTED",
+      "answered": 0,
+      "total": 11,
+      "progress": 0
+    },
+    {
+      "name": "AGS (Analysis Ground Station)",
+      "phase": 0,
+      "direction": "",
+      "status": "NOT_STARTED",
+      "answered": 0,
+      "total": 11,
+      "progress": 0
+    },
+    {
+      "name": "Q-PULSE",
+      "phase": 0,
+      "direction": "",
+      "status": "NOT_STARTED",
+      "answered": 0,
+      "total": 11,
+      "progress": 0
+    },
+    {
+      "name": "EUROCONTROL",
+      "phase": 0,
+      "direction": "",
+      "status": "NOT_STARTED",
+      "answered": 0,
+      "total": 8,
+      "progress": 0
+    },
+    {
+      "name": "JET PLANER",
+      "phase": 0,
+      "direction": "",
+      "status": "NOT_STARTED",
+      "answered": 0,
+      "total": 9,
+      "progress": 0
+    },
+    {
+      "name": "WORLD TRACER",
+      "phase": 0,
+      "direction": "",
+      "status": "IN_PROGRESS",
+      "answered": 2,
+      "total": 11,
+      "progress": 18
+    },
+    {
+      "name": "SITE WEB AIR ALGÉRIE",
+      "phase": 0,
+      "direction": "",
+      "status": "COMPLETED",
+      "answered": 11,
+      "total": 11,
+      "progress": 100
+    },
+    {
+      "name": "ACCELYA DISTRIBUTION",
+      "phase": 0,
+      "direction": "",
+      "status": "NOT_STARTED",
+      "answered": 0,
+      "total": 8,
+      "progress": 0
+    },
+    {
+      "name": "QLIK SENSE",
+      "phase": 0,
+      "direction": "",
+      "status": "NOT_STARTED",
+      "answered": 0,
+      "total": 8,
+      "progress": 0
+    },
+    {
+      "name": "POWER BI",
+      "phase": 0,
+      "direction": "",
+      "status": "NOT_STARTED",
+      "answered": 0,
+      "total": 9,
+      "progress": 0
+    },
+    {
+      "name": "AIMS Formation PNC/PNT + Conception Programme PN",
+      "phase": 0,
+      "direction": "",
+      "status": "NOT_STARTED",
+      "answered": 0,
+      "total": 12,
+      "progress": 0
+    },
+    {
+      "name": "SAGE FINANCE (volet RGF)",
+      "phase": 3,
+      "direction": "",
+      "status": "NOT_STARTED",
+      "answered": 0,
+      "total": 10,
+      "progress": 0
+    },
+    {
+      "name": "BSP LINK",
+      "phase": 0,
+      "direction": "",
+      "status": "NOT_STARTED",
+      "answered": 0,
+      "total": 7,
+      "progress": 0
+    },
+    {
+      "name": "E-DOLÉANCE",
+      "phase": 0,
+      "direction": "",
+      "status": "COMPLETED",
+      "answered": 11,
+      "total": 11,
+      "progress": 100
+    },
+    {
+      "name": "GLPI",
+      "phase": 0,
+      "direction": "",
+      "status": "NOT_STARTED",
+      "answered": 0,
+      "total": 8,
+      "progress": 0
+    },
+    {
+      "name": "HERMES CALL CENTER",
+      "phase": 0,
+      "direction": "",
+      "status": "NOT_STARTED",
+      "answered": 0,
+      "total": 10,
+      "progress": 0
+    },
+    {
+      "name": "OAG / INNOVATA",
+      "phase": 0,
+      "direction": "",
+      "status": "NOT_STARTED",
+      "answered": 0,
+      "total": 7,
+      "progress": 0
+    },
+    {
+      "name": "E-LEARNING E-EXAM PN",
+      "phase": 0,
+      "direction": "",
+      "status": "COMPLETED",
+      "answered": 8,
+      "total": 8,
+      "progress": 100
+    },
+    {
+      "name": "ZIMBRA",
+      "phase": 0,
+      "direction": "",
+      "status": "NOT_STARTED",
+      "answered": 0,
+      "total": 7,
+      "progress": 0
+    },
+    {
+      "name": "CONTRÔLE PROGRAMMES PN/AVIONS",
+      "phase": 0,
+      "direction": "",
+      "status": "NOT_STARTED",
+      "answered": 0,
+      "total": 7,
+      "progress": 0
+    },
+    {
+      "name": "DOA MAILING",
+      "phase": 0,
+      "direction": "",
+      "status": "COMPLETED",
+      "answered": 7,
+      "total": 7,
+      "progress": 100
+    },
+    {
+      "name": "CALL DOA",
+      "phase": 0,
+      "direction": "",
+      "status": "COMPLETED",
+      "answered": 7,
+      "total": 7,
+      "progress": 100
+    },
+    {
+      "name": "SKYBOOK",
+      "phase": 0,
+      "direction": "",
+      "status": "NOT_STARTED",
+      "answered": 0,
+      "total": 7,
+      "progress": 0
+    },
+    {
+      "name": "FLYSMART",
+      "phase": 0,
+      "direction": "",
+      "status": "NOT_STARTED",
+      "answered": 0,
+      "total": 7,
+      "progress": 0
+    },
+    {
+      "name": "PORTAIL AH",
+      "phase": 0,
+      "direction": "",
+      "status": "NOT_STARTED",
+      "answered": 0,
+      "total": 7,
+      "progress": 0
+    },
+    {
+      "name": "EVALCOM",
+      "phase": 0,
+      "direction": "",
+      "status": "NOT_STARTED",
+      "answered": 0,
+      "total": 7,
+      "progress": 0
+    },
+    {
+      "name": "BODET",
+      "phase": 0,
+      "direction": "",
+      "status": "NOT_STARTED",
+      "answered": 0,
+      "total": 7,
+      "progress": 0
+    },
+    {
+      "name": "DATAWINGS",
+      "phase": 0,
+      "direction": "",
+      "status": "NOT_STARTED",
+      "answered": 0,
+      "total": 7,
+      "progress": 0
+    },
+    {
+      "name": "AIMS Formation PNC",
+      "phase": 0,
+      "direction": "",
+      "status": "NOT_STARTED",
+      "answered": 0,
+      "total": 7,
+      "progress": 0
+    },
+    {
+      "name": "AIMS Formation PNT",
+      "phase": 0,
+      "direction": "",
+      "status": "NOT_STARTED",
+      "answered": 0,
+      "total": 9,
+      "progress": 0
+    }
+  ]
+}
