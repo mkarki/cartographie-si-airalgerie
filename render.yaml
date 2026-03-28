@@ -9,7 +9,7 @@ services:
     name: cartographie-si-airalgerie
     runtime: python
     buildCommand: "./build.sh"
-    startCommand: "python manage.py migrate && python manage.py loaddata initial_data 2>/dev/null; python manage.py shell -c \"from django.contrib.auth.models import User; User.objects.filter(username='admin').exists() or User.objects.create_superuser('admin','admin@airalgerie.dz','AirAlgerie2026!')\" && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --timeout 120 --workers 2"
+    startCommand: "python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --timeout 120 --workers 2"
     envVars:
       - key: SECRET_KEY
         generateValue: true
