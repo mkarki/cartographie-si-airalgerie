@@ -2023,6 +2023,217 @@ def api_kpi_stats(request):
     })
 
 
+def export_kpi_md(request):
+    """Génère un rapport Markdown complet de l'avancement KPI — téléchargeable"""
+    if not request.user.is_authenticated and not request.session.get('auditor_token'):
+        return redirect('cartography:login')
+    
+    now = timezone.now()
+    date_str = now.strftime('%d/%m/%Y à %Hh%M')
+    date_file = now.strftime('%Y-%m-%d')
+    
+    # ── Stats globales
+    total_systems = System.objects.count()
+    systems_with_data = System.objects.filter(
+        Q(outgoing_flows__isnull=False) | Q(incoming_flows__isnull=False)
+    ).distinct().count()
+    total_questionnaires = Questionnaire.objects.count()
+    q_completed = Questionnaire.objects.filter(status='COMPLETED').count()
+    q_in_progress = Questionnaire.objects.filter(status='IN_PROGRESS').count()
+    q_not_started = Questionnaire.objects.filter(status='NOT_STARTED').count()
+    total_questions = Question.objects.count()
+    total_answered = Question.objects.filter(is_answered=True).count()
+    total_validated = Question.objects.filter(validation_status='VALIDATED').count()
+    questionnaire_progress = int((total_answered / total_questions * 100)) if total_questions > 0 else 0
+    total_flows = DataFlow.objects.count()
+    total_samples = DataSample.objects.count()
+    
+    # ── Par phase
+    phase_data = []
+    for phase_num, phase_label in [(1, 'Phase 1 — Critique'), (2, 'Phase 2 — Important'), (3, 'Phase 3 — Standard')]:
+        phase_qs = Questionnaire.objects.filter(phase=phase_num)
+        phase_questions = Question.objects.filter(section__questionnaire__phase=phase_num)
+        p_total = phase_questions.count()
+        p_answered = phase_questions.filter(is_answered=True).count()
+        p_validated = phase_questions.filter(validation_status='VALIDATED').count()
+        phase_data.append({
+            'phase': phase_num,
+            'label': phase_label,
+            'total_systems': phase_qs.count(),
+            'completed': phase_qs.filter(status='COMPLETED').count(),
+            'in_progress': phase_qs.filter(status='IN_PROGRESS').count(),
+            'not_started': phase_qs.filter(status='NOT_STARTED').count(),
+            'total_questions': p_total,
+            'answered': p_answered,
+            'validated': p_validated,
+            'progress': int((p_answered / p_total * 100)) if p_total > 0 else 0,
+        })
+    
+    # ── Tous les questionnaires avec détails
+    all_qs = Questionnaire.objects.prefetch_related('sections__questions').order_by('direction', 'phase', 'system_name')
+    
+    # ── Grouper par direction
+    from collections import OrderedDict
+    by_direction = OrderedDict()
+    it_systems = []  # Systèmes où la DSI doit répondre (Questions Techniques)
+    
+    for q in all_qs:
+        direction = q.direction or '(Non renseigné)'
+        if direction not in by_direction:
+            by_direction[direction] = []
+        by_direction[direction].append(q)
+        # Identifier les systèmes IT (DSI doit répondre)
+        if 'DSI' in direction or 'technique' in q.system_name.lower():
+            it_systems.append(q)
+    
+    # ── Construction du MD
+    lines = []
+    lines.append(f'# Rapport d\'avancement — Cartographie SI Air Algérie')
+    lines.append(f'')
+    lines.append(f'> Généré le **{date_str}** depuis le KPI Dashboard')
+    lines.append(f'> URL : https://cartographie-si-airalgerie.onrender.com/kpi/')
+    lines.append(f'')
+    lines.append(f'---')
+    lines.append(f'')
+    
+    # ── Synthèse globale
+    lines.append(f'## 1. Synthèse globale')
+    lines.append(f'')
+    lines.append(f'| Indicateur | Valeur |')
+    lines.append(f'|------------|--------|')
+    lines.append(f'| Systèmes inventoriés | **{total_systems}** |')
+    lines.append(f'| Systèmes avec flux documentés | **{systems_with_data}** / {total_systems} |')
+    lines.append(f'| Questionnaires total | **{total_questionnaires}** |')
+    lines.append(f'| Questionnaires terminés | **{q_completed}** ({int(q_completed/total_questionnaires*100) if total_questionnaires else 0}%) |')
+    lines.append(f'| Questionnaires en cours | **{q_in_progress}** |')
+    lines.append(f'| Questionnaires non commencés | **{q_not_started}** |')
+    lines.append(f'| Questions répondues | **{total_answered}** / {total_questions} (**{questionnaire_progress}%**) |')
+    lines.append(f'| Questions validées | **{total_validated}** / {total_questions} |')
+    lines.append(f'| Flux de données documentés | **{total_flows}** |')
+    lines.append(f'| Échantillons collectés | **{total_samples}** |')
+    lines.append(f'')
+    
+    # ── Avancement par phase
+    lines.append(f'---')
+    lines.append(f'')
+    lines.append(f'## 2. Avancement par phase')
+    lines.append(f'')
+    for p in phase_data:
+        emoji = {1: '🔴', 2: '🟠', 3: '🟢'}.get(p['phase'], '')
+        lines.append(f'### {p["label"]} {emoji}')
+        lines.append(f'')
+        lines.append(f'| Indicateur | Valeur |')
+        lines.append(f'|------------|--------|')
+        lines.append(f'| Systèmes | {p["total_systems"]} |')
+        lines.append(f'| Terminés | **{p["completed"]}** |')
+        lines.append(f'| En cours | {p["in_progress"]} |')
+        lines.append(f'| Non commencés | {p["not_started"]} |')
+        lines.append(f'| Questions répondues | {p["answered"]} / {p["total_questions"]} (**{p["progress"]}%**) |')
+        lines.append(f'| Questions validées | {p["validated"]} / {p["total_questions"]} |')
+        progress_bar = '█' * (p['progress'] // 5) + '░' * (20 - p['progress'] // 5)
+        lines.append(f'| Progression | `{progress_bar}` {p["progress"]}% |')
+        lines.append(f'')
+    
+    # ── Avancement par direction
+    lines.append(f'---')
+    lines.append(f'')
+    lines.append(f'## 3. Avancement par direction')
+    lines.append(f'')
+    
+    for direction, qs_list in by_direction.items():
+        dir_total_q = sum(q.total_questions for q in qs_list)
+        dir_answered = sum(q.answered_questions for q in qs_list)
+        dir_progress = int(dir_answered / dir_total_q * 100) if dir_total_q > 0 else 0
+        dir_completed = sum(1 for q in qs_list if q.status == 'COMPLETED')
+        dir_in_progress = sum(1 for q in qs_list if q.status == 'IN_PROGRESS')
+        dir_not_started = sum(1 for q in qs_list if q.status == 'NOT_STARTED')
+        
+        lines.append(f'### {direction}')
+        lines.append(f'')
+        lines.append(f'**{len(qs_list)} système(s)** — Progression globale : **{dir_progress}%** ({dir_answered}/{dir_total_q} questions) — ✅ {dir_completed} terminé(s), 🔄 {dir_in_progress} en cours, ⏳ {dir_not_started} non commencé(s)')
+        lines.append(f'')
+        lines.append(f'| Système | Phase | Key User | Questions | Progression | Statut |')
+        lines.append(f'|---------|-------|----------|-----------|-------------|--------|')
+        
+        for q in qs_list:
+            phase_tag = {1: 'P1 🔴', 2: 'P2 🟠', 3: 'P3 🟢'}.get(q.phase, f'P{q.phase}')
+            ku = q.key_users[:40] if q.key_users else '—'
+            progress = q.progress_percent
+            answered = q.answered_questions
+            total = q.total_questions
+            if q.status == 'COMPLETED':
+                status = '✅ Terminé'
+            elif q.status == 'IN_PROGRESS':
+                status = f'🔄 En cours ({progress}%)'
+            else:
+                status = '⏳ Non commencé'
+            lines.append(f'| {q.system_name} | {phase_tag} | {ku} | {answered}/{total} | {progress}% | {status} |')
+        
+        lines.append(f'')
+    
+    # ── Systèmes IT / DSI
+    lines.append(f'---')
+    lines.append(f'')
+    lines.append(f'## 4. Systèmes IT (DSI) — Avancement des réponses techniques')
+    lines.append(f'')
+    
+    if it_systems:
+        it_total_q = sum(q.total_questions for q in it_systems)
+        it_answered = sum(q.answered_questions for q in it_systems)
+        it_progress = int(it_answered / it_total_q * 100) if it_total_q > 0 else 0
+        lines.append(f'**{len(it_systems)} système(s) IT** — Progression : **{it_progress}%** ({it_answered}/{it_total_q} questions)')
+        lines.append(f'')
+        lines.append(f'| Système | Key User | Éditeur | Questions | Progression | Statut |')
+        lines.append(f'|---------|----------|---------|-----------|-------------|--------|')
+        for q in it_systems:
+            ku = q.key_users[:35] if q.key_users else '—'
+            ed = q.editor[:25] if q.editor else '—'
+            progress = q.progress_percent
+            if q.status == 'COMPLETED':
+                status = '✅ Terminé'
+            elif q.status == 'IN_PROGRESS':
+                status = f'🔄 En cours ({progress}%)'
+            else:
+                status = '⏳ Non commencé'
+            lines.append(f'| {q.system_name} | {ku} | {ed} | {q.answered_questions}/{q.total_questions} | {progress}% | {status} |')
+        lines.append(f'')
+    else:
+        lines.append(f'Aucun système IT identifié.')
+        lines.append(f'')
+    
+    # ── Tableau complet de tous les systèmes
+    lines.append(f'---')
+    lines.append(f'')
+    lines.append(f'## 5. Tableau complet — Tous les systèmes')
+    lines.append(f'')
+    lines.append(f'| # | Système | Direction | Phase | Key User | Questions | Progression | Statut |')
+    lines.append(f'|---|---------|-----------|-------|----------|-----------|-------------|--------|')
+    
+    for i, q in enumerate(Questionnaire.objects.prefetch_related('sections__questions').order_by('phase', 'priority_in_phase'), 1):
+        phase_tag = {1: 'P1 🔴', 2: 'P2 🟠', 3: 'P3 🟢'}.get(q.phase, f'P{q.phase}')
+        ku = q.key_users[:30] if q.key_users else '—'
+        direction = q.direction[:25] if q.direction else '—'
+        progress = q.progress_percent
+        if q.status == 'COMPLETED':
+            status = '✅ Terminé'
+        elif q.status == 'IN_PROGRESS':
+            status = f'🔄 En cours'
+        else:
+            status = '⏳ Non commencé'
+        lines.append(f'| {i} | {q.system_name} | {direction} | {phase_tag} | {ku} | {q.answered_questions}/{q.total_questions} | {progress}% | {status} |')
+    
+    lines.append(f'')
+    lines.append(f'---')
+    lines.append(f'')
+    lines.append(f'*Rapport généré automatiquement le {date_str} — Cartographie SI Air Algérie — Alpha Aero Systems*')
+    
+    md_content = '\n'.join(lines)
+    
+    response = HttpResponse(md_content, content_type='text/markdown; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="rapport_avancement_cartographie_SI_{date_file}.md"'
+    return response
+
+
 def questionnaire_form_view(request, pk):
     """Formulaire de questionnaire — accès admin, key user ou auditeur"""
     is_admin = request.user.is_authenticated

@@ -53,6 +53,7 @@ urlpatterns = [
     
     # KPI Dashboard
     path('kpi/', views.kpi_dashboard_view, name='kpi_dashboard'),
+    path('kpi/export-md/', views.export_kpi_md, name='export_kpi_md'),
     
     # Questionnaire form (public access for key users)
     path('form/<int:pk>/', views.questionnaire_form_view, name='questionnaire_form'),
