@@ -1611,7 +1611,10 @@ def api_save_answer(request):
         
         # Update questionnaire status
         questionnaire = question.section.questionnaire
-        if questionnaire.status == 'NOT_STARTED' and questionnaire.answered_questions > 0:
+        if questionnaire.progress_percent == 100:
+            questionnaire.status = 'COMPLETED'
+            questionnaire.save()
+        elif questionnaire.status == 'NOT_STARTED' and questionnaire.answered_questions > 0:
             questionnaire.status = 'IN_PROGRESS'
             questionnaire.save()
         
@@ -1824,7 +1827,7 @@ def kpi_dashboard_view(request):
     q_completed = Questionnaire.objects.filter(status='COMPLETED').count()
     
     total_questions = Question.objects.count()
-    total_answered = Question.objects.filter(is_answered=True).count()
+    total_answered = Question.objects.exclude(answer='').count()
     total_validated = Question.objects.filter(validation_status='VALIDATED').count()
     
     questionnaire_progress = int((total_answered / total_questions * 100)) if total_questions > 0 else 0
@@ -1836,7 +1839,7 @@ def kpi_dashboard_view(request):
         phase_qs = Questionnaire.objects.filter(phase=phase_num)
         phase_questions = Question.objects.filter(section__questionnaire__phase=phase_num)
         p_total = phase_questions.count()
-        p_answered = phase_questions.filter(is_answered=True).count()
+        p_answered = phase_questions.exclude(answer='').count()
         p_validated = phase_questions.filter(validation_status='VALIDATED').count()
         phase_data.append({
             'phase': phase_num,
@@ -1987,7 +1990,7 @@ def api_kpi_stats(request):
     q_in_progress = Questionnaire.objects.filter(status='IN_PROGRESS').count()
     
     total_questions = Question.objects.count()
-    total_answered = Question.objects.filter(is_answered=True).count()
+    total_answered = Question.objects.exclude(answer='').count()
     total_validated = Question.objects.filter(validation_status='VALIDATED').count()
     
     # Per-phase
@@ -1995,7 +1998,7 @@ def api_kpi_stats(request):
     for p in [1, 2, 3]:
         pq = Question.objects.filter(section__questionnaire__phase=p)
         pt = pq.count()
-        pa = pq.filter(is_answered=True).count()
+        pa = pq.exclude(answer='').count()
         phases.append({
             'phase': p,
             'total': pt,
@@ -2023,6 +2026,100 @@ def api_kpi_stats(request):
     })
 
 
+def debug_recover_data(request):
+    """TEMPORAIRE — Diagnostic filesystem Render pour récupérer l'ancien db.sqlite3"""
+    import subprocess, glob, sqlite3
+    results = []
+    
+    # 1. Check current db.sqlite3
+    db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'db.sqlite3')
+    results.append(f"=== Current db.sqlite3: {db_path} ===")
+    if os.path.exists(db_path):
+        size = os.path.getsize(db_path)
+        results.append(f"Exists: {size} bytes")
+        try:
+            conn = sqlite3.connect(db_path)
+            cur = conn.cursor()
+            cur.execute("SELECT COUNT(*) FROM cartography_question WHERE answer != ''")
+            answered = cur.fetchone()[0]
+            results.append(f"Answered questions in current db: {answered}")
+            conn.close()
+        except Exception as e:
+            results.append(f"Error reading: {e}")
+    else:
+        results.append("NOT FOUND")
+    
+    # 2. Search for any sqlite3 files on the filesystem
+    results.append("\n=== Searching for *.sqlite3 files ===")
+    search_dirs = ['/opt/render', '/tmp', '/var', '/home', '/srv', '/app', os.path.expanduser('~')]
+    for d in search_dirs:
+        try:
+            for root, dirs, files in os.walk(d):
+                for f in files:
+                    if 'sqlite' in f.lower() or f.endswith('.db'):
+                        fpath = os.path.join(root, f)
+                        try:
+                            sz = os.path.getsize(fpath)
+                            results.append(f"FOUND: {fpath} ({sz} bytes)")
+                            if sz > 100000:  # Might have data
+                                try:
+                                    conn = sqlite3.connect(fpath)
+                                    cur = conn.cursor()
+                                    cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
+                                    tables = [r[0] for r in cur.fetchall()]
+                                    if 'cartography_question' in tables:
+                                        cur.execute("SELECT COUNT(*) FROM cartography_question WHERE answer != ''")
+                                        answered = cur.fetchone()[0]
+                                        results.append(f"  >>> HAS CARTOGRAPHY DATA! Answered: {answered}")
+                                    conn.close()
+                                except:
+                                    pass
+                        except:
+                            pass
+                # Limit depth
+                if root.count(os.sep) > 5:
+                    dirs.clear()
+        except PermissionError:
+            results.append(f"Permission denied: {d}")
+        except Exception as e:
+            results.append(f"Error scanning {d}: {e}")
+    
+    # 3. Check /opt/render/project for old deployments
+    results.append("\n=== /opt/render/project contents ===")
+    try:
+        for root, dirs, files in os.walk('/opt/render/project'):
+            level = root.replace('/opt/render/project', '').count(os.sep)
+            indent = ' ' * 2 * level
+            results.append(f'{indent}{os.path.basename(root)}/')
+            if level > 2:
+                dirs.clear()
+                continue
+            for f in files:
+                fpath = os.path.join(root, f)
+                try:
+                    sz = os.path.getsize(fpath)
+                    if sz > 50000 or 'sqlite' in f.lower() or 'db' in f.lower():
+                        results.append(f'{indent}  {f} ({sz} bytes)')
+                except:
+                    pass
+    except Exception as e:
+        results.append(f"Error: {e}")
+    
+    # 4. Check environment
+    results.append("\n=== DATABASE CONFIG ===")
+    db_url = os.environ.get('DATABASE_URL', 'NOT SET')
+    results.append(f"DATABASE_URL: {'SET (postgres)' if 'postgres' in db_url else db_url}")
+    
+    # 5. Check if there's a WAL file (write-ahead log) that might have data
+    wal_path = db_path + '-wal'
+    shm_path = db_path + '-shm'
+    results.append(f"\n=== WAL/SHM files ===")
+    results.append(f"WAL: {'EXISTS ' + str(os.path.getsize(wal_path)) + ' bytes' if os.path.exists(wal_path) else 'NOT FOUND'}")
+    results.append(f"SHM: {'EXISTS ' + str(os.path.getsize(shm_path)) + ' bytes' if os.path.exists(shm_path) else 'NOT FOUND'}")
+    
+    return HttpResponse('\n'.join(results), content_type='text/plain; charset=utf-8')
+
+
 def export_kpi_md(request):
     """Génère un rapport Markdown complet de l'avancement KPI — téléchargeable"""
     if not request.user.is_authenticated and not request.session.get('auditor_token'):
@@ -2038,31 +2135,43 @@ def export_kpi_md(request):
         Q(outgoing_flows__isnull=False) | Q(incoming_flows__isnull=False)
     ).distinct().count()
     total_questionnaires = Questionnaire.objects.count()
-    q_completed = Questionnaire.objects.filter(status='COMPLETED').count()
-    q_in_progress = Questionnaire.objects.filter(status='IN_PROGRESS').count()
-    q_not_started = Questionnaire.objects.filter(status='NOT_STARTED').count()
     total_questions = Question.objects.count()
-    total_answered = Question.objects.filter(is_answered=True).count()
+    total_answered = Question.objects.exclude(answer='').count()
     total_validated = Question.objects.filter(validation_status='VALIDATED').count()
     questionnaire_progress = int((total_answered / total_questions * 100)) if total_questions > 0 else 0
     total_flows = DataFlow.objects.count()
     total_samples = DataSample.objects.count()
     
+    # ── Compute real status from answers (not relying solely on status field)
+    q_completed = 0
+    q_in_progress = 0
+    q_not_started = 0
+    for q in Questionnaire.objects.prefetch_related('sections__questions').all():
+        if q.progress_percent == 100:
+            q_completed += 1
+        elif q.answered_questions > 0:
+            q_in_progress += 1
+        else:
+            q_not_started += 1
+    
     # ── Par phase
     phase_data = []
     for phase_num, phase_label in [(1, 'Phase 1 — Critique'), (2, 'Phase 2 — Important'), (3, 'Phase 3 — Standard')]:
-        phase_qs = Questionnaire.objects.filter(phase=phase_num)
+        phase_qs = list(Questionnaire.objects.filter(phase=phase_num).prefetch_related('sections__questions'))
         phase_questions = Question.objects.filter(section__questionnaire__phase=phase_num)
         p_total = phase_questions.count()
-        p_answered = phase_questions.filter(is_answered=True).count()
+        p_answered = phase_questions.exclude(answer='').count()
         p_validated = phase_questions.filter(validation_status='VALIDATED').count()
+        p_completed = sum(1 for q in phase_qs if q.progress_percent == 100)
+        p_in_progress = sum(1 for q in phase_qs if 0 < q.answered_questions < q.total_questions)
+        p_not_started = sum(1 for q in phase_qs if q.answered_questions == 0)
         phase_data.append({
             'phase': phase_num,
             'label': phase_label,
-            'total_systems': phase_qs.count(),
-            'completed': phase_qs.filter(status='COMPLETED').count(),
-            'in_progress': phase_qs.filter(status='IN_PROGRESS').count(),
-            'not_started': phase_qs.filter(status='NOT_STARTED').count(),
+            'total_systems': len(phase_qs),
+            'completed': p_completed,
+            'in_progress': p_in_progress,
+            'not_started': p_not_started,
             'total_questions': p_total,
             'answered': p_answered,
             'validated': p_validated,
