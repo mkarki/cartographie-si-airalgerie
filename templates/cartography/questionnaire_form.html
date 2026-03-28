@@ -424,5 +424,70 @@
             lucide.createIcons({nodes: [btn]});
         });
     }
+
+    // ═══ AUTO-SAVE — sauvegarde automatique toutes les 30 secondes ═══
+    {% if not is_auditor %}
+    const dirtyQuestions = new Set();
+    
+    // Track all modified textareas
+    document.querySelectorAll('textarea[name^="answer_"]').forEach(ta => {
+        ta.addEventListener('input', () => {
+            const qId = ta.name.replace('answer_', '');
+            dirtyQuestions.add(qId);
+        });
+    });
+
+    function autoSaveAll() {
+        if (dirtyQuestions.size === 0) return;
+        
+        const toSave = [...dirtyQuestions];
+        dirtyQuestions.clear();
+        
+        toSave.forEach(qId => {
+            const ta = document.querySelector('textarea[name="answer_' + qId + '"]');
+            if (!ta) return;
+            
+            fetch('{% url "cartography:api_save_answer" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ question_id: qId, answer: ta.value })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.ok) {
+                    const card = ta.closest('.form-question');
+                    const feedback = card.querySelector('.save-feedback');
+                    if (feedback) {
+                        feedback.textContent = '✓ Auto-sauvegardé à ' + new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+                        feedback.className = 'save-feedback text-[10px] text-green-500';
+                    }
+                    // Update progress
+                    if (data.answered !== undefined) {
+                        document.getElementById('form-progress-text').textContent = data.answered + ' / ' + data.total + ' questions répondues';
+                        const pct = data.total > 0 ? Math.round((data.answered / data.total) * 100) : 0;
+                        document.getElementById('form-progress-pct').textContent = pct + '%';
+                        document.getElementById('form-progress-bar').style.width = pct + '%';
+                    }
+                }
+            })
+            .catch(() => { dirtyQuestions.add(qId); }); // Re-add on failure to retry
+        });
+    }
+
+    // Auto-save every 30 seconds
+    setInterval(autoSaveAll, 30000);
+    
+    // Also save on page unload
+    window.addEventListener('beforeunload', (e) => {
+        if (dirtyQuestions.size > 0) {
+            autoSaveAll();
+            e.preventDefault();
+            e.returnValue = 'Des réponses non sauvegardées. Voulez-vous quitter ?';
+        }
+    });
+    {% endif %}
 </script>
 {% endblock %}
