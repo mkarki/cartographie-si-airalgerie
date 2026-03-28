@@ -2027,95 +2027,74 @@ def api_kpi_stats(request):
 
 
 def debug_recover_data(request):
-    """TEMPORAIRE — Diagnostic filesystem Render pour récupérer l'ancien db.sqlite3"""
-    import subprocess, glob, sqlite3
+    """TEMPORAIRE — Diagnostic PostgreSQL + Django DB"""
+    import traceback
+    from django.db import connection
     results = []
     
-    # 1. Check current db.sqlite3
-    db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'db.sqlite3')
-    results.append(f"=== Current db.sqlite3: {db_path} ===")
-    if os.path.exists(db_path):
-        size = os.path.getsize(db_path)
-        results.append(f"Exists: {size} bytes")
-        try:
-            conn = sqlite3.connect(db_path)
-            cur = conn.cursor()
-            cur.execute("SELECT COUNT(*) FROM cartography_question WHERE answer != ''")
-            answered = cur.fetchone()[0]
-            results.append(f"Answered questions in current db: {answered}")
-            conn.close()
-        except Exception as e:
-            results.append(f"Error reading: {e}")
-    else:
-        results.append("NOT FOUND")
+    # 1. Database config
+    db_url = os.environ.get('DATABASE_URL', 'NOT SET')
+    results.append(f"=== DATABASE CONFIG ===")
+    results.append(f"DATABASE_URL: {'SET (' + db_url[:30] + '...)' if db_url != 'NOT SET' else 'NOT SET'}")
     
-    # 2. Search for any sqlite3 files on the filesystem
-    results.append("\n=== Searching for *.sqlite3 files ===")
-    search_dirs = ['/opt/render', '/tmp', '/var', '/home', '/srv', '/app', os.path.expanduser('~')]
-    for d in search_dirs:
-        try:
-            for root, dirs, files in os.walk(d):
-                for f in files:
-                    if 'sqlite' in f.lower() or f.endswith('.db'):
-                        fpath = os.path.join(root, f)
-                        try:
-                            sz = os.path.getsize(fpath)
-                            results.append(f"FOUND: {fpath} ({sz} bytes)")
-                            if sz > 100000:  # Might have data
-                                try:
-                                    conn = sqlite3.connect(fpath)
-                                    cur = conn.cursor()
-                                    cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
-                                    tables = [r[0] for r in cur.fetchall()]
-                                    if 'cartography_question' in tables:
-                                        cur.execute("SELECT COUNT(*) FROM cartography_question WHERE answer != ''")
-                                        answered = cur.fetchone()[0]
-                                        results.append(f"  >>> HAS CARTOGRAPHY DATA! Answered: {answered}")
-                                    conn.close()
-                                except:
-                                    pass
-                        except:
-                            pass
-                # Limit depth
-                if root.count(os.sep) > 5:
-                    dirs.clear()
-        except PermissionError:
-            results.append(f"Permission denied: {d}")
-        except Exception as e:
-            results.append(f"Error scanning {d}: {e}")
+    from django.conf import settings
+    db_conf = settings.DATABASES.get('default', {})
+    results.append(f"ENGINE: {db_conf.get('ENGINE', '?')}")
+    results.append(f"NAME: {db_conf.get('NAME', '?')}")
+    results.append(f"HOST: {db_conf.get('HOST', '?')}")
     
-    # 3. Check /opt/render/project for old deployments
-    results.append("\n=== /opt/render/project contents ===")
+    # 2. Test DB connection
+    results.append(f"\n=== DB CONNECTION TEST ===")
     try:
-        for root, dirs, files in os.walk('/opt/render/project'):
-            level = root.replace('/opt/render/project', '').count(os.sep)
-            indent = ' ' * 2 * level
-            results.append(f'{indent}{os.path.basename(root)}/')
-            if level > 2:
-                dirs.clear()
-                continue
-            for f in files:
-                fpath = os.path.join(root, f)
-                try:
-                    sz = os.path.getsize(fpath)
-                    if sz > 50000 or 'sqlite' in f.lower() or 'db' in f.lower():
-                        results.append(f'{indent}  {f} ({sz} bytes)')
-                except:
-                    pass
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+            results.append("Connection: OK")
+    except Exception as e:
+        results.append(f"Connection FAILED: {e}")
+        results.append(traceback.format_exc())
+    
+    # 3. Check tables
+    results.append(f"\n=== TABLES ===")
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename")
+            tables = [r[0] for r in cursor.fetchall()]
+            results.append(f"Tables ({len(tables)}): {', '.join(tables[:20])}")
+    except Exception as e:
+        results.append(f"Error listing tables: {e}")
+        # Maybe it's SQLite
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+                tables = [r[0] for r in cursor.fetchall()]
+                results.append(f"SQLite tables ({len(tables)}): {', '.join(tables[:20])}")
+        except Exception as e2:
+            results.append(f"Error listing SQLite tables: {e2}")
+    
+    # 4. Check data counts
+    results.append(f"\n=== DATA COUNTS ===")
+    try:
+        results.append(f"Systems: {System.objects.count()}")
+        results.append(f"Questionnaires: {Questionnaire.objects.count()}")
+        results.append(f"Questions: {Question.objects.count()}")
+        results.append(f"KeyUserAccess: {KeyUserAccess.objects.count()}")
+        results.append(f"Answered: {Question.objects.exclude(answer='').count()}")
+    except Exception as e:
+        results.append(f"Error counting: {e}")
+        results.append(traceback.format_exc())
+    
+    # 5. Check migrations
+    results.append(f"\n=== MIGRATIONS ===")
+    try:
+        with connection.cursor() as cursor:
+            try:
+                cursor.execute("SELECT app, name FROM django_migrations ORDER BY id DESC LIMIT 10")
+                for row in cursor.fetchall():
+                    results.append(f"  {row[0]}.{row[1]}")
+            except Exception as e:
+                results.append(f"No django_migrations table: {e}")
     except Exception as e:
         results.append(f"Error: {e}")
-    
-    # 4. Check environment
-    results.append("\n=== DATABASE CONFIG ===")
-    db_url = os.environ.get('DATABASE_URL', 'NOT SET')
-    results.append(f"DATABASE_URL: {'SET (postgres)' if 'postgres' in db_url else db_url}")
-    
-    # 5. Check if there's a WAL file (write-ahead log) that might have data
-    wal_path = db_path + '-wal'
-    shm_path = db_path + '-shm'
-    results.append(f"\n=== WAL/SHM files ===")
-    results.append(f"WAL: {'EXISTS ' + str(os.path.getsize(wal_path)) + ' bytes' if os.path.exists(wal_path) else 'NOT FOUND'}")
-    results.append(f"SHM: {'EXISTS ' + str(os.path.getsize(shm_path)) + ' bytes' if os.path.exists(shm_path) else 'NOT FOUND'}")
     
     return HttpResponse('\n'.join(results), content_type='text/plain; charset=utf-8')
 
