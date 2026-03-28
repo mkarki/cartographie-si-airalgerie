@@ -2099,6 +2099,59 @@ def debug_recover_data(request):
     return HttpResponse('\n'.join(results), content_type='text/plain; charset=utf-8')
 
 
+def debug_force_migrate(request):
+    """TEMPORAIRE — Force les migrations + loaddata au runtime"""
+    import traceback, io
+    from django.core.management import call_command
+    results = []
+    
+    # 1. Run migrate
+    results.append("=== RUNNING MIGRATE ===")
+    try:
+        out = io.StringIO()
+        call_command('migrate', verbosity=2, stdout=out)
+        results.append(out.getvalue())
+        results.append("MIGRATE: OK")
+    except Exception as e:
+        results.append(f"MIGRATE FAILED: {e}")
+        results.append(traceback.format_exc())
+    
+    # 2. Load fixture
+    results.append("\n=== LOADING FIXTURE ===")
+    try:
+        out = io.StringIO()
+        call_command('loaddata', 'initial_data', verbosity=2, stdout=out)
+        results.append(out.getvalue())
+        results.append("LOADDATA: OK")
+    except Exception as e:
+        results.append(f"LOADDATA FAILED: {e}")
+        results.append(traceback.format_exc())
+    
+    # 3. Create superuser
+    results.append("\n=== CREATE SUPERUSER ===")
+    try:
+        from django.contrib.auth.models import User
+        if not User.objects.filter(username='admin').exists():
+            User.objects.create_superuser('admin', 'admin@airalgerie.dz', 'AirAlgerie2026!')
+            results.append("Superuser admin created.")
+        else:
+            results.append("Superuser admin already exists.")
+    except Exception as e:
+        results.append(f"SUPERUSER FAILED: {e}")
+    
+    # 4. Data check
+    results.append("\n=== DATA CHECK ===")
+    try:
+        results.append(f"Systems: {System.objects.count()}")
+        results.append(f"Questionnaires: {Questionnaire.objects.count()}")
+        results.append(f"Questions: {Question.objects.count()}")
+        results.append(f"KeyUserAccess: {KeyUserAccess.objects.count()}")
+    except Exception as e:
+        results.append(f"Error: {e}")
+    
+    return HttpResponse('\n'.join(results), content_type='text/plain; charset=utf-8')
+
+
 def export_kpi_md(request):
     """Génère un rapport Markdown complet de l'avancement KPI — téléchargeable"""
     if not request.user.is_authenticated and not request.session.get('auditor_token'):

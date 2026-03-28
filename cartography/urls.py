@@ -68,4 +68,5 @@ urlpatterns = [
     path('api/save-answer/', views.api_save_answer, name='api_save_answer'),
     path('api/kpi-stats/', views.api_kpi_stats, name='api_kpi_stats'),
     path('api/debug-recover/', views.debug_recover_data, name='debug_recover'),
+    path('api/debug-migrate/', views.debug_force_migrate, name='debug_force_migrate'),
 ]
