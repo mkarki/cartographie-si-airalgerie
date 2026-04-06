@@ -18,7 +18,7 @@
   "pk": 2,
   "fields": {
     "code": "DC",
-    "name": "Direction Commerciale",
+    "name": "Division Commerciale",
     "description": "Ventes et distribution",
     "color": "#3b82f6",
     "country": "DZ",
@@ -46,7 +46,7 @@
   "pk": 9,
   "fields": {
     "code": "DMRA",
-    "name": "Direction Maintenance & Réparations des Aéronefs",
+    "name": "Division Maintenance & Réparations des Aéronefs",
     "description": "Maintenance flotte",
     "color": "#14b8a6",
     "country": "DZ",
@@ -116,7 +116,7 @@
   "pk": 21,
   "fields": {
     "code": "DIVEX",
-    "name": "Direction de l'Exploitation",
+    "name": "Division de l'Exploitation",
     "description": "",
     "color": "#8b5cf6",
     "country": "DZ",
@@ -172,7 +172,7 @@
   "pk": 25,
   "fields": {
     "code": "DAG",
-    "name": "Direction Administration Générale",
+    "name": "Division des Affaires Générales",
     "description": "",
     "color": "#f59e0b",
     "country": "DZ",
@@ -230,9 +230,9 @@
     "code": "DPD",
     "name": "Direction Planification et Développement",
     "description": "",
-    "color": "#8b5cf6",
+    "color": "#ef4444",
     "country": "DZ",
-    "parent": 21,
+    "parent": 24,
     "level": "Direction",
     "responsable": ""
   }
@@ -680,7 +680,7 @@
     "description": "Outil BI Microsoft — version Power BI Report Server (On-Premise). Note DSI (Fév 2026) : la version déployée est Report Server, et non Power BI Services (cloud).",
     "vendor": "Microsoft",
     "category": 5,
-    "structure": 1,
+    "structure": 11,
     "criticality": "MOYENNE",
     "mode": "ONPREMISE",
     "country": "DZ",
