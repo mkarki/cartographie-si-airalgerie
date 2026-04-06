@@ -1462,7 +1462,11 @@ def questionnaires_list(request):
     in_progress = Questionnaire.objects.filter(status='IN_PROGRESS').count()
     completed = Questionnaire.objects.filter(status='COMPLETED').count()
     total_questions = Question.objects.count()
-    total_answered = Question.objects.filter(is_answered=True).count()
+    # Questions répondues = réellement répondues + toutes les questions des questionnaires terminés (même si answer vide)
+    completed_qs = Questionnaire.objects.filter(status='COMPLETED')
+    completed_q_total = Question.objects.filter(section__questionnaire__in=completed_qs).count()
+    non_completed_answered = Question.objects.filter(is_answered=True).exclude(section__questionnaire__in=completed_qs).count()
+    total_answered = completed_q_total + non_completed_answered
     
     # Group by phase
     phase1 = [q for q in questionnaires if q.phase == 1]
@@ -1827,7 +1831,11 @@ def kpi_dashboard_view(request):
     q_completed = Questionnaire.objects.filter(status='COMPLETED').count()
     
     total_questions = Question.objects.count()
-    total_answered = Question.objects.exclude(answer='').count()
+    # Questions répondues = réellement répondues + toutes les questions des questionnaires terminés
+    completed_qs_kpi = Questionnaire.objects.filter(status='COMPLETED')
+    completed_q_total_kpi = Question.objects.filter(section__questionnaire__in=completed_qs_kpi).count()
+    non_completed_answered_kpi = Question.objects.exclude(answer='').exclude(section__questionnaire__in=completed_qs_kpi).count()
+    total_answered = completed_q_total_kpi + non_completed_answered_kpi
     total_validated = Question.objects.filter(validation_status='VALIDATED').count()
     
     questionnaire_progress = int((total_answered / total_questions * 100)) if total_questions > 0 else 0
@@ -1839,7 +1847,11 @@ def kpi_dashboard_view(request):
         phase_qs = Questionnaire.objects.filter(phase=phase_num)
         phase_questions = Question.objects.filter(section__questionnaire__phase=phase_num)
         p_total = phase_questions.count()
-        p_answered = phase_questions.exclude(answer='').count()
+        # Compter toutes les questions des questionnaires terminés comme répondues
+        phase_completed_qs = phase_qs.filter(status='COMPLETED')
+        p_completed_total = Question.objects.filter(section__questionnaire__in=phase_completed_qs).count()
+        p_non_completed_answered = phase_questions.exclude(answer='').exclude(section__questionnaire__in=phase_completed_qs).count()
+        p_answered = p_completed_total + p_non_completed_answered
         p_validated = phase_questions.filter(validation_status='VALIDATED').count()
         phase_data.append({
             'phase': phase_num,
@@ -1990,7 +2002,11 @@ def api_kpi_stats(request):
     q_in_progress = Questionnaire.objects.filter(status='IN_PROGRESS').count()
     
     total_questions = Question.objects.count()
-    total_answered = Question.objects.exclude(answer='').count()
+    # Questions répondues = réellement répondues + toutes les questions des questionnaires terminés
+    api_completed_qs = Questionnaire.objects.filter(status='COMPLETED')
+    api_completed_q_total = Question.objects.filter(section__questionnaire__in=api_completed_qs).count()
+    api_non_completed_answered = Question.objects.exclude(answer='').exclude(section__questionnaire__in=api_completed_qs).count()
+    total_answered = api_completed_q_total + api_non_completed_answered
     total_validated = Question.objects.filter(validation_status='VALIDATED').count()
     
     # Per-phase
@@ -1998,7 +2014,11 @@ def api_kpi_stats(request):
     for p in [1, 2, 3]:
         pq = Question.objects.filter(section__questionnaire__phase=p)
         pt = pq.count()
-        pa = pq.exclude(answer='').count()
+        # Compter toutes les questions des questionnaires terminés comme répondues
+        p_completed_qs = Questionnaire.objects.filter(phase=p, status='COMPLETED')
+        p_completed_total = Question.objects.filter(section__questionnaire__in=p_completed_qs).count()
+        p_non_completed_answered = pq.exclude(answer='').exclude(section__questionnaire__in=p_completed_qs).count()
+        pa = p_completed_total + p_non_completed_answered
         phases.append({
             'phase': p,
             'total': pt,
@@ -2042,7 +2062,11 @@ def export_kpi_md(request):
     ).distinct().count()
     total_questionnaires = Questionnaire.objects.count()
     total_questions = Question.objects.count()
-    total_answered = Question.objects.exclude(answer='').count()
+    # Questions répondues = réellement répondues + toutes les questions des questionnaires terminés
+    md_completed_qs = Questionnaire.objects.filter(status='COMPLETED')
+    md_completed_q_total = Question.objects.filter(section__questionnaire__in=md_completed_qs).count()
+    md_non_completed_answered = Question.objects.exclude(answer='').exclude(section__questionnaire__in=md_completed_qs).count()
+    total_answered = md_completed_q_total + md_non_completed_answered
     total_validated = Question.objects.filter(validation_status='VALIDATED').count()
     questionnaire_progress = int((total_answered / total_questions * 100)) if total_questions > 0 else 0
     total_flows = DataFlow.objects.count()
@@ -2066,7 +2090,12 @@ def export_kpi_md(request):
         phase_qs = list(Questionnaire.objects.filter(phase=phase_num).prefetch_related('sections__questions'))
         phase_questions = Question.objects.filter(section__questionnaire__phase=phase_num)
         p_total = phase_questions.count()
-        p_answered = phase_questions.exclude(answer='').count()
+        # Compter toutes les questions des questionnaires terminés comme répondues
+        md_phase_completed_qs = [q for q in phase_qs if q.status == 'COMPLETED']
+        md_phase_completed_ids = [q.id for q in md_phase_completed_qs]
+        p_completed_q_total = Question.objects.filter(section__questionnaire__id__in=md_phase_completed_ids).count() if md_phase_completed_ids else 0
+        p_non_completed_answered = phase_questions.exclude(answer='').exclude(section__questionnaire__id__in=md_phase_completed_ids).count() if md_phase_completed_ids else phase_questions.exclude(answer='').count()
+        p_answered = p_completed_q_total + p_non_completed_answered
         p_validated = phase_questions.filter(validation_status='VALIDATED').count()
         p_completed = sum(1 for q in phase_qs if q.progress_percent == 100)
         p_in_progress = sum(1 for q in phase_qs if 0 < q.answered_questions < q.total_questions)

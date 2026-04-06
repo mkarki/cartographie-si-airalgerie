@@ -443,6 +443,8 @@ class Questionnaire(models.Model):
     
     @property
     def answered_questions(self):
+        if self.status == 'COMPLETED':
+            return self.total_questions
         return Question.objects.filter(section__questionnaire=self).exclude(answer='').count()
     
     @property

@@ -46,7 +46,7 @@
   "pk": 9,
   "fields": {
     "code": "DMRA",
-    "name": "Direction Maintenance et Révision Avions",
+    "name": "Direction Maintenance & Réparations des Aéronefs",
     "description": "Maintenance flotte",
     "color": "#14b8a6",
     "country": "DZ",
@@ -88,7 +88,7 @@
   "pk": 19,
   "fields": {
     "code": "DAGP",
-    "name": "Direction Administration Générale et Patrimoine",
+    "name": "Direction Achat et Gestion du Patrimoine",
     "description": "",
     "color": "#f59e0b",
     "country": "DZ",
@@ -130,7 +130,7 @@
   "pk": 22,
   "fields": {
     "code": "DSC",
-    "name": "Direction Sûreté et Conformité",
+    "name": "Direction de la Surveillance de la Conformité",
     "description": "",
     "color": "#ef4444",
     "country": "DZ",

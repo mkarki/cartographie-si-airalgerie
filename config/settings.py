@@ -18,10 +18,9 @@ if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 CSRF_TRUSTED_ORIGINS = [
-    'http://127.0.0.1:*',
-    'http://localhost:*',
+    'http://127.0.0.1:8888',
+    'http://localhost:8888',
     'http://85.31.237.249',
-    'http://85.31.237.249:*',
     'https://*.onrender.com',
 ]
 
@@ -44,7 +43,10 @@ MIDDLEWARE = [
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+]
+if not DEBUG:
+    MIDDLEWARE.append('django.middleware.csrf.CsrfViewMiddleware')
+MIDDLEWARE += [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
