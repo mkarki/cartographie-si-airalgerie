@@ -14,7 +14,7 @@ from .models import (
     DataField, MessageFormat, MessageField, DataDomain,
     DataSample, FlowFieldHypothesis, FlowValidation,
     ReferenceData, FlowReferential, DataImportHistory, COUNTRY_CHOICES,
-    Questionnaire, QuestionSection, Question, KeyUserAccess, AuditorAccess
+    Questionnaire, QuestionSection, Question, KeyUserAccess, AuditorAccess, DivisionAccess
 )
 
 
@@ -46,6 +46,10 @@ def logout_view(request):
     request.session.pop('key_user_questionnaires', None)
     request.session.pop('auditor_token', None)
     request.session.pop('auditor_name', None)
+    request.session.pop('division_token', None)
+    request.session.pop('division_name', None)
+    request.session.pop('division_structure_id', None)
+    request.session.pop('division_structure_code', None)
     logout(request)
     return redirect('cartography:login')
 
@@ -89,6 +93,130 @@ def auditor_login(request):
         return redirect('cartography:kpi_dashboard')
     except AuditorAccess.DoesNotExist:
         return render(request, 'cartography/login.html', {'error': 'Code auditeur invalide ou désactivé.'})
+
+
+def division_login(request):
+    """Accès division via token — redirige vers le dashboard division"""
+    token = request.GET.get('token', '').strip()
+    if not token:
+        return redirect('cartography:login')
+    try:
+        access = DivisionAccess.objects.select_related('structure').get(token=token, is_active=True)
+        access.last_accessed = timezone.now()
+        access.save(update_fields=['last_accessed'])
+        request.session['division_token'] = token
+        request.session['division_name'] = access.name
+        request.session['division_structure_id'] = access.structure.pk
+        request.session['division_structure_code'] = access.structure.code
+        return redirect('cartography:division_dashboard')
+    except DivisionAccess.DoesNotExist:
+        return render(request, 'cartography/login.html', {'error': 'Code division invalide ou désactivé.'})
+
+
+def division_dashboard(request):
+    """Dashboard division — avancement des questionnaires de la division"""
+    division_token = request.session.get('division_token')
+    if not division_token:
+        return redirect('cartography:login')
+    
+    try:
+        access = DivisionAccess.objects.select_related('structure').get(token=division_token, is_active=True)
+    except DivisionAccess.DoesNotExist:
+        request.session.pop('division_token', None)
+        return redirect('cartography:login')
+    
+    division = access.structure
+    # Get all child structures (directions under this division)
+    children = Structure.objects.filter(parent=division)
+    all_structures = [division] + list(children)
+    
+    # Get all systems belonging to this division or its child directions
+    systems = System.objects.filter(structure__in=all_structures).select_related('structure')
+    
+    # Get questionnaires for these systems
+    questionnaires = Questionnaire.objects.filter(
+        system__in=systems
+    ).prefetch_related('sections__questions').select_related('system__structure')
+    
+    # Stats
+    total_q = questionnaires.count()
+    completed = questionnaires.filter(status='COMPLETED').count()
+    in_progress = questionnaires.filter(status='IN_PROGRESS').count()
+    not_started = questionnaires.filter(status='NOT_STARTED').count()
+    
+    total_questions = 0
+    total_answered = 0
+    for q in questionnaires:
+        total_questions += q.total_questions
+        total_answered += q.answered_questions
+    
+    global_progress = int((total_answered / total_questions * 100)) if total_questions > 0 else 0
+    
+    # Group by child direction
+    directions_data = []
+    for struct in all_structures:
+        struct_systems = systems.filter(structure=struct)
+        struct_quests = [q for q in questionnaires if q.system and q.system.structure_id == struct.pk]
+        if struct_quests:
+            s_total = sum(q.total_questions for q in struct_quests)
+            s_answered = sum(q.answered_questions for q in struct_quests)
+            s_progress = int((s_answered / s_total * 100)) if s_total > 0 else 0
+            directions_data.append({
+                'structure': struct,
+                'questionnaires': struct_quests,
+                'total_questions': s_total,
+                'total_answered': s_answered,
+                'progress': s_progress,
+            })
+    
+    context = {
+        'division': division,
+        'access': access,
+        'questionnaires': questionnaires,
+        'directions_data': directions_data,
+        'total_questionnaires': total_q,
+        'completed': completed,
+        'in_progress': in_progress,
+        'not_started': not_started,
+        'total_questions': total_questions,
+        'total_answered': total_answered,
+        'global_progress': global_progress,
+    }
+    return render(request, 'cartography/division_dashboard.html', context)
+
+
+def division_questionnaire_view(request, pk):
+    """Consultation lecture seule d'un questionnaire par un responsable division"""
+    division_token = request.session.get('division_token')
+    if not division_token:
+        return redirect('cartography:login')
+    
+    try:
+        access = DivisionAccess.objects.select_related('structure').get(token=division_token, is_active=True)
+    except DivisionAccess.DoesNotExist:
+        return redirect('cartography:login')
+    
+    division = access.structure
+    children = Structure.objects.filter(parent=division)
+    all_structures = [division] + list(children)
+    
+    questionnaire = get_object_or_404(
+        Questionnaire.objects.prefetch_related('sections__questions'),
+        pk=pk
+    )
+    
+    # Check that this questionnaire belongs to the division
+    if questionnaire.system and questionnaire.system.structure not in all_structures:
+        return redirect('cartography:division_dashboard')
+    
+    context = {
+        'questionnaire': questionnaire,
+        'sections': questionnaire.sections.prefetch_related('questions').all(),
+        'division': division,
+        'access': access,
+        'is_readonly': True,
+    }
+    return render(request, 'cartography/division_questionnaire.html', context)
 
 
 @login_required(login_url='/login/')

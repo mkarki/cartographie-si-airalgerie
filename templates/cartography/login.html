@@ -78,6 +78,23 @@
             </form>
         </div>
 
+        <!-- Division access -->
+        <div class="glass rounded-2xl p-6 mt-4">
+            <h3 class="text-sm font-semibold mb-3 flex items-center gap-2">
+                <i data-lucide="building-2" class="w-4 h-4 text-blue-400"></i>
+                Accès Division
+            </h3>
+            <p class="text-xs text-gray-500 mb-3">Vous êtes responsable de division ? Entrez votre code d'accès.</p>
+            <form method="get" action="{% url 'cartography:division_login' %}" class="flex gap-2">
+                <input type="text" name="token" required
+                    class="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-blue-500/50 transition"
+                    placeholder="Code division">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 transition rounded-lg px-4 py-2 text-sm font-semibold">
+                    Accéder
+                </button>
+            </form>
+        </div>
+
         <p class="text-center text-[10px] text-gray-700 mt-6">© 2026 Air Algérie DSI · Alpha Aero Systems</p>
     </div>
     <script>lucide.createIcons();</script>

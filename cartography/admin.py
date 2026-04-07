@@ -2,7 +2,7 @@ from django.contrib import admin
 from .models import (
     Structure, SystemCategory, System, DataFlow, 
     DataField, MessageFormat, MessageField, DataDomain,
-    Questionnaire, QuestionSection, Question, KeyUserAccess, AuditorAccess
+    Questionnaire, QuestionSection, Question, KeyUserAccess, AuditorAccess, DivisionAccess
 )
 
 
@@ -97,4 +97,12 @@ class AuditorAccessAdmin(admin.ModelAdmin):
     list_display = ['name', 'email', 'token', 'is_active', 'last_accessed']
     list_filter = ['is_active']
     search_fields = ['name', 'email', 'token']
+    readonly_fields = ['token', 'created_at', 'last_accessed']
+
+
+@admin.register(DivisionAccess)
+class DivisionAccessAdmin(admin.ModelAdmin):
+    list_display = ['name', 'structure', 'email', 'token', 'is_active', 'last_accessed']
+    list_filter = ['is_active', 'structure']
+    search_fields = ['name', 'email', 'token', 'structure__code']
     readonly_fields = ['token', 'created_at', 'last_accessed']

@@ -1,0 +1,165 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ division.code }} — Tableau de bord Division</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { 'ah-red': '#c8102e', 'ah-green': '#00843d', 'ah-dark': '#1a1a2e' } } }
+        }
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); }
+        .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+    </style>
+</head>
+<body class="min-h-full text-white">
+
+    <!-- Header -->
+    <header class="glass border-b border-white/10 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold" style="background: {{ division.color }}20; color: {{ division.color }};">
+                    {{ division.code|truncatechars:3 }}
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold">{{ division.name }}</h1>
+                    <p class="text-xs text-gray-400">Connecté : {{ access.name }}</p>
+                </div>
+            </div>
+            <a href="{% url 'cartography:logout' %}" class="text-xs text-gray-400 hover:text-white transition flex items-center gap-1">
+                <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Déconnexion
+            </a>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-8">
+
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div class="glass rounded-xl p-4 text-center">
+                <p class="text-3xl font-bold text-blue-400">{{ total_questionnaires }}</p>
+                <p class="text-xs text-gray-500 mt-1">Systèmes</p>
+            </div>
+            <div class="glass rounded-xl p-4 text-center">
+                <p class="text-3xl font-bold text-green-400">{{ completed }}</p>
+                <p class="text-xs text-gray-500 mt-1">Terminés</p>
+            </div>
+            <div class="glass rounded-xl p-4 text-center">
+                <p class="text-3xl font-bold text-amber-400">{{ in_progress }}</p>
+                <p class="text-xs text-gray-500 mt-1">En cours</p>
+            </div>
+            <div class="glass rounded-xl p-4 text-center">
+                <p class="text-3xl font-bold text-gray-400">{{ not_started }}</p>
+                <p class="text-xs text-gray-500 mt-1">Non commencés</p>
+            </div>
+            <div class="glass rounded-xl p-4 text-center">
+                <p class="text-3xl font-bold" style="color: {{ division.color }};">{{ global_progress }}%</p>
+                <p class="text-xs text-gray-500 mt-1">Progression globale</p>
+            </div>
+        </div>
+
+        <!-- Global progress bar -->
+        <div class="glass rounded-xl p-5">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-semibold">Progression globale — {{ division.code }}</span>
+                <span class="text-sm font-bold" style="color: {{ division.color }};">{{ total_answered }}/{{ total_questions }} questions</span>
+            </div>
+            <div class="w-full bg-gray-700/50 rounded-full h-4">
+                <div class="h-4 rounded-full transition-all duration-500" style="width: {{ global_progress }}%; background: {{ division.color }};"></div>
+            </div>
+        </div>
+
+        <!-- Per Direction -->
+        {% for dir_data in directions_data %}
+        <div class="glass rounded-xl p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-3 h-3 rounded-full" style="background: {{ dir_data.structure.color }};"></div>
+                    <h2 class="text-base font-bold">{{ dir_data.structure.code }} — {{ dir_data.structure.name }}</h2>
+                </div>
+                <span class="text-sm font-semibold px-3 py-1 rounded-full" style="background: {{ dir_data.structure.color }}20; color: {{ dir_data.structure.color }};">
+                    {{ dir_data.progress }}%
+                </span>
+            </div>
+
+            <!-- Direction progress bar -->
+            <div class="w-full bg-gray-700/50 rounded-full h-2 mb-4">
+                <div class="h-2 rounded-full transition-all" style="width: {{ dir_data.progress }}%; background: {{ dir_data.structure.color }};"></div>
+            </div>
+
+            <!-- Questionnaires table -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-gray-500 text-xs border-b border-white/5">
+                            <th class="text-left py-2 pr-4">Système</th>
+                            <th class="text-left py-2 pr-4">Phase</th>
+                            <th class="text-left py-2 pr-4">Key User</th>
+                            <th class="text-left py-2 pr-4">Questions</th>
+                            <th class="text-left py-2 pr-4">Progression</th>
+                            <th class="text-left py-2 pr-4">Statut</th>
+                            <th class="text-center py-2">Consulter</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for q in dir_data.questionnaires %}
+                        <tr class="border-b border-white/5 hover:bg-white/5 transition">
+                            <td class="py-3 pr-4 font-medium">{{ q.system_name }}</td>
+                            <td class="py-3 pr-4">
+                                {% if q.phase == 1 %}
+                                <span class="text-xs px-2 py-0.5 rounded-full bg-red-500/20 text-red-300">P1</span>
+                                {% elif q.phase == 2 %}
+                                <span class="text-xs px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300">P2</span>
+                                {% else %}
+                                <span class="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-300">P3</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3 pr-4 text-gray-400 text-xs">{{ q.key_users|truncatechars:30 }}</td>
+                            <td class="py-3 pr-4 text-xs">{{ q.answered_questions }}/{{ q.total_questions }}</td>
+                            <td class="py-3 pr-4">
+                                <div class="flex items-center gap-2">
+                                    <div class="flex-1 bg-gray-700 rounded-full h-1.5 max-w-[80px]">
+                                        <div class="h-1.5 rounded-full {% if q.status == 'COMPLETED' %}bg-green-400{% elif q.status == 'IN_PROGRESS' %}bg-amber-400{% else %}bg-gray-600{% endif %}"
+                                             style="width: {{ q.progress_percent }}%"></div>
+                                    </div>
+                                    <span class="text-xs font-medium {% if q.status == 'COMPLETED' %}text-green-400{% elif q.status == 'IN_PROGRESS' %}text-amber-400{% else %}text-gray-500{% endif %}">{{ q.progress_percent }}%</span>
+                                </div>
+                            </td>
+                            <td class="py-3 pr-4">
+                                {% if q.status == 'COMPLETED' %}
+                                <span class="text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-300 font-medium">Terminé</span>
+                                {% elif q.status == 'IN_PROGRESS' %}
+                                <span class="text-xs px-2 py-1 rounded-full bg-amber-500/20 text-amber-300 font-medium">En cours</span>
+                                {% else %}
+                                <span class="text-xs px-2 py-1 rounded-full bg-gray-700 text-gray-400 font-medium">Non commencé</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3 text-center">
+                                <a href="{% url 'cartography:division_questionnaire' pk=q.pk %}"
+                                   class="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition">
+                                    <i data-lucide="eye" class="w-3 h-3"></i> Voir
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endfor %}
+
+    </main>
+
+    <footer class="text-center py-6">
+        <p class="text-[10px] text-gray-700">© 2026 Air Algérie DSI · Alpha Aero Systems</p>
+    </footer>
+
+    <script>lucide.createIcons();</script>
+</body>
+</html>

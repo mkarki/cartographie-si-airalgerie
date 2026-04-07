@@ -9,6 +9,9 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
     path('key-user/', views.key_user_login, name='key_user_login'),
     path('auditor/', views.auditor_login, name='auditor_login'),
+    path('division/', views.division_login, name='division_login'),
+    path('division/dashboard/', views.division_dashboard, name='division_dashboard'),
+    path('division/questionnaire/<int:pk>/', views.division_questionnaire_view, name='division_questionnaire'),
     
     path('', views.dashboard, name='dashboard'),
     path('systems/', views.systems_list, name='systems_list'),

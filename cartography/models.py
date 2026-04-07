@@ -577,6 +577,32 @@ class AuditorAccess(models.Model):
         super().save(*args, **kwargs)
 
 
+class DivisionAccess(models.Model):
+    """Accès division — token unique pour consulter l'avancement des questionnaires de sa division"""
+    structure = models.ForeignKey(Structure, on_delete=models.CASCADE, related_name='division_tokens',
+                                  help_text="Division rattachée")
+    name = models.CharField(max_length=200, help_text="Nom du responsable division")
+    email = models.EmailField(blank=True)
+    token = models.CharField(max_length=64, unique=True, db_index=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_accessed = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['structure', 'name']
+        verbose_name = "Accès Division"
+        verbose_name_plural = "Accès Divisions"
+    
+    def __str__(self):
+        return f"{self.name} → {self.structure.code}"
+    
+    def save(self, *args, **kwargs):
+        if not self.token:
+            import secrets
+            self.token = secrets.token_urlsafe(32)
+        super().save(*args, **kwargs)
+
+
 class FlowValidation(models.Model):
     """Validation d'un flux complet basée sur des échantillons"""
     STATUS_CHOICES = [
