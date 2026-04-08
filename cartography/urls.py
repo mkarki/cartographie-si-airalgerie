@@ -7,6 +7,7 @@ urlpatterns = [
     # Auth
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
+    path('access/', views.unified_token_login, name='unified_login'),
     path('key-user/', views.key_user_login, name='key_user_login'),
     path('auditor/', views.auditor_login, name='auditor_login'),
     path('division/', views.division_login, name='division_login'),

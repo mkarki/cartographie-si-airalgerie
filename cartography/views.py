@@ -54,6 +54,54 @@ def logout_view(request):
     return redirect('cartography:login')
 
 
+def unified_token_login(request):
+    """Accès unifié — détecte automatiquement le type de token (auditeur, division, key user)"""
+    token = request.GET.get('token', '').strip()
+    if not token:
+        return redirect('cartography:login')
+    # 1. Essayer AuditorAccess (PDG, conseillers)
+    try:
+        access = AuditorAccess.objects.get(token=token, is_active=True)
+        access.last_accessed = timezone.now()
+        access.save(update_fields=['last_accessed'])
+        request.session['auditor_token'] = token
+        request.session['auditor_name'] = access.name
+        return redirect('cartography:kpi_dashboard')
+    except AuditorAccess.DoesNotExist:
+        pass
+    # 2. Essayer DivisionAccess (divisionnaires, directeurs)
+    try:
+        access = DivisionAccess.objects.select_related('structure').get(token=token, is_active=True)
+        access.last_accessed = timezone.now()
+        access.save(update_fields=['last_accessed'])
+        request.session['division_token'] = token
+        request.session['division_name'] = access.name
+        request.session['division_structure_id'] = access.structure.pk
+        request.session['division_structure_code'] = access.structure.code
+        return redirect('cartography:division_dashboard')
+    except DivisionAccess.DoesNotExist:
+        pass
+    # 3. Essayer KeyUserAccess
+    try:
+        access = KeyUserAccess.objects.select_related('questionnaire').get(token=token, is_active=True)
+        access.last_accessed = timezone.now()
+        access.save(update_fields=['last_accessed'])
+        request.session['key_user_token'] = token
+        request.session['key_user_name'] = access.name
+        request.session['key_user_questionnaire_id'] = access.questionnaire.pk
+        all_access = KeyUserAccess.objects.filter(
+            name=access.name, is_active=True
+        ).select_related('questionnaire').order_by('questionnaire__system_name')
+        request.session['key_user_questionnaires'] = [
+            {'id': a.questionnaire.pk, 'name': a.questionnaire.system_name, 'token': a.token}
+            for a in all_access
+        ]
+        return redirect('cartography:questionnaire_form', pk=access.questionnaire.pk)
+    except KeyUserAccess.DoesNotExist:
+        pass
+    return render(request, 'cartography/login.html', {'error': 'Code d\'accès invalide ou désactivé.'})
+
+
 def key_user_login(request):
     """Accès key user via token — redirige vers le questionnaire"""
     token = request.GET.get('token', '').strip()

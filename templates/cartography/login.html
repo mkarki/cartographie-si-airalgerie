@@ -61,36 +61,21 @@
             </form>
         </div>
 
-        <!-- Key user access -->
+        <!-- Accès par code personnel -->
         <div class="glass rounded-2xl p-6 mt-4">
-            <h3 class="text-sm font-semibold mb-3 flex items-center gap-2">
-                <i data-lucide="key" class="w-4 h-4 text-amber-400"></i>
-                Accès Key User
-            </h3>
-            <p class="text-xs text-gray-500 mb-3">Vous êtes un interlocuteur métier ? Entrez votre code d'accès personnel.</p>
-            <form method="get" action="{% url 'cartography:key_user_login' %}" class="flex gap-2">
+            <div class="flex items-center gap-3 mb-1">
+                <div class="flex -space-x-1">
+                    <i data-lucide="shield" class="w-4 h-4 text-blue-400"></i>
+                </div>
+                <h3 class="text-sm font-semibold">Accès par code personnel</h3>
+            </div>
+            <p class="text-xs text-gray-500 mb-4">Direction générale, divisions, directions ou key users.</p>
+            <form method="get" action="{% url 'cartography:unified_login' %}" class="flex gap-2">
                 <input type="text" name="token" required
-                    class="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-amber-500/50 transition"
-                    placeholder="Votre code d'accès">
-                <button type="submit" class="bg-amber-600 hover:bg-amber-700 transition rounded-lg px-4 py-2 text-sm font-semibold">
-                    Accéder
-                </button>
-            </form>
-        </div>
-
-        <!-- Division access -->
-        <div class="glass rounded-2xl p-6 mt-4">
-            <h3 class="text-sm font-semibold mb-3 flex items-center gap-2">
-                <i data-lucide="building-2" class="w-4 h-4 text-blue-400"></i>
-                Accès Division
-            </h3>
-            <p class="text-xs text-gray-500 mb-3">Vous êtes responsable de division ? Entrez votre code d'accès.</p>
-            <form method="get" action="{% url 'cartography:division_login' %}" class="flex gap-2">
-                <input type="text" name="token" required
-                    class="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-blue-500/50 transition"
-                    placeholder="Code division">
-                <button type="submit" class="bg-blue-600 hover:bg-blue-700 transition rounded-lg px-4 py-2 text-sm font-semibold">
-                    Accéder
+                    class="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-blue-400/50 focus:ring-1 focus:ring-blue-400/30 transition"
+                    placeholder="Entrez votre code d'accès">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-500 transition rounded-lg px-5 py-2.5 text-sm font-semibold">
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
                 </button>
             </form>
         </div>
