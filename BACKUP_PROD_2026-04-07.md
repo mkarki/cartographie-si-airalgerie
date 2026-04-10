@@ -1,3 +1,35 @@
+# Sauvegarde État Production — 10 avril 2026, 08:54 (avant transfert e-doléance + DAG admin)
+
+| Indicateur | Valeur |
+|------------|--------|
+| Systèmes | 38 |
+| Questionnaires | 40 (15 terminés, 5 en cours) |
+| Questions | 619 (202 répondues, 32%) |
+| Phase 1 (Critique) | 96/332 (28%), 3 terminés / 7 |
+| Phase 2 (Important) | 40/150 (26%), 4 terminés / 15 |
+| Phase 3 (Standard) | 66/137 (48%), 8 terminés / 18 |
+| Flux documentés | 73 |
+| Échantillons | 14 |
+| Questions validées | 0 |
+| Dernière migration prod | 0015_add_division_access |
+
+## Changements à pousser
+
+- `0016_create_division_tokens` — Création des tokens divisionnaires
+- `0017_personalized_division_access` — Accès personnalisés
+- **E-doléance** : transféré de DRM → DVR (System id=34)
+- **Mme la DAG** : convertie DivisionAccess → AuditorAccess (vue complète, même token)
+- PostgreSQL Render : `dpg-d743dghaae7s73bad4og-a`
+- App Render : `cartographie-si-airalgerie.onrender.com`
+
+## Progression depuis le 8 avril
+
+- Questions répondues : 135 → **202** (+67, soit +49%)
+- Questionnaires terminés : 12 → **15** (+3)
+- Phase 1 : 30 → **96** réponses (+220%)
+
+---
+
 # Sauvegarde État Production — 8 avril 2026, 12:02 (avant push accès personnalisés)
 
 | Indicateur | Valeur |
