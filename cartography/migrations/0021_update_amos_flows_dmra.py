@@ -28,11 +28,13 @@ def update_amos_flows(apps, schema_editor):
         deleted, _ = DataFlow.objects.filter(source=src, target=tgt).delete()
         print(f"  DEL {src_code}→{tgt_code}: {deleted} flux supprimé(s)")
 
-    # Corrections descriptions
+    # Corrections descriptions + noms
     DataFlow.objects.filter(source=aims, target=amos).update(
+        name="Heures de vol, cycles et programme des vols",
         description="Heures de vol effectuées, cycles effectués et programme des vols transmis depuis AIMS vers AMOS"
     )
     DataFlow.objects.filter(source=amos, target=aims).update(
+        name="Prévisions d'immobilisation maintenance",
         description="Prévisions d'immobilisation de maintenance de la flotte transmises depuis AMOS vers AIMS"
     )
 
@@ -42,6 +44,7 @@ def update_amos_flows(apps, schema_editor):
         DataFlow.objects.create(
             source=amos,
             target=sage_fin,
+            name="Stock et valorisation des pièces",
             description="Stock et valorisation des pièces de rechange transmis depuis AMOS vers le système comptable (ERP)",
             frequency="PERIODIC",
         )
@@ -61,11 +64,13 @@ def reverse_amos_flows(apps, schema_editor):
     # Supprimer le nouveau flux
     DataFlow.objects.filter(source=amos, target=sage_fin).delete()
 
-    # Restaurer descriptions originales
+    # Restaurer descriptions + noms originaux
     DataFlow.objects.filter(source=aims, target=amos).update(
+        name="Plan Immobilisation",
         description="Transmission du plan d'immobilisation avions vers AMOS"
     )
     DataFlow.objects.filter(source=amos, target=aims).update(
+        name="Disponibilité Avions",
         description="Retour de la disponibilité des avions depuis AMOS"
     )
 
