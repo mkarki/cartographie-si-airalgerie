@@ -1,3 +1,26 @@
+# Sauvegarde État Production — 12 avril 2026, 15:59 (avant push correction flux AMOS)
+
+| Indicateur | Valeur |
+|------------|--------|
+| Systèmes | 38 |
+| Flux | 70 (était 73, -4 supprimés +1 créé) |
+| Structures | 17 |
+| Process | 1 |
+| ProcessSteps | 8 |
+| Dernière migration locale | 0020_seed_process_world_tracer |
+
+## Corrections flux AMOS (entretien DMRA 12/04/2026)
+
+- **Supprimé** AMOS → SAGE-STOCK (id=31) : aucun échange, stock AMOS autonome
+- **Supprimé** QPULSE → AMOS (id=55) : systèmes indépendants
+- **Supprimé** AMOS → QPULSE (id=54) : systèmes indépendants
+- **Supprimé** AMOS → AGS (id=29) : données viennent de l'avion, pas d'AMOS
+- **Corrigé** AIMS → AMOS (id=3) : heures de vol, cycles, programme des vols
+- **Corrigé** AMOS → AIMS (id=4) : prévisions d'immobilisation maintenance
+- **Créé** AMOS → SAGE-FIN : stock et valorisation pièces vers ERP comptable
+
+---
+
 # Sauvegarde État Production — 12 avril 2026, 13:13 (avant push module Process)
 
 | Indicateur | Valeur |
