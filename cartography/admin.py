@@ -2,7 +2,8 @@ from django.contrib import admin
 from .models import (
     Structure, SystemCategory, System, DataFlow, 
     DataField, MessageFormat, MessageField, DataDomain,
-    Questionnaire, QuestionSection, Question, KeyUserAccess, AuditorAccess, DivisionAccess
+    Questionnaire, QuestionSection, Question, KeyUserAccess, AuditorAccess, DivisionAccess,
+    Process, ProcessStep
 )
 
 
@@ -106,3 +107,36 @@ class DivisionAccessAdmin(admin.ModelAdmin):
     list_filter = ['is_active', 'structure']
     search_fields = ['name', 'email', 'token', 'structure__code']
     readonly_fields = ['token', 'created_at', 'last_accessed']
+
+
+class ProcessStepInline(admin.TabularInline):
+    model = ProcessStep
+    extra = 0
+    fields = ['order', 'title', 'step_type', 'actor_role', 'actor_structure', 'duration_estimate']
+    ordering = ['order']
+
+
+@admin.register(Process)
+class ProcessAdmin(admin.ModelAdmin):
+    list_display = ['code', 'name', 'category', 'status', 'step_count', 'ai_generated', 'updated_at']
+    list_filter = ['category', 'status', 'ai_generated']
+    search_fields = ['code', 'name', 'description', 'context']
+    filter_horizontal = ['structures', 'systems']
+    readonly_fields = ['created_at', 'updated_at']
+    inlines = [ProcessStepInline]
+    fieldsets = (
+        (None, {'fields': ('code', 'name', 'description', 'category', 'status', 'created_by')}),
+        ('Contexte entretien', {'fields': ('context', 'source_questionnaire'), 'classes': ('collapse',)}),
+        ('Périmètre', {'fields': ('structures', 'systems')}),
+        ('Analyse', {'fields': ('problems', 'recommendations')}),
+        ('Workflow IA', {'fields': ('workflow_mermaid', 'workflow_json', 'ai_generated'), 'classes': ('collapse',)}),
+        ('Métadonnées', {'fields': ('created_at', 'updated_at')}),
+    )
+
+
+@admin.register(ProcessStep)
+class ProcessStepAdmin(admin.ModelAdmin):
+    list_display = ['process', 'order', 'title', 'step_type', 'actor_role', 'actor_structure']
+    list_filter = ['step_type', 'actor_structure', 'process']
+    search_fields = ['title', 'description', 'actor_role']
+    filter_horizontal = ['systems_used']

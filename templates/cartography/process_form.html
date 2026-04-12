@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if process %}Éditer {{ process.name }}{% else %}Nouveau Process{% endif %} — Cartographie SI{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Header -->
+    <div class="flex items-center gap-4">
+        <a href="{% url 'cartography:processes_list' %}" class="text-gray-500 hover:text-white transition">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        </a>
+        <h1 class="text-2xl font-bold">{% if process %}Éditer « {{ process.name }} »{% else %}Nouveau Process{% endif %}</h1>
+    </div>
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+
+        <!-- Infos principales -->
+        <div class="glass rounded-xl p-6 space-y-4">
+            <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-400 mb-4">Informations générales</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Code *</label>
+                    <input type="text" name="code" value="{{ process.code|default:'' }}" required
+                        placeholder="PROC-WT-001" class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Catégorie</label>
+                    <select name="category" class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200">
+                        {% for val, label in categories %}
+                        <option value="{{ val }}" {% if process and process.category == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Nom du process *</label>
+                <input type="text" name="name" value="{{ process.name|default:'' }}" required
+                    placeholder="Gestion des irrégularités bagages" class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600">
+            </div>
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Description courte</label>
+                <textarea name="description" rows="2" placeholder="Résumé du process en une ou deux phrases"
+                    class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600">{{ process.description|default:'' }}</textarea>
+            </div>
+            {% if process %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Statut</label>
+                    <select name="status" class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200">
+                        {% for val, label in statuses %}
+                        <option value="{{ val }}" {% if process.status == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Contexte entretien -->
+        <div class="glass rounded-xl p-6 space-y-4">
+            <div class="flex items-center justify-between">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-400">Contexte (description entretien)</h2>
+                <span class="text-[10px] text-gray-600">Ce texte sera utilisé par l'IA pour générer le workflow</span>
+            </div>
+            <textarea name="context" rows="12" placeholder="Collez ici la description complète du process issue de l'entretien.
+
+Exemple : 
+Le process de gestion des irrégularités bagages commence lorsqu'un passager signale une perte de bagage à l'escale d'arrivée. L'agent d'escale crée un dossier dans World Tracer..."
+                class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-3 text-sm text-gray-200 placeholder-gray-600 font-mono leading-relaxed">{{ process.context|default:'' }}</textarea>
+        </div>
+
+        <!-- Périmètre -->
+        <div class="glass rounded-xl p-6 space-y-4">
+            <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-400">Périmètre (optionnel — l'IA peut aussi les identifier)</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-2">Structures impactées</label>
+                    <select name="structures" multiple size="6" class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200">
+                        {% for s in structures %}
+                        <option value="{{ s.id }}" {% if process and s in process.structures.all %}selected{% endif %}>{{ s.code }} — {{ s.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <p class="text-[10px] text-gray-600 mt-1">Ctrl+clic pour sélection multiple</p>
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-2">Systèmes impliqués</label>
+                    <select name="systems" multiple size="6" class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200">
+                        {% for s in systems_list %}
+                        <option value="{{ s.id }}" {% if process and s in process.systems.all %}selected{% endif %}>{{ s.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <p class="text-[10px] text-gray-600 mt-1">Ctrl+clic pour sélection multiple</p>
+                </div>
+            </div>
+        </div>
+
+        {% if process %}
+        <!-- Analyse -->
+        <div class="glass rounded-xl p-6 space-y-4">
+            <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-400">Analyse</h2>
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Problèmes identifiés</label>
+                <textarea name="problems" rows="4" class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600">{{ process.problems|default:'' }}</textarea>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Recommandations</label>
+                <textarea name="recommendations" rows="4" class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600">{{ process.recommendations|default:'' }}</textarea>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Actions -->
+        <div class="flex items-center justify-between">
+            <a href="{% url 'cartography:processes_list' %}" class="text-gray-400 hover:text-white text-sm transition">Annuler</a>
+            <button type="submit" class="flex items-center gap-2 bg-ah-red hover:bg-red-700 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition">
+                <i data-lucide="save" class="w-4 h-4"></i>
+                {% if process %}Enregistrer{% else %}Créer le process{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

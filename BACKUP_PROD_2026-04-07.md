@@ -1,3 +1,29 @@
+# Sauvegarde État Production — 12 avril 2026, 13:13 (avant push module Process)
+
+| Indicateur | Valeur |
+|------------|--------|
+| Systèmes | 38 |
+| Flux | 73 |
+| Structures | 17 |
+| Questionnaires | 40 |
+| Questions | 619 |
+| Échantillons | 14 |
+| KeyUserAccess | 40 |
+| AuditorAccess | 4 |
+| DivisionAccess | 11 |
+| Process | 1 (test local) |
+| ProcessSteps | 8 |
+| Dernière migration prod | 0018_edoleance_dvr_dag_auditor |
+
+## Changements à pousser
+
+- `0019_add_process_models` — Modèles Process + ProcessStep
+- Module Process complet : CRUD + service IA Claude + diagramme Mermaid
+- Accès Process réservé aux admins (staff_member_required)
+- Lien sidebar masqué pour non-admins
+
+---
+
 # Sauvegarde État Production — 10 avril 2026, 08:54 (avant transfert e-doléance + DAG admin)
 
 | Indicateur | Valeur |

@@ -71,4 +71,12 @@ urlpatterns = [
     path('api/database-schema/', views.api_database_schema, name='api_database_schema'),
     path('api/save-answer/', views.api_save_answer, name='api_save_answer'),
     path('api/kpi-stats/', views.api_kpi_stats, name='api_kpi_stats'),
+
+    # Process
+    path('processes/', views.processes_list, name='processes_list'),
+    path('processes/new/', views.process_create, name='process_create'),
+    path('processes/<int:pk>/', views.process_detail, name='process_detail'),
+    path('processes/<int:pk>/edit/', views.process_edit, name='process_edit'),
+    path('api/process/<int:pk>/generate/', views.api_process_generate_workflow, name='api_process_generate'),
+    path('api/process/<int:pk>/save-mermaid/', views.api_process_save_mermaid, name='api_process_save_mermaid'),
 ]

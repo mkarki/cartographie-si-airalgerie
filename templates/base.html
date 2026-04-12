@@ -171,6 +171,12 @@
                             <i data-lucide="database" class="w-4 h-4 flex-shrink-0"></i>
                             <span>Domaines</span>
                         </a>
+                        {% if user.is_staff %}
+                        <a href="{% url 'cartography:processes_list' %}" class="sidebar-link flex items-center gap-2.5 px-3 py-2 rounded-md text-gray-300 {% if 'process' in request.resolver_match.url_name %}active{% endif %}">
+                            <i data-lucide="workflow" class="w-4 h-4 flex-shrink-0"></i>
+                            <span>Process</span>
+                        </a>
+                        {% endif %}
                     </div>
                 </div>
                 

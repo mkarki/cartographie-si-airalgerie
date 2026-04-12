@@ -647,3 +647,96 @@ class FlowValidation(models.Model):
         if total == 0:
             return 0
         return int((self.fields_confirmed / total) * 100)
+
+
+class Process(models.Model):
+    """Process métier documenté lors des entretiens"""
+    STATUS_CHOICES = [
+        ('DRAFT', 'Brouillon'),
+        ('DOCUMENTED', 'Documenté'),
+        ('VALIDATED', 'Validé'),
+        ('TO_BE', 'Cible (TO-BE)'),
+    ]
+    CATEGORY_CHOICES = [
+        ('OPERATIONAL', 'Opérationnel'),
+        ('SUPPORT', 'Support'),
+        ('MANAGEMENT', 'Management'),
+        ('COMMERCIAL', 'Commercial'),
+        ('MAINTENANCE', 'Maintenance'),
+        ('FINANCE', 'Finance'),
+        ('HR', 'Ressources Humaines'),
+        ('IT', 'Informatique'),
+        ('OTHER', 'Autre'),
+    ]
+
+    name = models.CharField(max_length=300)
+    code = models.CharField(max_length=50, unique=True, help_text="Code court (ex: PROC-WT-001)")
+    description = models.TextField(blank=True, help_text="Description courte du process")
+    context = models.TextField(blank=True, help_text="Description complète en langage naturel (entretien)")
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='OPERATIONAL')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='DRAFT')
+    structures = models.ManyToManyField(Structure, blank=True, related_name='processes', help_text="Structures impactées")
+    systems = models.ManyToManyField(System, blank=True, related_name='processes', help_text="Systèmes impliqués")
+    problems = models.TextField(blank=True, help_text="Problèmes et dysfonctionnements identifiés")
+    recommendations = models.TextField(blank=True, help_text="Recommandations d'amélioration")
+    workflow_json = models.JSONField(default=dict, blank=True, help_text="Workflow structuré (nœuds + arêtes)")
+    workflow_mermaid = models.TextField(blank=True, help_text="Code Mermaid du diagramme")
+    ai_generated = models.BooleanField(default=False, help_text="Workflow généré par IA")
+    source_questionnaire = models.ForeignKey(Questionnaire, on_delete=models.SET_NULL, null=True, blank=True, related_name='processes')
+    created_by = models.CharField(max_length=200, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['category', 'name']
+        verbose_name = "Process"
+        verbose_name_plural = "Process"
+
+    def __str__(self):
+        return f"[{self.code}] {self.name}"
+
+    @property
+    def step_count(self):
+        return self.steps.count()
+
+    @property
+    def structure_codes(self):
+        return list(self.structures.values_list('code', flat=True))
+
+    @property
+    def system_names(self):
+        return list(self.systems.values_list('name', flat=True))
+
+
+class ProcessStep(models.Model):
+    """Étape individuelle d'un process"""
+    STEP_TYPE_CHOICES = [
+        ('MANUAL', 'Action manuelle'),
+        ('AUTOMATED', 'Action automatisée'),
+        ('DECISION', 'Point de décision'),
+        ('INPUT', 'Entrée / Déclencheur'),
+        ('OUTPUT', 'Sortie / Résultat'),
+        ('WAIT', 'Attente / Délai'),
+        ('PARALLEL', 'Actions parallèles'),
+    ]
+
+    process = models.ForeignKey(Process, on_delete=models.CASCADE, related_name='steps')
+    order = models.IntegerField(default=0)
+    title = models.CharField(max_length=300)
+    description = models.TextField(blank=True)
+    step_type = models.CharField(max_length=20, choices=STEP_TYPE_CHOICES, default='MANUAL')
+    actor_role = models.CharField(max_length=200, blank=True, help_text="Poste/rôle responsable")
+    actor_structure = models.ForeignKey(Structure, on_delete=models.SET_NULL, null=True, blank=True, help_text="Structure responsable")
+    systems_used = models.ManyToManyField(System, blank=True, related_name='process_steps', help_text="Systèmes utilisés à cette étape")
+    data_inputs = models.TextField(blank=True, help_text="Données en entrée")
+    data_outputs = models.TextField(blank=True, help_text="Données en sortie")
+    interactions = models.TextField(blank=True, help_text="Interactions (homme↔système, système↔système, etc.)")
+    problems = models.TextField(blank=True, help_text="Problèmes spécifiques à cette étape")
+    duration_estimate = models.CharField(max_length=100, blank=True, help_text="Durée estimée")
+    next_steps = models.JSONField(default=list, blank=True, help_text="IDs des étapes suivantes (pour branches)")
+
+    class Meta:
+        ordering = ['process', 'order']
+
+    def __str__(self):
+        return f"{self.process.code} — Étape {self.order}: {self.title}"

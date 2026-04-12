@@ -14,7 +14,8 @@ from .models import (
     DataField, MessageFormat, MessageField, DataDomain,
     DataSample, FlowFieldHypothesis, FlowValidation,
     ReferenceData, FlowReferential, DataImportHistory, COUNTRY_CHOICES,
-    Questionnaire, QuestionSection, Question, KeyUserAccess, AuditorAccess, DivisionAccess
+    Questionnaire, QuestionSection, Question, KeyUserAccess, AuditorAccess, DivisionAccess,
+    Process, ProcessStep
 )
 
 
@@ -2556,3 +2557,266 @@ def questionnaire_form_view(request, pk):
         'auditor_name': auditor_name,
     }
     return render(request, 'cartography/questionnaire_form.html', context)
+
+
+# ─── Process views ──────────────────────────────────────────────────────────
+
+from django.contrib.admin.views.decorators import staff_member_required
+
+@staff_member_required(login_url='/login/')
+def processes_list(request):
+    """Liste des process avec filtres"""
+    processes = Process.objects.prefetch_related('structures', 'systems', 'steps').all()
+
+    category = request.GET.get('category')
+    status = request.GET.get('status')
+    structure = request.GET.get('structure')
+    system = request.GET.get('system')
+    search = request.GET.get('search')
+
+    if category:
+        processes = processes.filter(category=category)
+    if status:
+        processes = processes.filter(status=status)
+    if structure:
+        processes = processes.filter(structures__id=structure).distinct()
+    if system:
+        processes = processes.filter(systems__id=system).distinct()
+    if search:
+        processes = processes.filter(
+            Q(name__icontains=search) |
+            Q(code__icontains=search) |
+            Q(description__icontains=search) |
+            Q(context__icontains=search)
+        )
+
+    context = {
+        'processes': processes,
+        'categories': Process.CATEGORY_CHOICES,
+        'statuses': Process.STATUS_CHOICES,
+        'structures': Structure.objects.all(),
+        'systems_list': System.objects.all(),
+        'selected_category': category,
+        'selected_status': status,
+        'selected_structure': structure,
+        'selected_system': system,
+        'search': search or '',
+    }
+    return render(request, 'cartography/process_list.html', context)
+
+
+@staff_member_required(login_url='/login/')
+def process_detail(request, pk):
+    """Détail d'un process avec diagramme Mermaid"""
+    process = get_object_or_404(
+        Process.objects.prefetch_related('steps__systems_used', 'steps__actor_structure', 'structures', 'systems'),
+        pk=pk
+    )
+    context = {
+        'process': process,
+        'steps': process.steps.all().order_by('order'),
+    }
+    return render(request, 'cartography/process_detail.html', context)
+
+
+@staff_member_required(login_url='/login/')
+def process_create(request):
+    """Création d'un nouveau process"""
+    if request.method == 'POST':
+        import json as json_mod
+        name = request.POST.get('name', '').strip()
+        code = request.POST.get('code', '').strip()
+        description = request.POST.get('description', '').strip()
+        context_text = request.POST.get('context', '').strip()
+        category = request.POST.get('category', 'OPERATIONAL')
+        structure_ids = request.POST.getlist('structures')
+        system_ids = request.POST.getlist('systems')
+
+        if not name or not code:
+            messages.error(request, 'Le nom et le code sont obligatoires.')
+            return render(request, 'cartography/process_form.html', {
+                'categories': Process.CATEGORY_CHOICES,
+                'structures': Structure.objects.all(),
+                'systems_list': System.objects.all(),
+            })
+
+        process = Process.objects.create(
+            name=name,
+            code=code,
+            description=description,
+            context=context_text,
+            category=category,
+            created_by=request.user.username if request.user.is_authenticated else '',
+        )
+        if structure_ids:
+            process.structures.set(structure_ids)
+        if system_ids:
+            process.systems.set(system_ids)
+
+        messages.success(request, f'Process « {name} » créé avec succès.')
+        return redirect('cartography:process_detail', pk=process.pk)
+
+    context = {
+        'categories': Process.CATEGORY_CHOICES,
+        'structures': Structure.objects.all(),
+        'systems_list': System.objects.all(),
+    }
+    return render(request, 'cartography/process_form.html', context)
+
+
+@staff_member_required(login_url='/login/')
+def process_edit(request, pk):
+    """Édition d'un process existant"""
+    process = get_object_or_404(Process, pk=pk)
+
+    if request.method == 'POST':
+        process.name = request.POST.get('name', process.name).strip()
+        process.code = request.POST.get('code', process.code).strip()
+        process.description = request.POST.get('description', '').strip()
+        process.context = request.POST.get('context', '').strip()
+        process.category = request.POST.get('category', process.category)
+        process.status = request.POST.get('status', process.status)
+        process.problems = request.POST.get('problems', '').strip()
+        process.recommendations = request.POST.get('recommendations', '').strip()
+        process.save()
+
+        structure_ids = request.POST.getlist('structures')
+        system_ids = request.POST.getlist('systems')
+        if structure_ids:
+            process.structures.set(structure_ids)
+        if system_ids:
+            process.systems.set(system_ids)
+
+        messages.success(request, f'Process « {process.name} » mis à jour.')
+        return redirect('cartography:process_detail', pk=process.pk)
+
+    context = {
+        'process': process,
+        'categories': Process.CATEGORY_CHOICES,
+        'statuses': Process.STATUS_CHOICES,
+        'structures': Structure.objects.all(),
+        'systems_list': System.objects.all(),
+    }
+    return render(request, 'cartography/process_form.html', context)
+
+
+@staff_member_required(login_url='/login/')
+def api_process_generate_workflow(request, pk):
+    """API: génère le workflow IA à partir du contexte du process"""
+    import json as json_mod
+
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST requis'}, status=405)
+
+    process = get_object_or_404(Process, pk=pk)
+
+    if not process.context.strip():
+        return JsonResponse({'error': 'Le champ contexte est vide. Décrivez le process avant de générer.'}, status=400)
+
+    api_key = os.environ.get('ANTHROPIC_API_KEY', '')
+    if not api_key:
+        return JsonResponse({'error': 'Clé API Anthropic non configurée (ANTHROPIC_API_KEY).'}, status=500)
+
+    try:
+        from .services.process_workflow_generator import ProcessWorkflowGenerator
+
+        # Préparer les données existantes pour le matching
+        existing_structures = list(Structure.objects.values('code', 'name'))
+        existing_systems = list(System.objects.values('code', 'name', 'description'))
+
+        generator = ProcessWorkflowGenerator(api_key)
+        result = generator.generate(
+            process_name=process.name,
+            context_text=process.context,
+            existing_structures=existing_structures,
+            existing_systems=existing_systems,
+        )
+
+        # Sauvegarder le workflow
+        process.workflow_json = result.get('steps', [])
+        process.workflow_mermaid = result.get('mermaid', '')
+        process.problems = result.get('problems', process.problems)
+        process.recommendations = result.get('recommendations', process.recommendations)
+        process.ai_generated = True
+        process.save()
+
+        # Créer les ProcessStep en base
+        process.steps.all().delete()  # Supprimer les anciennes étapes
+        steps_data = result.get('steps', [])
+
+        for step_data in steps_data:
+            step = ProcessStep.objects.create(
+                process=process,
+                order=step_data.get('order', 0),
+                title=step_data.get('title', ''),
+                description=step_data.get('description', ''),
+                step_type=step_data.get('step_type', 'MANUAL'),
+                actor_role=step_data.get('actor_role', ''),
+                data_inputs=step_data.get('data_inputs', ''),
+                data_outputs=step_data.get('data_outputs', ''),
+                interactions=step_data.get('interactions', ''),
+                problems=step_data.get('problems', ''),
+                duration_estimate=step_data.get('duration_estimate', ''),
+                next_steps=step_data.get('next_steps', []),
+            )
+
+            # Rattacher la structure si code valide
+            struct_code = step_data.get('actor_structure_code')
+            if struct_code:
+                try:
+                    step.actor_structure = Structure.objects.get(code=struct_code)
+                    step.save()
+                except Structure.DoesNotExist:
+                    pass
+
+            # Rattacher les systèmes
+            sys_names = step_data.get('systems_used', [])
+            for sys_name in sys_names:
+                try:
+                    system = System.objects.get(name__iexact=sys_name)
+                    step.systems_used.add(system)
+                except System.DoesNotExist:
+                    # Essai fuzzy par contenu
+                    matches = System.objects.filter(name__icontains=sys_name.split()[0] if sys_name else '')
+                    if matches.exists():
+                        step.systems_used.add(matches.first())
+
+        # Auto-set structures and systems on the process
+        all_struct_ids = set(process.structures.values_list('id', flat=True))
+        all_sys_ids = set(process.systems.values_list('id', flat=True))
+        for step in process.steps.all():
+            if step.actor_structure:
+                all_struct_ids.add(step.actor_structure.id)
+            all_sys_ids.update(step.systems_used.values_list('id', flat=True))
+        process.structures.set(all_struct_ids)
+        process.systems.set(all_sys_ids)
+
+        return JsonResponse({
+            'success': True,
+            'steps_count': len(steps_data),
+            'mermaid': process.workflow_mermaid,
+            'problems': process.problems,
+            'recommendations': process.recommendations,
+        })
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@staff_member_required(login_url='/login/')
+def api_process_save_mermaid(request, pk):
+    """API: sauvegarde le code Mermaid édité manuellement"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST requis'}, status=405)
+
+    import json as json_mod
+    process = get_object_or_404(Process, pk=pk)
+
+    try:
+        data = json_mod.loads(request.body)
+        mermaid_code = data.get('mermaid', '')
+        process.workflow_mermaid = mermaid_code
+        process.save(update_fields=['workflow_mermaid', 'updated_at'])
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
