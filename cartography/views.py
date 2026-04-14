@@ -2245,7 +2245,6 @@ def api_export_structure_data(request, code):
                         'order': quest.order,
                         'text': quest.text,
                         'answer': quest.answer or '',
-                        'question_type': quest.question_type,
                     })
                 sections_data.append({'title': sec.title, 'order': sec.order, 'questions': questions_data})
             questionnaires.append({
