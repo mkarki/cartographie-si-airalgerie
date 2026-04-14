@@ -71,7 +71,6 @@ urlpatterns = [
     path('api/database-schema/', views.api_database_schema, name='api_database_schema'),
     path('api/save-answer/', views.api_save_answer, name='api_save_answer'),
     path('api/kpi-stats/', views.api_kpi_stats, name='api_kpi_stats'),
-    path('api/export/<str:code>/', views.api_export_structure_data, name='api_export_structure'),
 
     # Process
     path('processes/', views.processes_list, name='processes_list'),

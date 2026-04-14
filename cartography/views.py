@@ -2223,52 +2223,6 @@ def api_kpi_stats(request):
     })
 
 
-def api_export_structure_data(request, code):
-    """API temporaire — export complet des données d'une structure (systèmes, flux, questionnaires, réponses)"""
-    struct = get_object_or_404(Structure, code=code)
-    systems = System.objects.filter(structure=struct).order_by('code')
-
-    systems_data = []
-    for s in systems:
-        # Flux
-        flux_in = [{'source': f.source.code, 'name': f.name, 'desc': f.description, 'freq': f.frequency} for f in DataFlow.objects.filter(target=s)]
-        flux_out = [{'target': f.target.code, 'name': f.name, 'desc': f.description, 'freq': f.frequency} for f in DataFlow.objects.filter(source=s)]
-
-        # Questionnaire + réponses
-        questionnaires = []
-        for q in Questionnaire.objects.filter(system=s):
-            sections_data = []
-            for sec in q.sections.all().order_by('order'):
-                questions_data = []
-                for quest in sec.questions.all().order_by('order'):
-                    questions_data.append({
-                        'order': quest.order,
-                        'text': quest.text,
-                        'answer': quest.answer or '',
-                    })
-                sections_data.append({'title': sec.title, 'order': sec.order, 'questions': questions_data})
-            questionnaires.append({
-                'phase': q.phase,
-                'status': q.status,
-                'sections': sections_data,
-            })
-
-        systems_data.append({
-            'code': s.code,
-            'name': s.name,
-            'criticality': s.criticality,
-            'description': s.description,
-            'flux_entrants': flux_in,
-            'flux_sortants': flux_out,
-            'questionnaires': questionnaires,
-        })
-
-    return JsonResponse({
-        'structure': {'code': struct.code, 'name': struct.name},
-        'systems': systems_data,
-    }, json_dumps_params={'ensure_ascii': False, 'indent': 2})
-
-
 def export_kpi_md(request):
     """Génère un rapport Markdown complet de l'avancement KPI — téléchargeable"""
     if not request.user.is_authenticated and not request.session.get('auditor_token'):
