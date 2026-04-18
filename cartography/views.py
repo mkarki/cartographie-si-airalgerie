@@ -2223,6 +2223,36 @@ def api_kpi_stats(request):
     })
 
 
+def api_export_q40(request):
+    """API TEMPORAIRE — export du questionnaire technique Q40 avec réponses"""
+    q = get_object_or_404(Questionnaire, id=40)
+    sections = []
+    for s in q.sections.all().order_by('order'):
+        questions = []
+        for quest in s.questions.all().order_by('order'):
+            questions.append({
+                'number': quest.number,
+                'text': quest.text,
+                'order': quest.order,
+                'answer': quest.answer or '',
+                'notes': quest.notes or '',
+                'is_answered': quest.is_answered,
+                'validation_status': quest.validation_status,
+            })
+        sections.append({
+            'id': s.id,
+            'title': s.title,
+            'order': s.order,
+            'questions': questions,
+        })
+    return JsonResponse({
+        'questionnaire_id': q.id,
+        'system_name': q.system_name,
+        'status': q.status,
+        'sections': sections,
+    }, json_dumps_params={'ensure_ascii': False, 'indent': 2})
+
+
 def export_kpi_md(request):
     """Génère un rapport Markdown complet de l'avancement KPI — téléchargeable"""
     if not request.user.is_authenticated and not request.session.get('auditor_token'):
