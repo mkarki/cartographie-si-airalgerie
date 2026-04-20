@@ -1,0 +1,7 @@
+{"id":1,"name":"Core Business","description":"Systèmes critiques pour l'activité principale","icon":"server","color":"#ef4444","order":1}
+{"id":2,"name":"Distribution & Commercial","description":"Systèmes de vente et distribution","icon":"shopping-cart","color":"#3b82f6","order":2}
+{"id":3,"name":"Finance & Comptabilité","description":"Systèmes financiers","icon":"wallet","color":"#f59e0b","order":3}
+{"id":4,"name":"RH & Formation","description":"Ressources humaines et formation","icon":"users","color":"#8b5cf6","order":4}
+{"id":5,"name":"BI & Analytics","description":"Business Intelligence","icon":"bar-chart-3","color":"#06b6d4","order":5}
+{"id":6,"name":"Qualité & Opérations","description":"Qualité et opérations aériennes","icon":"shield-check","color":"#22c55e","order":6}
+{"id":7,"name":"Communication & Support","description":"Communication et support","icon":"message-circle","color":"#64748b","order":7}

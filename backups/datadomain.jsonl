@@ -1,0 +1,8 @@
+{"id":1,"name":"Programme de Vol","description":"Horaires, routes, fréquences des vols","criticality":"CRITIQUE","master_system_id":2}
+{"id":2,"name":"Réservations Passagers","description":"PNR, segments, contacts passagers","criticality":"CRITIQUE","master_system_id":1}
+{"id":3,"name":"Billets Électroniques","description":"E-Tickets, coupons, statuts","criticality":"CRITIQUE","master_system_id":1}
+{"id":4,"name":"Équipages","description":"Planning crew, qualifications, disponibilités","criticality":"HAUTE","master_system_id":2}
+{"id":5,"name":"Maintenance Avions","description":"Ordres de travail, pièces, configurations","criticality":"HAUTE","master_system_id":6}
+{"id":6,"name":"Mouvements Avion","description":"Départs/arrivées réels, heures bloc","criticality":"CRITIQUE","master_system_id":1}
+{"id":7,"name":"Revenue Accounting","description":"Recettes, facturation, compensation","criticality":"HAUTE","master_system_id":4}
+{"id":8,"name":"Tarifs","description":"Prix, conditions tarifaires, règles","criticality":"HAUTE","master_system_id":12}

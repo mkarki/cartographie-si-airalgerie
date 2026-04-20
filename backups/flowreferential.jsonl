@@ -1,0 +1,10 @@
+{"id":1,"usage":"INPUT","field_name":"carrier_code","is_present_in_sample":true,"notes":"","flow_id":1,"reference_data_id":1}
+{"id":2,"usage":"INPUT","field_name":"origin","is_present_in_sample":true,"notes":"","flow_id":1,"reference_data_id":2}
+{"id":3,"usage":"INPUT","field_name":"destination","is_present_in_sample":true,"notes":"","flow_id":1,"reference_data_id":2}
+{"id":4,"usage":"INPUT","field_name":"aircraft_type","is_present_in_sample":false,"notes":"Non présent dans les échantillons actuels","flow_id":1,"reference_data_id":3}
+{"id":5,"usage":"INPUT","field_name":"class_of_service","is_present_in_sample":true,"notes":"","flow_id":2,"reference_data_id":6}
+{"id":6,"usage":"INPUT","field_name":"segment_status","is_present_in_sample":false,"notes":"","flow_id":2,"reference_data_id":9}
+{"id":7,"usage":"INPUT","field_name":"coupon_status","is_present_in_sample":true,"notes":"","flow_id":3,"reference_data_id":8}
+{"id":8,"usage":"INPUT","field_name":"currency","is_present_in_sample":true,"notes":"","flow_id":3,"reference_data_id":4}
+{"id":9,"usage":"INPUT","field_name":"form_of_payment","is_present_in_sample":false,"notes":"À valider avec échantillons APS","flow_id":4,"reference_data_id":7}
+{"id":10,"usage":"OUTPUT","field_name":"flight_status","is_present_in_sample":true,"notes":"","flow_id":5,"reference_data_id":11}

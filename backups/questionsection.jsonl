@@ -1,0 +1,180 @@
+{"id":65,"title":"D — Besoins et irritants","order":3,"questionnaire_id":16}
+{"id":1,"title":"A — Module Reservation","order":0,"questionnaire_id":1}
+{"id":2,"title":"B — Module Ticketing","order":1,"questionnaire_id":1}
+{"id":3,"title":"C — Module Inventory","order":2,"questionnaire_id":1}
+{"id":4,"title":"D — Module DCS (Departure Control System)","order":3,"questionnaire_id":1}
+{"id":5,"title":"E — Processus transverses","order":4,"questionnaire_id":1}
+{"id":6,"title":"A — Programmes de vols","order":0,"questionnaire_id":2}
+{"id":7,"title":"B — Gestion des équipages (Crew Management)","order":1,"questionnaire_id":2}
+{"id":8,"title":"C — Suivi opérationnel jour J (Crew Tracking / Operations)","order":2,"questionnaire_id":2}
+{"id":9,"title":"D — Affectation avions","order":3,"questionnaire_id":2}
+{"id":10,"title":"E — Besoins et irritants","order":4,"questionnaire_id":2}
+{"id":11,"title":"A — Ordres de travail (OT) et maintenance","order":0,"questionnaire_id":3}
+{"id":12,"title":"B — Planification maintenance","order":1,"questionnaire_id":3}
+{"id":13,"title":"C — Navigabilité et conformité","order":2,"questionnaire_id":3}
+{"id":14,"title":"D — Gestion des pièces et lien SAGE STOCK","order":3,"questionnaire_id":3}
+{"id":15,"title":"E — Indicateurs et besoins","order":4,"questionnaire_id":3}
+{"id":16,"title":"A — Processus de revenue accounting","order":0,"questionnaire_id":4}
+{"id":17,"title":"B — Facturation interline et rapprochement","order":1,"questionnaire_id":4}
+{"id":18,"title":"C — Rapports financiers et flux sortants","order":2,"questionnaire_id":4}
+{"id":19,"title":"D — Besoins et irritants","order":3,"questionnaire_id":4}
+{"id":20,"title":"A — Types de messages et usage","order":0,"questionnaire_id":5}
+{"id":66,"title":"A — Canaux de distribution","order":0,"questionnaire_id":17}
+{"id":67,"title":"B — Rapports et suivi commercial","order":1,"questionnaire_id":17}
+{"id":68,"title":"C — Besoins et irritants","order":2,"questionnaire_id":17}
+{"id":69,"title":"A — Dashboards et usage","order":0,"questionnaire_id":18}
+{"id":70,"title":"B — Données et rafraîchissement","order":1,"questionnaire_id":18}
+{"id":71,"title":"C — Besoins et irritants","order":2,"questionnaire_id":18}
+{"id":72,"title":"A — Dashboards et usage","order":0,"questionnaire_id":19}
+{"id":73,"title":"B — Gouvernance et maintenance","order":1,"questionnaire_id":19}
+{"id":74,"title":"C — Besoins et irritants","order":2,"questionnaire_id":19}
+{"id":75,"title":"A — Formation PNC","order":0,"questionnaire_id":20}
+{"id":76,"title":"B — Formation PNT","order":1,"questionnaire_id":20}
+{"id":77,"title":"C — Conception Programme PN","order":2,"questionnaire_id":20}
+{"id":78,"title":"D — Besoins et irritants","order":3,"questionnaire_id":20}
+{"id":79,"title":"A — Périmètre fonctionnel","order":0,"questionnaire_id":21}
+{"id":80,"title":"B — Flux entrants et rapprochement","order":1,"questionnaire_id":21}
+{"id":81,"title":"C — Reporting financier","order":2,"questionnaire_id":21}
+{"id":82,"title":"D — Besoins et irritants","order":3,"questionnaire_id":21}
+{"id":83,"title":"A — Rapports BSP et exploitation","order":0,"questionnaire_id":22}
+{"id":84,"title":"B — Gestion des agences","order":1,"questionnaire_id":22}
+{"id":85,"title":"C — Besoins et irritants","order":2,"questionnaire_id":22}
+{"id":86,"title":"A — Types de réclamations et processus","order":0,"questionnaire_id":23}
+{"id":87,"title":"B — Indemnisation et suivi","order":1,"questionnaire_id":23}
+{"id":88,"title":"C — Rapports et indicateurs","order":2,"questionnaire_id":23}
+{"id":89,"title":"D — Besoins et irritants","order":3,"questionnaire_id":23}
+{"id":90,"title":"A — Gestion du parc informatique","order":0,"questionnaire_id":24}
+{"id":91,"title":"B — Gestion des tickets support","order":1,"questionnaire_id":24}
+{"id":92,"title":"C — Besoins et irritants","order":2,"questionnaire_id":24}
+{"id":93,"title":"A — Organisation et volumétrie","order":0,"questionnaire_id":25}
+{"id":94,"title":"B — Processus et outils agents","order":1,"questionnaire_id":25}
+{"id":95,"title":"C — Indicateurs et reporting","order":2,"questionnaire_id":25}
+{"id":96,"title":"D — Besoins et irritants","order":3,"questionnaire_id":25}
+{"id":97,"title":"A — Usage et données","order":0,"questionnaire_id":26}
+{"id":98,"title":"B — Exploitation pour le réseau","order":1,"questionnaire_id":26}
+{"id":99,"title":"C — Besoins et irritants","order":2,"questionnaire_id":26}
+{"id":100,"title":"A — Formations et examens","order":0,"questionnaire_id":27}
+{"id":101,"title":"B — Suivi et conformité","order":1,"questionnaire_id":27}
+{"id":102,"title":"C — Besoins et irritants","order":2,"questionnaire_id":27}
+{"id":103,"title":"A — Usage et périmètre","order":0,"questionnaire_id":28}
+{"id":104,"title":"B — Statistiques et gouvernance","order":1,"questionnaire_id":28}
+{"id":105,"title":"C — Besoins et irritants","order":2,"questionnaire_id":28}
+{"id":106,"title":"A — Processus de contrôle","order":0,"questionnaire_id":29}
+{"id":107,"title":"B — Résultats et reporting","order":1,"questionnaire_id":29}
+{"id":108,"title":"C — Besoins et irritants","order":2,"questionnaire_id":29}
+{"id":109,"title":"A — Usage et processus","order":0,"questionnaire_id":30}
+{"id":110,"title":"B — Suivi et traçabilité","order":1,"questionnaire_id":30}
+{"id":111,"title":"C — Besoins et irritants","order":2,"questionnaire_id":30}
+{"id":112,"title":"A — Usage et processus","order":0,"questionnaire_id":31}
+{"id":113,"title":"B — Suivi et traçabilité","order":1,"questionnaire_id":31}
+{"id":114,"title":"C — Besoins et irritants","order":2,"questionnaire_id":31}
+{"id":115,"title":"A — Usage opérationnel","order":0,"questionnaire_id":32}
+{"id":116,"title":"B — Documentation et mises à jour","order":1,"questionnaire_id":32}
+{"id":117,"title":"C — Besoins et irritants","order":2,"questionnaire_id":32}
+{"id":118,"title":"A — Usage et fonctionnalités","order":0,"questionnaire_id":33}
+{"id":119,"title":"B — Exploitation des données","order":1,"questionnaire_id":33}
+{"id":120,"title":"C — Besoins et irritants","order":2,"questionnaire_id":33}
+{"id":121,"title":"A — Fonctionnalités et usage","order":0,"questionnaire_id":34}
+{"id":122,"title":"B — Statistiques et gouvernance","order":1,"questionnaire_id":34}
+{"id":123,"title":"C — Besoins et irritants","order":2,"questionnaire_id":34}
+{"id":124,"title":"A — Processus d'évaluation","order":0,"questionnaire_id":35}
+{"id":125,"title":"B — Exploitation des résultats","order":1,"questionnaire_id":35}
+{"id":126,"title":"C — Besoins et irritants","order":2,"questionnaire_id":35}
+{"id":127,"title":"A — Périmètre et usage","order":0,"questionnaire_id":36}
+{"id":128,"title":"B — Exploitation des données","order":1,"questionnaire_id":36}
+{"id":129,"title":"C — Besoins et irritants","order":2,"questionnaire_id":36}
+{"id":130,"title":"A — Périmètre fonctionnel","order":0,"questionnaire_id":37}
+{"id":131,"title":"B — Suivi et indicateurs","order":1,"questionnaire_id":37}
+{"id":132,"title":"C — Besoins et irritants","order":2,"questionnaire_id":37}
+{"id":133,"title":"A — Spécificités Formation PNC","order":0,"questionnaire_id":38}
+{"id":134,"title":"B — Suivi et conformité","order":1,"questionnaire_id":38}
+{"id":135,"title":"C — Besoins et irritants","order":2,"questionnaire_id":38}
+{"id":136,"title":"A — Spécificités Formation PNT","order":0,"questionnaire_id":39}
+{"id":137,"title":"B — Licences et suivi réglementaire","order":1,"questionnaire_id":39}
+{"id":138,"title":"C — Besoins et irritants","order":2,"questionnaire_id":39}
+{"id":139,"title":"1.1 — SUITE ALTÉA (Amadeus)","order":1,"questionnaire_id":40}
+{"id":140,"title":"1.2 — AIMS (Solution Soft)","order":2,"questionnaire_id":40}
+{"id":141,"title":"1.3 — AMOS (Swiss Aviation Software)","order":3,"questionnaire_id":40}
+{"id":142,"title":"1.4 — RAPID PASSAGERS (Accelya)","order":4,"questionnaire_id":40}
+{"id":143,"title":"1.5 — SITATEX ONLINE (SITA)","order":5,"questionnaire_id":40}
+{"id":144,"title":"1.6 — ACARS / HERMES (Collins ARINC)","order":6,"questionnaire_id":40}
+{"id":145,"title":"2.1 — SAGE STOCK (DAGP)","order":7,"questionnaire_id":40}
+{"id":146,"title":"2.2 — ATPCO","order":8,"questionnaire_id":40}
+{"id":147,"title":"2.3 — BAC (Amadeus)","order":9,"questionnaire_id":40}
+{"id":148,"title":"2.4 — Dashboards CCO + Suivi Irrégularités","order":10,"questionnaire_id":40}
+{"id":149,"title":"2.5 — AGS (Safran)","order":11,"questionnaire_id":40}
+{"id":150,"title":"2.6 — Q-PULSE (Ideagen)","order":12,"questionnaire_id":40}
+{"id":151,"title":"2.7 — EUROCONTROL","order":13,"questionnaire_id":40}
+{"id":152,"title":"2.8 — JET PLANER (Jeppesen/Boeing)","order":14,"questionnaire_id":40}
+{"id":153,"title":"2.9 — WORLD TRACER (SITA)","order":15,"questionnaire_id":40}
+{"id":154,"title":"2.10 — SITE WEB AIR ALGÉRIE (KYO)","order":16,"questionnaire_id":40}
+{"id":155,"title":"2.11 — ACCELYA DISTRIBUTION","order":17,"questionnaire_id":40}
+{"id":156,"title":"2.12 — QLIK SENSE","order":18,"questionnaire_id":40}
+{"id":157,"title":"2.13 — POWER BI","order":19,"questionnaire_id":40}
+{"id":158,"title":"2.14 — AIMS Formation PNC/PNT + Conception Programme PN","order":20,"questionnaire_id":40}
+{"id":159,"title":"2.15 — SAGE FINANCE (volet RGF)","order":21,"questionnaire_id":40}
+{"id":160,"title":"3.1 — BSP LINK (IATA)","order":22,"questionnaire_id":40}
+{"id":161,"title":"3.2 — E-DOLÉANCE","order":23,"questionnaire_id":40}
+{"id":162,"title":"3.3 — GLPI","order":24,"questionnaire_id":40}
+{"id":163,"title":"3.4 — HERMES CALL CENTER (Vocalcom)","order":25,"questionnaire_id":40}
+{"id":164,"title":"3.5 — OAG / INNOVATA","order":26,"questionnaire_id":40}
+{"id":165,"title":"3.6 — E-LEARNING E-EXAM PN","order":27,"questionnaire_id":40}
+{"id":166,"title":"3.7 — ZIMBRA (Umaitek)","order":28,"questionnaire_id":40}
+{"id":21,"title":"B — Processus opérationnels","order":1,"questionnaire_id":5}
+{"id":22,"title":"C — Passerelle Zimbra et archivage","order":2,"questionnaire_id":5}
+{"id":23,"title":"D — Besoins et irritants","order":3,"questionnaire_id":5}
+{"id":24,"title":"A — Types de messages et exploitation","order":0,"questionnaire_id":6}
+{"id":25,"title":"B — Processus opérationnels CCO","order":1,"questionnaire_id":6}
+{"id":26,"title":"C — Communication équipage","order":2,"questionnaire_id":6}
+{"id":27,"title":"D — Besoins et irritants","order":3,"questionnaire_id":6}
+{"id":28,"title":"A — Périmètre fonctionnel","order":0,"questionnaire_id":7}
+{"id":29,"title":"B — Processus métier","order":1,"questionnaire_id":7}
+{"id":30,"title":"C — Lien avec AMOS","order":2,"questionnaire_id":7}
+{"id":31,"title":"D — Besoins et irritants","order":3,"questionnaire_id":7}
+{"id":32,"title":"A — Publication tarifaire","order":0,"questionnaire_id":8}
+{"id":33,"title":"B — Marchés et classes","order":1,"questionnaire_id":8}
+{"id":34,"title":"C — Contrôle et veille concurrentielle","order":2,"questionnaire_id":8}
+{"id":35,"title":"D — Besoins et irritants","order":3,"questionnaire_id":8}
+{"id":36,"title":"A — Processus interline","order":0,"questionnaire_id":9}
+{"id":37,"title":"B — Rapprochement et litiges","order":1,"questionnaire_id":9}
+{"id":38,"title":"C — Besoins et irritants","order":2,"questionnaire_id":9}
+{"id":39,"title":"A — Dashboard Ponctualité Jour J","order":0,"questionnaire_id":10}
+{"id":40,"title":"B — Dashboard Historique Ponctualité","order":1,"questionnaire_id":10}
+{"id":41,"title":"C — Suivi des Irrégularités","order":2,"questionnaire_id":10}
+{"id":42,"title":"D — Besoins et irritants","order":3,"questionnaire_id":10}
+{"id":43,"title":"A — Analyse des données de vol","order":0,"questionnaire_id":11}
+{"id":44,"title":"B — Exploitation des résultats","order":1,"questionnaire_id":11}
+{"id":45,"title":"C — Programme de sécurité des vols","order":2,"questionnaire_id":11}
+{"id":46,"title":"D — Besoins et irritants","order":3,"questionnaire_id":11}
+{"id":47,"title":"A — Gestion des non-conformités","order":0,"questionnaire_id":12}
+{"id":48,"title":"B — Sources de signalement","order":1,"questionnaire_id":12}
+{"id":49,"title":"C — Audits et conformité","order":2,"questionnaire_id":12}
+{"id":50,"title":"D — Besoins et irritants","order":3,"questionnaire_id":12}
+{"id":51,"title":"A — Plans de vol et slots","order":0,"questionnaire_id":13}
+{"id":52,"title":"B — Exploitation des données","order":1,"questionnaire_id":13}
+{"id":53,"title":"C — Besoins et irritants","order":2,"questionnaire_id":13}
+{"id":54,"title":"A — Préparation des vols","order":0,"questionnaire_id":14}
+{"id":55,"title":"B — OFP et distribution","order":1,"questionnaire_id":14}
+{"id":56,"title":"C — Analyses et optimisation","order":2,"questionnaire_id":14}
+{"id":57,"title":"D — Besoins et irritants","order":3,"questionnaire_id":14}
+{"id":58,"title":"A — Processus de gestion des bagages","order":0,"questionnaire_id":15}
+{"id":59,"title":"B — Suivi et indicateurs","order":1,"questionnaire_id":15}
+{"id":60,"title":"C — Indemnisation et coûts","order":2,"questionnaire_id":15}
+{"id":61,"title":"D — Besoins et irritants","order":3,"questionnaire_id":15}
+{"id":62,"title":"A — Fonctionnalités et parcours client","order":0,"questionnaire_id":16}
+{"id":63,"title":"B — Performance commerciale","order":1,"questionnaire_id":16}
+{"id":64,"title":"C — Contenu et gestion","order":2,"questionnaire_id":16}
+{"id":167,"title":"3.8 — CONTRÔLE PROGRAMMES PN/AVIONS","order":29,"questionnaire_id":40}
+{"id":168,"title":"3.9 — DOA MAILING","order":30,"questionnaire_id":40}
+{"id":169,"title":"3.10 — CALL DOA (Campusave)","order":31,"questionnaire_id":40}
+{"id":170,"title":"3.11 — SKYBOOK (Bytron)","order":32,"questionnaire_id":40}
+{"id":171,"title":"3.12 — FLYSMART (Airbus/Boeing/ATR)","order":33,"questionnaire_id":40}
+{"id":172,"title":"3.13 — PORTAIL AH","order":34,"questionnaire_id":40}
+{"id":173,"title":"3.14 — EVALCOM","order":35,"questionnaire_id":40}
+{"id":174,"title":"3.15 — BODET","order":36,"questionnaire_id":40}
+{"id":175,"title":"3.16 — DATAWINGS","order":37,"questionnaire_id":40}
+{"id":176,"title":"3.17 — AIMS Formation PNC","order":38,"questionnaire_id":40}
+{"id":177,"title":"3.18 — AIMS Formation PNT","order":39,"questionnaire_id":40}
+{"id":178,"title":"Infrastructure","order":40,"questionnaire_id":40}
+{"id":179,"title":"Sécurité","order":41,"questionnaire_id":40}
+{"id":180,"title":"Contrats éditeurs","order":42,"questionnaire_id":40}

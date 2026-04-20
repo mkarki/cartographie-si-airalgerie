@@ -1,0 +1,17 @@
+{"id":10,"code":"DOS","name":"Direction des Opérations Sol","description":"Opérations au sol","color":"#8b5cf6","country":"DZ","level":"Direction","parent_id":21,"responsable":"BERRABIA MOKRANE"}
+{"id":11,"code":"DRH","name":"Direction des Ressources Humaines","description":"Gestion RH","color":"#f59e0b","country":"DZ","level":"Direction","parent_id":25,"responsable":"KRAIMECHE ABDELKRIM"}
+{"id":19,"code":"DAGP","name":"Direction Administration Générale et Patrimoine","description":"","color":"#f59e0b","country":"DZ","level":"Direction","parent_id":25,"responsable":"HABEL RACHID"}
+{"id":20,"code":"DFC","name":"Direction Finance et Comptabilité","description":"","color":"#f59e0b","country":"DZ","level":"Direction","parent_id":25,"responsable":"KHELFI REDOUANE"}
+{"id":21,"code":"DIVEX","name":"Direction de l'Exploitation","description":"","color":"#8b5cf6","country":"DZ","level":"Division","parent_id":24,"responsable":""}
+{"id":22,"code":"DSC","name":"Direction Sûreté et Conformité","description":"","color":"#ef4444","country":"DZ","level":"Direction","parent_id":24,"responsable":"BOUCHAMA LAID"}
+{"id":23,"code":"RGF","name":"Représentation Générale France","description":"","color":"#ef4444","country":"DZ","level":"Direction","parent_id":24,"responsable":"AOUDIA SOUFIANE"}
+{"id":24,"code":"DG","name":"Direction Générale","description":"","color":"#ef4444","country":"DZ","level":"DG","parent_id":null,"responsable":""}
+{"id":25,"code":"DAG","name":"Direction Administration Générale","description":"","color":"#f59e0b","country":"DZ","level":"Division","parent_id":24,"responsable":""}
+{"id":26,"code":"DRM","name":"Direction du Revenue Management","description":"","color":"#3b82f6","country":"DZ","level":"Direction","parent_id":2,"responsable":"FAIDI FOUAD"}
+{"id":27,"code":"DVR","name":"Direction des Ventes et Réseau","description":"","color":"#3b82f6","country":"DZ","level":"Direction","parent_id":2,"responsable":"BOUNEB BRAHIM NIHAD"}
+{"id":28,"code":"CCO","name":"Centre de Contrôle des Opérations","description":"","color":"#8b5cf6","country":"DZ","level":"Direction","parent_id":21,"responsable":"HOUAOUI SAMIA"}
+{"id":29,"code":"DPD","name":"Direction Planification et Développement","description":"","color":"#8b5cf6","country":"DZ","level":"Direction","parent_id":21,"responsable":""}
+{"id":1,"code":"DSI","name":"Direction des Systèmes d'Information","description":"Développement, maintenance et support des systèmes","color":"#f59e0b","country":"DZ","level":"Direction","parent_id":25,"responsable":"DEBAB NOUREDDINE"}
+{"id":2,"code":"DC","name":"Direction Commerciale","description":"Ventes et distribution","color":"#3b82f6","country":"DZ","level":"Division","parent_id":24,"responsable":""}
+{"id":6,"code":"DOA","name":"Direction des Opérations Aériennes","description":"Personnel navigant","color":"#8b5cf6","country":"DZ","level":"Direction","parent_id":21,"responsable":"BENBOUAZIZ LYES"}
+{"id":9,"code":"DMRA","name":"Direction Maintenance et Révision Avions","description":"Maintenance flotte","color":"#14b8a6","country":"DZ","level":"Division","parent_id":24,"responsable":""}

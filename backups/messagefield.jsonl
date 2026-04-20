@@ -1,0 +1,18 @@
+{"id":1,"name":"Record Type","position_start":1,"position_end":1,"length":1,"field_type":"Num","description":"Type d'enregistrement","example":"3","is_mandatory":true,"message_format_id":1}
+{"id":2,"name":"Airline Code","position_start":3,"position_end":4,"length":2,"field_type":"Alpha","description":"Code IATA compagnie","example":"AH","is_mandatory":true,"message_format_id":1}
+{"id":3,"name":"Flight Number","position_start":5,"position_end":8,"length":4,"field_type":"Alphanum","description":"Numéro de vol","example":"1004","is_mandatory":true,"message_format_id":1}
+{"id":4,"name":"Service Type","position_start":12,"position_end":12,"length":1,"field_type":"Alpha","description":"Type de service","example":"J","is_mandatory":true,"message_format_id":1}
+{"id":5,"name":"Period From","position_start":13,"position_end":19,"length":7,"field_type":"Date","description":"Début période opération","example":"01JAN26","is_mandatory":true,"message_format_id":1}
+{"id":6,"name":"Period To","position_start":20,"position_end":26,"length":7,"field_type":"Date","description":"Fin période opération","example":"15MAR26","is_mandatory":true,"message_format_id":1}
+{"id":7,"name":"Days of Operation","position_start":27,"position_end":33,"length":7,"field_type":"Num","description":"Jours d'opération (1=Lundi...7=Dimanche)","example":"1234567","is_mandatory":true,"message_format_id":1}
+{"id":8,"name":"Departure Station","position_start":34,"position_end":36,"length":3,"field_type":"Alpha","description":"Code IATA aéroport départ","example":"ALG","is_mandatory":true,"message_format_id":1}
+{"id":9,"name":"Departure Time","position_start":37,"position_end":40,"length":4,"field_type":"Time","description":"Heure départ locale","example":"0830","is_mandatory":true,"message_format_id":1}
+{"id":10,"name":"Arrival Station","position_start":46,"position_end":48,"length":3,"field_type":"Alpha","description":"Code IATA aéroport arrivée","example":"CDG","is_mandatory":true,"message_format_id":1}
+{"id":11,"name":"Arrival Time","position_start":49,"position_end":52,"length":4,"field_type":"Time","description":"Heure arrivée locale","example":"1145","is_mandatory":true,"message_format_id":1}
+{"id":12,"name":"Aircraft Type","position_start":58,"position_end":60,"length":3,"field_type":"Alphanum","description":"Type avion IATA","example":"738","is_mandatory":true,"message_format_id":1}
+{"id":13,"name":"Amadeus PNR Locator","position_start":1,"position_end":6,"length":6,"field_type":"Alphanum","description":"Record locator Amadeus","example":"WE6MDX","is_mandatory":true,"message_format_id":6}
+{"id":14,"name":"PNR Purge Date","position_start":7,"position_end":12,"length":6,"field_type":"Date","description":"Date de purge du PNR (ddmmyy)","example":"150326","is_mandatory":true,"message_format_id":6}
+{"id":15,"name":"Last EOT Date","position_start":13,"position_end":18,"length":6,"field_type":"Date","description":"Date du dernier End of Transaction","example":"010226","is_mandatory":true,"message_format_id":6}
+{"id":16,"name":"Activity Type","position_start":19,"position_end":22,"length":4,"field_type":"Alpha","description":"Type d'activité (AIR, TSM, etc.)","example":"AIR","is_mandatory":true,"message_format_id":6}
+{"id":17,"name":"Segment Name","position_start":23,"position_end":30,"length":8,"field_type":"Alpha","description":"Nom du segment","example":"SEGMENT","is_mandatory":false,"message_format_id":6}
+{"id":18,"name":"Passenger Name","position_start":31,"position_end":80,"length":50,"field_type":"Alpha","description":"Nom du passager","example":"DUPONT/JEAN MR","is_mandatory":true,"message_format_id":6}
