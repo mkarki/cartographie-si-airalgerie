@@ -2523,13 +2523,25 @@ def questionnaire_form_view(request, pk):
                 except Question.DoesNotExist:
                     pass
         
-        # Handle file attachments
+        # Handle file attachments — stockage binaire en BDD + anonymisation
+        from .anonymizer import anonymize_bytes
         for key, f in request.FILES.items():
             if key.startswith('attachment_'):
                 q_id = key.replace('attachment_', '')
                 try:
                     question = Question.objects.get(pk=q_id)
-                    question.attachment = f
+                    content = f.read()
+                    anonymized_content, was_anonymized, nb = anonymize_bytes(
+                        content, f.name, getattr(f, 'content_type', '') or ''
+                    )
+                    question.attachment_data = anonymized_content
+                    question.attachment_filename = f.name
+                    question.attachment_content_type = getattr(f, 'content_type', '') or 'application/octet-stream'
+                    question.attachment_size = len(anonymized_content)
+                    question.attachment_anonymized = was_anonymized
+                    question.attachment_uploaded_at = timezone.now()
+                    # On neutralise l'ancien FileField (plus utilisé)
+                    question.attachment = None
                     question.save()
                 except Question.DoesNotExist:
                     pass
@@ -2557,6 +2569,35 @@ def questionnaire_form_view(request, pk):
         'auditor_name': auditor_name,
     }
     return render(request, 'cartography/questionnaire_form.html', context)
+
+
+def question_attachment_download(request, question_id):
+    """Streame la pièce jointe stockée en BDD (binary) avec son nom et type MIME d'origine."""
+    question = get_object_or_404(Question, pk=question_id)
+    # Contrôle d'accès : admin, auditeur (token) ou key user (token sur le questionnaire)
+    is_admin = request.user.is_authenticated and request.user.is_staff
+    is_auditor = bool(request.session.get('auditor_token'))
+    questionnaire = question.section.questionnaire
+    has_ku_token = False
+    token = request.GET.get('token', '')
+    if token:
+        has_ku_token = KeyUserAccess.objects.filter(
+            questionnaire=questionnaire, token=token, is_active=True
+        ).exists()
+    if not (is_admin or is_auditor or has_ku_token):
+        return HttpResponse(status=403)
+
+    if not question.attachment_data:
+        return HttpResponse(status=404)
+
+    response = HttpResponse(
+        bytes(question.attachment_data),
+        content_type=question.attachment_content_type or 'application/octet-stream',
+    )
+    filename = question.attachment_filename or f'attachment_{question.pk}'
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    response['Content-Length'] = str(question.attachment_size or len(question.attachment_data))
+    return response
 
 
 # ─── Process views ──────────────────────────────────────────────────────────

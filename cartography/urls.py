@@ -61,6 +61,7 @@ urlpatterns = [
     
     # Questionnaire form (public access for key users)
     path('form/<int:pk>/', views.questionnaire_form_view, name='questionnaire_form'),
+    path('question/<int:question_id>/attachment/', views.question_attachment_download, name='question_attachment_download'),
     
     # API endpoints for graph data
     path('api/graph-data/', views.api_graph_data, name='api_graph_data'),

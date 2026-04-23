@@ -506,8 +506,16 @@ class Question(models.Model):
     validated_at = models.DateTimeField(null=True, blank=True)
     validation_comment = models.TextField(blank=True, help_text="Commentaire de validation ou motif de rejet")
     
-    # Pièce jointe
-    attachment = models.FileField(upload_to='question_attachments/', blank=True, null=True, help_text="Pièce jointe (PDF, image, document...)")
+    # Pièce jointe — déprécié (filesystem Render éphémère, remplacé par binary storage)
+    attachment = models.FileField(upload_to='question_attachments/', blank=True, null=True, help_text="[DÉPRÉCIÉ] utiliser attachment_data")
+    
+    # Pièce jointe — stockage binaire en BDD + anonymisation
+    attachment_data = models.BinaryField(blank=True, null=True, help_text="Contenu binaire de la pièce jointe (anonymisé si possible)")
+    attachment_filename = models.CharField(max_length=255, blank=True, help_text="Nom de fichier original")
+    attachment_content_type = models.CharField(max_length=100, blank=True, help_text="Type MIME")
+    attachment_size = models.PositiveIntegerField(null=True, blank=True, help_text="Taille en octets (après anonymisation)")
+    attachment_anonymized = models.BooleanField(default=False, help_text="Contenu anonymisé (texte)")
+    attachment_uploaded_at = models.DateTimeField(null=True, blank=True)
     
     # Commentaire auditeur
     auditor_comment = models.TextField(blank=True, help_text="Commentaire de l'auditeur")
@@ -740,3 +748,24 @@ class ProcessStep(models.Model):
 
     def __str__(self):
         return f"{self.process.code} — Étape {self.order}: {self.title}"
+
+
+class MatriculeMap(models.Model):
+    """
+    Table de correspondance matricule → variantes de nom à anonymiser.
+    Utilisée pour anonymiser dynamiquement le contenu des pièces jointes.
+    Les noms réels restent uniquement dans cette table (non exposée publiquement)
+    et permettent de remplacer à la volée les noms dans les fichiers uploadés.
+    """
+    matricule = models.CharField(max_length=20, unique=True, db_index=True, help_text="Ex: KU001")
+    variants = models.JSONField(default=list, help_text="Liste de variantes de noms à rechercher")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['matricule']
+        verbose_name = "Correspondance matricule"
+        verbose_name_plural = "Correspondances matricules"
+
+    def __str__(self):
+        return f"{self.matricule} ({len(self.variants)} variantes)"
