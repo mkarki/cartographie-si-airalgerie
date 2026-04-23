@@ -13,16 +13,28 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-airalgerie-cartograph
 DEBUG = os.environ.get('DEBUG', 'True').lower() in ('true', '1', 'yes')
 
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+# Domaines additionnels (Cloudflare + sous-domaine airalgerie.dz).
+# Configurable via env var EXTRA_ALLOWED_HOSTS="host1.airalgerie.dz,host2.airalgerie.dz"
+EXTRA_ALLOWED_HOSTS = [
+    h.strip() for h in os.environ.get('EXTRA_ALLOWED_HOSTS', 'cartographie-si.airalgerie.dz').split(',')
+    if h.strip()
+]
 ALLOWED_HOSTS = ['*']
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+ALLOWED_HOSTS.extend(EXTRA_ALLOWED_HOSTS)
 
 CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:8888',
     'http://localhost:8888',
     'http://85.31.237.249',
     'https://*.onrender.com',
+    'https://*.airalgerie.dz',
 ]
+# Derrière Cloudflare : header X-Forwarded-Proto pour détecter HTTPS
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# Récupérer la vraie IP client derrière Cloudflare (middleware audit log)
+USE_X_FORWARDED_HOST = True
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -121,7 +133,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # ─── Sécurité (loi 18-07 art. 2 — mesures techniques) ────────────────────
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    # SECURE_PROXY_SSL_HEADER déjà défini plus haut (support Cloudflare)
     SECURE_HSTS_SECONDS = 31536000  # 1 an
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True

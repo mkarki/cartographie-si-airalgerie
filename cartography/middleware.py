@@ -18,6 +18,10 @@ SENSITIVE_VIEW_PATTERNS = [
 
 
 def _get_client_ip(request):
+    # Derrière Cloudflare : CF-Connecting-IP est la vraie IP utilisateur (non spoofable)
+    cf_ip = request.META.get('HTTP_CF_CONNECTING_IP')
+    if cf_ip:
+        return cf_ip.strip()
     xff = request.META.get('HTTP_X_FORWARDED_FOR', '')
     if xff:
         return xff.split(',')[0].strip()

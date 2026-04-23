@@ -24,8 +24,12 @@ from .ratelimit import check_rate_limit, reset_rate_limit
 def _log_audit(request, action, actor='', target_type='', target_id='', success=True, details=None):
     """Helper pour créer une entrée AuditLog explicite."""
     try:
-        xff = request.META.get('HTTP_X_FORWARDED_FOR', '')
-        ip = xff.split(',')[0].strip() if xff else request.META.get('REMOTE_ADDR')
+        cf_ip = request.META.get('HTTP_CF_CONNECTING_IP')
+        if cf_ip:
+            ip = cf_ip.strip()
+        else:
+            xff = request.META.get('HTTP_X_FORWARDED_FOR', '')
+            ip = xff.split(',')[0].strip() if xff else request.META.get('REMOTE_ADDR')
         AuditLog.objects.create(
             action=action,
             actor=actor or '',
