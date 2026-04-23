@@ -152,5 +152,6 @@ RATELIMIT_LOGIN_ATTEMPTS = 5  # 5 tentatives
 RATELIMIT_LOGIN_WINDOW = 300  # par 5 min
 
 # ─── Contact DPO (affiché dans /privacy/) ─────────────────────────────────
-DPO_CONTACT_NAME = os.environ.get('DPO_CONTACT_NAME', 'À désigner')
-DPO_CONTACT_EMAIL = os.environ.get('DPO_CONTACT_EMAIL', 'dpo@airalgerie.dz')
+# Délégué à la protection des données désigné (loi 18-07 art. 30)
+DPO_CONTACT_NAME = os.environ.get('DPO_CONTACT_NAME', 'M. DEBAB Noureddine')
+DPO_CONTACT_EMAIL = os.environ.get('DPO_CONTACT_EMAIL', 'debab.noureddine@airalgerie.dz')
