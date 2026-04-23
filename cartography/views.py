@@ -1868,17 +1868,43 @@ def organigramme_view(request):
     """Organigramme par département — hiérarchie + suivi réponses par direction"""
     if not request.user.is_authenticated and not request.session.get('auditor_token'):
         return redirect('cartography:login')
+
+    # 1. Structures + systèmes + questionnaires (sans prefetch des sections/questions
+    #    qui est inutile — les counts viennent de l'aggregate ci-dessous).
     structures = Structure.objects.prefetch_related(
         'systems__category',
-        'systems__questionnaire__sections__questions',
+        'systems__questionnaire',
         'children',
     ).annotate(
         system_count=Count('systems')
     ).order_by('code')
-    
-    # Build a lookup for all structures
-    struct_map = {s.pk: s for s in structures}
-    
+
+    # 2. Counts de questions par questionnaire en 1 query agrégée, au lieu de
+    #    ~5 queries × N questionnaires via les @property de Questionnaire.
+    q_counts_by_qr = {
+        row['section__questionnaire_id']: row
+        for row in Question.objects.values('section__questionnaire_id').annotate(
+            nb_total=Count('id'),
+            nb_answered_raw=Count('id', filter=~Q(answer='')),
+            nb_validated=Count('id', filter=Q(validation_status='VALIDATED')),
+            nb_rejected=Count('id', filter=Q(validation_status='REJECTED')),
+        )
+    }
+
+    def _attach_cached_counts(q):
+        """Setter les attrs `_cached_*` lus par les @property de Questionnaire."""
+        c = q_counts_by_qr.get(q.id) or {
+            'nb_total': 0, 'nb_answered_raw': 0, 'nb_validated': 0, 'nb_rejected': 0,
+        }
+        nb_total = c['nb_total']
+        nb_answered = nb_total if q.status == 'COMPLETED' else c['nb_answered_raw']
+        q._cached_total_questions = nb_total
+        q._cached_answered_questions = nb_answered
+        q._cached_progress_percent = int((nb_answered / nb_total) * 100) if nb_total > 0 else 0
+        q._cached_validated_questions = c['nb_validated']
+        q._cached_rejected_questions = c['nb_rejected']
+        q._cached_validation_percent = int((c['nb_validated'] / nb_total) * 100) if nb_total > 0 else 0
+
     def build_dept_data(struct):
         """Build department data dict for a structure"""
         systems_data = []
@@ -1888,7 +1914,7 @@ def organigramme_view(request):
         dept_rejected = 0
         dept_key_users = set()
         dept_critiques = 0
-        
+
         for s in struct.systems.all():
             q = getattr(s, 'questionnaire', None)
             q_progress = 0
@@ -1900,11 +1926,12 @@ def organigramme_view(request):
             q_direction = ''
             q_editor = ''
             q_pk = None
-            
+
             q_key_users_backup = ''
             q_responsible = ''
-            
+
             if q:
+                _attach_cached_counts(q)
                 q_progress = q.progress_percent
                 q_status = q.status
                 q_total = q.total_questions
@@ -1920,12 +1947,12 @@ def organigramme_view(request):
                 dept_answered += q_answered
                 dept_validated += q_validated
                 dept_rejected += q.rejected_questions
-                
+
                 for name in q_key_users.split(','):
                     name = name.strip()
                     if name and name != '—':
                         dept_key_users.add(name)
-            
+
             if s.criticality == 'CRITIQUE':
                 dept_critiques += 1
             
