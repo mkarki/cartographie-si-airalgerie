@@ -2031,243 +2031,340 @@ def organigramme_view(request):
 
 # ─── KPI Dashboard ─────────────────────────────────────────────────────────
 
+def _compute_kpi_aggregates():
+    """
+    Agrège tous les compteurs KPI en un nombre minimal de requêtes SQL
+    (aggregate + conditional Count), au lieu de la cascade de `.count()`
+    qui faisait exploser le N+1.
+
+    Retourne un dict utilisé par `kpi_dashboard_view` et `api_kpi_stats`.
+    Résultat mis en cache 30 s (CACHES.default -> table cartography_cache).
+    """
+    from django.core.cache import cache
+    cached = cache.get('kpi_aggregates_v1')
+    if cached is not None:
+        return cached
+
+    # 1. Systems — 2 requêtes pour éviter le Cartesian product.
+    #    Le JOIN sur outgoing/incoming flows (pour `with_flows`) inflaterait
+    #    `total` et chaque `crit_*` en cas d'aggregate unique. On isole :
+    sys_total_agg = System.objects.aggregate(
+        total=Count('id'),
+        **{
+            f'crit_{c}': Count('id', filter=Q(criticality=c))
+            for c, _ in System.CRITICALITY_CHOICES
+        },
+    )
+    with_flows = System.objects.filter(
+        Q(outgoing_flows__isnull=False) | Q(incoming_flows__isnull=False)
+    ).distinct().count()
+    sys_agg = {'total': sys_total_agg['total'], 'with_flows': with_flows}
+    for c, _ in System.CRITICALITY_CHOICES:
+        sys_agg[f'crit_{c}'] = sys_total_agg[f'crit_{c}']
+
+    # 2. Questionnaires : total + status + phase×status en 1 query
+    qr_filters = {}
+    for p in (1, 2, 3):
+        qr_filters[f'p{p}_total'] = Count('id', filter=Q(phase=p))
+        qr_filters[f'p{p}_completed'] = Count('id', filter=Q(phase=p, status='COMPLETED'))
+        qr_filters[f'p{p}_in_progress'] = Count('id', filter=Q(phase=p, status='IN_PROGRESS'))
+        qr_filters[f'p{p}_not_started'] = Count('id', filter=Q(phase=p, status='NOT_STARTED'))
+    qr_agg = Questionnaire.objects.aggregate(
+        total=Count('id'),
+        not_started=Count('id', filter=Q(status='NOT_STARTED')),
+        in_progress=Count('id', filter=Q(status='IN_PROGRESS')),
+        completed=Count('id', filter=Q(status='COMPLETED')),
+        **qr_filters,
+    )
+
+    # 3. Questions : totaux + répondues + validées + par phase en 1 query
+    #    "répondues" = toutes les questions de questionnaires COMPLETED
+    #                  + questions avec `answer <> ''` dans les autres.
+    completed_in = Q(section__questionnaire__status='COMPLETED')
+    q_filters = {}
+    for p in (1, 2, 3):
+        q_filters[f'p{p}_total'] = Count('id', filter=Q(section__questionnaire__phase=p))
+        q_filters[f'p{p}_answered_completed'] = Count(
+            'id', filter=Q(section__questionnaire__phase=p) & completed_in,
+        )
+        q_filters[f'p{p}_answered_noncompleted'] = Count(
+            'id',
+            filter=Q(section__questionnaire__phase=p) & ~completed_in & ~Q(answer=''),
+        )
+        q_filters[f'p{p}_validated'] = Count(
+            'id',
+            filter=Q(section__questionnaire__phase=p, validation_status='VALIDATED'),
+        )
+    q_agg = Question.objects.aggregate(
+        total=Count('id'),
+        answered_completed=Count('id', filter=completed_in),
+        answered_noncompleted=Count('id', filter=~completed_in & ~Q(answer='')),
+        validated=Count('id', filter=Q(validation_status='VALIDATED')),
+        **q_filters,
+    )
+    total_questions = q_agg['total']
+    total_answered = q_agg['answered_completed'] + q_agg['answered_noncompleted']
+    total_validated = q_agg['validated']
+
+    phase_labels = {
+        1: 'Phase 1 — Critique',
+        2: 'Phase 2 — Important',
+        3: 'Phase 3 — Standard',
+    }
+    phase_data = []
+    for p in (1, 2, 3):
+        p_total = q_agg[f'p{p}_total']
+        p_answered = q_agg[f'p{p}_answered_completed'] + q_agg[f'p{p}_answered_noncompleted']
+        phase_data.append({
+            'phase': p,
+            'label': phase_labels[p],
+            'total_systems': qr_agg[f'p{p}_total'],
+            'completed': qr_agg[f'p{p}_completed'],
+            'in_progress': qr_agg[f'p{p}_in_progress'],
+            'not_started': qr_agg[f'p{p}_not_started'],
+            'total_questions': p_total,
+            'answered': p_answered,
+            'validated': q_agg[f'p{p}_validated'],
+            'progress': int((p_answered / p_total * 100)) if p_total > 0 else 0,
+        })
+
+    # 4. Flows, samples, hypotheses, validations : 1 query chacun (aggregate)
+    flow_agg = DataFlow.objects.aggregate(
+        total=Count('id'),
+        automated=Count('id', filter=Q(is_automated=True)),
+        manual=Count('id', filter=Q(is_automated=False)),
+        critical=Count('id', filter=Q(is_critical=True)),
+    )
+    total_samples = DataSample.objects.count()
+    hyp_agg = FlowFieldHypothesis.objects.aggregate(
+        total=Count('id'),
+        confirmed=Count('id', filter=Q(status='CONFIRMED')),
+        partial=Count('id', filter=Q(status='PARTIAL')),
+        incorrect=Count('id', filter=Q(status='INCORRECT')),
+        pending=Count('id', filter=Q(status='HYPOTHESIS')),
+    )
+    fv_agg = FlowValidation.objects.aggregate(
+        total=Count('id'),
+        validated=Count('id', filter=Q(status='VALIDATED')),
+        partial=Count('id', filter=Q(status='PARTIAL')),
+        issues=Count('id', filter=Q(status='ISSUES')),
+    )
+
+    # 5. Flows with sample — subquery au lieu de .all() en Python
+    flows_with_samples = DataFlow.objects.filter(
+        Q(source__code__in=DataSample.objects.values('source_system'))
+        | Q(field_hypotheses__validated_from_sample__isnull=False)
+    ).distinct().count()
+
+    # Systems disposant d'un échantillon de données réelles
+    systems_with_samples = list(
+        DataSample.objects.values_list('source_system', flat=True).distinct()
+    )
+
+    payload = {
+        'total_systems': sys_agg['total'],
+        'systems_with_data': sys_agg['with_flows'],
+        'systems_no_data': sys_agg['total'] - sys_agg['with_flows'],
+        'crit_stats': {c: sys_agg[f'crit_{c}'] for c, _ in System.CRITICALITY_CHOICES},
+        'total_questionnaires': qr_agg['total'],
+        'q_not_started': qr_agg['not_started'],
+        'q_in_progress': qr_agg['in_progress'],
+        'q_completed': qr_agg['completed'],
+        'total_questions': total_questions,
+        'total_answered': total_answered,
+        'total_validated': total_validated,
+        'questionnaire_progress':
+            int((total_answered / total_questions * 100)) if total_questions > 0 else 0,
+        'validation_progress':
+            int((total_validated / total_questions * 100)) if total_questions > 0 else 0,
+        'phase_data': phase_data,
+        'total_flows': flow_agg['total'],
+        'automated_flows': flow_agg['automated'],
+        'manual_flows': flow_agg['manual'],
+        'critical_flows': flow_agg['critical'],
+        'total_samples': total_samples,
+        'total_hypotheses': hyp_agg['total'],
+        'hyp_confirmed': hyp_agg['confirmed'],
+        'hyp_partial': hyp_agg['partial'],
+        'hyp_incorrect': hyp_agg['incorrect'],
+        'hyp_pending': hyp_agg['pending'],
+        'hyp_validated_pct': int(
+            ((hyp_agg['confirmed'] + hyp_agg['partial']) / hyp_agg['total'] * 100)
+        ) if hyp_agg['total'] > 0 else 0,
+        'total_flow_validations': fv_agg['total'],
+        'fv_validated': fv_agg['validated'],
+        'fv_partial': fv_agg['partial'],
+        'fv_issues': fv_agg['issues'],
+        'flows_with_samples': flows_with_samples,
+        'systems_with_samples': systems_with_samples,
+    }
+    cache.set('kpi_aggregates_v1', payload, 30)
+    return payload
+
+
 def kpi_dashboard_view(request):
     """Dashboard KPI avec avancement cartographie en temps réel vs roadmap"""
     if not request.user.is_authenticated and not request.session.get('auditor_token'):
         return redirect('cartography:login')
     import json as json_module
-    
-    # ── Systems stats
-    total_systems = System.objects.count()
-    systems_with_data = System.objects.filter(
-        Q(outgoing_flows__isnull=False) | Q(incoming_flows__isnull=False)
-    ).distinct().count()
-    systems_no_data = total_systems - systems_with_data
-    
-    # By criticality
-    crit_stats = {}
-    for crit, label in System.CRITICALITY_CHOICES:
-        crit_stats[crit] = System.objects.filter(criticality=crit).count()
-    
-    # ── Questionnaire stats
-    total_questionnaires = Questionnaire.objects.count()
-    q_not_started = Questionnaire.objects.filter(status='NOT_STARTED').count()
-    q_in_progress = Questionnaire.objects.filter(status='IN_PROGRESS').count()
-    q_completed = Questionnaire.objects.filter(status='COMPLETED').count()
-    
-    total_questions = Question.objects.count()
-    # Questions répondues = réellement répondues + toutes les questions des questionnaires terminés
-    completed_qs_kpi = Questionnaire.objects.filter(status='COMPLETED')
-    completed_q_total_kpi = Question.objects.filter(section__questionnaire__in=completed_qs_kpi).count()
-    non_completed_answered_kpi = Question.objects.exclude(answer='').exclude(section__questionnaire__in=completed_qs_kpi).count()
-    total_answered = completed_q_total_kpi + non_completed_answered_kpi
-    total_validated = Question.objects.filter(validation_status='VALIDATED').count()
-    
-    questionnaire_progress = int((total_answered / total_questions * 100)) if total_questions > 0 else 0
-    validation_progress = int((total_validated / total_questions * 100)) if total_questions > 0 else 0
-    
-    # ── Per-phase breakdown
-    phase_data = []
-    for phase_num, phase_label in [(1, 'Phase 1 — Critique'), (2, 'Phase 2 — Important'), (3, 'Phase 3 — Standard')]:
-        phase_qs = Questionnaire.objects.filter(phase=phase_num)
-        phase_questions = Question.objects.filter(section__questionnaire__phase=phase_num)
-        p_total = phase_questions.count()
-        # Compter toutes les questions des questionnaires terminés comme répondues
-        phase_completed_qs = phase_qs.filter(status='COMPLETED')
-        p_completed_total = Question.objects.filter(section__questionnaire__in=phase_completed_qs).count()
-        p_non_completed_answered = phase_questions.exclude(answer='').exclude(section__questionnaire__in=phase_completed_qs).count()
-        p_answered = p_completed_total + p_non_completed_answered
-        p_validated = phase_questions.filter(validation_status='VALIDATED').count()
-        phase_data.append({
-            'phase': phase_num,
-            'label': phase_label,
-            'total_systems': phase_qs.count(),
-            'completed': phase_qs.filter(status='COMPLETED').count(),
-            'in_progress': phase_qs.filter(status='IN_PROGRESS').count(),
-            'not_started': phase_qs.filter(status='NOT_STARTED').count(),
-            'total_questions': p_total,
-            'answered': p_answered,
-            'validated': p_validated,
-            'progress': int((p_answered / p_total * 100)) if p_total > 0 else 0,
-        })
-    
-    # ── Data collection stats
-    total_flows = DataFlow.objects.count()
-    automated_flows = DataFlow.objects.filter(is_automated=True).count()
-    manual_flows = DataFlow.objects.filter(is_automated=False).count()
-    critical_flows = DataFlow.objects.filter(is_critical=True).count()
-    
-    total_samples = DataSample.objects.count()
-    
-    # ── Flow validation — Hypothèse vs Réalité (données réelles)
-    total_hypotheses = FlowFieldHypothesis.objects.count()
-    hyp_confirmed = FlowFieldHypothesis.objects.filter(status='CONFIRMED').count()
-    hyp_partial = FlowFieldHypothesis.objects.filter(status='PARTIAL').count()
-    hyp_incorrect = FlowFieldHypothesis.objects.filter(status='INCORRECT').count()
-    hyp_pending = FlowFieldHypothesis.objects.filter(status='HYPOTHESIS').count()
-    hyp_validated_pct = int(((hyp_confirmed + hyp_partial) / total_hypotheses * 100)) if total_hypotheses > 0 else 0
-    
-    total_flow_validations = FlowValidation.objects.count()
-    fv_validated = FlowValidation.objects.filter(status='VALIDATED').count()
-    fv_partial = FlowValidation.objects.filter(status='PARTIAL').count()
-    fv_issues = FlowValidation.objects.filter(status='ISSUES').count()
-    
-    # Flows with at least one sample (data received)
-    flows_with_samples = DataFlow.objects.filter(
-        Q(source__code__in=[s.source_system for s in DataSample.objects.all()]) |
-        Q(field_hypotheses__validated_from_sample__isnull=False)
-    ).distinct().count()
-    
-    # Per-system: which systems have real data samples
-    systems_with_samples = set(DataSample.objects.values_list('source_system', flat=True))
-    
-    # Build flow validation detail table
-    flow_validation_data = []
-    for flow in DataFlow.objects.select_related('source', 'target').prefetch_related('field_hypotheses', 'validations'):
-        hyps = flow.field_hypotheses.all()
-        h_total = hyps.count()
-        if h_total == 0:
-            continue
-        h_confirmed = hyps.filter(status='CONFIRMED').count()
-        h_partial_f = hyps.filter(status='PARTIAL').count()
-        h_incorrect = hyps.filter(status='INCORRECT').count()
-        h_pending_f = hyps.filter(status='HYPOTHESIS').count()
-        has_sample = hyps.filter(validated_from_sample__isnull=False).exists()
-        latest_v = flow.validations.first()
-        
-        flow_validation_data.append({
-            'flow': flow,
-            'total_fields': h_total,
-            'confirmed': h_confirmed,
-            'partial': h_partial_f,
-            'incorrect': h_incorrect,
-            'pending': h_pending_f,
-            'has_sample': has_sample,
-            'match_pct': int(((h_confirmed + h_partial_f) / h_total * 100)) if h_total > 0 else 0,
-            'validation_status': latest_v.status if latest_v else 'PENDING',
-        })
-    flow_validation_data.sort(key=lambda x: x['confirmed'], reverse=True)
-    
-    # ── Per-system progress for the table
+    from django.db.models import OuterRef, Subquery
+
+    agg = _compute_kpi_aggregates()
+
+    # Flow validation detail — 1 query annotate au lieu d'une boucle N×7
+    latest_v_sq = FlowValidation.objects.filter(
+        flow=OuterRef('pk')
+    ).order_by('-id').values('status')[:1]
+    flows_qs = (
+        DataFlow.objects.select_related('source', 'target')
+        .annotate(
+            h_total=Count('field_hypotheses'),
+            h_confirmed=Count(
+                'field_hypotheses',
+                filter=Q(field_hypotheses__status='CONFIRMED'),
+            ),
+            h_partial_f=Count(
+                'field_hypotheses',
+                filter=Q(field_hypotheses__status='PARTIAL'),
+            ),
+            h_incorrect=Count(
+                'field_hypotheses',
+                filter=Q(field_hypotheses__status='INCORRECT'),
+            ),
+            h_pending_f=Count(
+                'field_hypotheses',
+                filter=Q(field_hypotheses__status='HYPOTHESIS'),
+            ),
+            h_with_sample=Count(
+                'field_hypotheses',
+                filter=Q(field_hypotheses__validated_from_sample__isnull=False),
+            ),
+            latest_v_status=Subquery(latest_v_sq),
+        )
+        .filter(h_total__gt=0)
+        .order_by('-h_confirmed')
+    )
+    flow_validation_data = [
+        {
+            'flow': f,
+            'total_fields': f.h_total,
+            'confirmed': f.h_confirmed,
+            'partial': f.h_partial_f,
+            'incorrect': f.h_incorrect,
+            'pending': f.h_pending_f,
+            'has_sample': f.h_with_sample > 0,
+            'match_pct': int(
+                ((f.h_confirmed + f.h_partial_f) / f.h_total * 100)
+            ) if f.h_total > 0 else 0,
+            'validation_status': f.latest_v_status or 'PENDING',
+        }
+        for f in flows_qs
+    ]
+
+    # Per-system progress : 3 requêtes agrégées au lieu de N×(2 flows + 3 properties).
+    # - Question counts groupés par questionnaire_id (total, répondues, validées, rejetées)
+    # - Flows entrants par system_id
+    # - Flows sortants par system_id
+    q_counts_by_qr = {
+        row['section__questionnaire_id']: row
+        for row in Question.objects.values('section__questionnaire_id').annotate(
+            nb_total=Count('id'),
+            nb_answered_raw=Count('id', filter=~Q(answer='')),
+            nb_validated=Count('id', filter=Q(validation_status='VALIDATED')),
+            nb_rejected=Count('id', filter=Q(validation_status='REJECTED')),
+        )
+    }
+    flow_in_by_sys = dict(
+        DataFlow.objects.values_list('target_id').annotate(c=Count('id')).values_list('target_id', 'c')
+    )
+    flow_out_by_sys = dict(
+        DataFlow.objects.values_list('source_id').annotate(c=Count('id')).values_list('source_id', 'c')
+    )
+
     system_progress = []
-    for q in Questionnaire.objects.prefetch_related('sections__questions').order_by('phase', 'priority_in_phase'):
-        sys_obj = q.system
-        incoming = sys_obj.incoming_flows.count() if sys_obj else 0
-        outgoing = sys_obj.outgoing_flows.count() if sys_obj else 0
+    for q in Questionnaire.objects.select_related('system').order_by('phase', 'priority_in_phase'):
+        c = q_counts_by_qr.get(q.id) or {'nb_total': 0, 'nb_answered_raw': 0, 'nb_validated': 0, 'nb_rejected': 0}
+        nb_total = c['nb_total']
+        nb_answered = nb_total if q.status == 'COMPLETED' else c['nb_answered_raw']
+        progress = int((nb_answered / nb_total) * 100) if nb_total > 0 else 0
+        validation_pct = int((c['nb_validated'] / nb_total) * 100) if nb_total > 0 else 0
+        # Caches lus par les @property de Questionnaire (évite les re-queries côté template)
+        q._cached_total_questions = nb_total
+        q._cached_answered_questions = nb_answered
+        q._cached_progress_percent = progress
+        q._cached_validated_questions = c['nb_validated']
+        q._cached_rejected_questions = c['nb_rejected']
+        q._cached_validation_percent = validation_pct
+
+        sys_id = q.system_id
+        inc = flow_in_by_sys.get(sys_id, 0) if sys_id else 0
+        out = flow_out_by_sys.get(sys_id, 0) if sys_id else 0
         system_progress.append({
             'questionnaire': q,
-            'system': sys_obj,
-            'incoming_flows': incoming,
-            'outgoing_flows': outgoing,
-            'total_flows': incoming + outgoing,
-            'has_data': incoming > 0 or outgoing > 0,
+            'system': q.system,
+            'incoming_flows': inc,
+            'outgoing_flows': out,
+            'total_flows': inc + out,
+            'has_data': (inc + out) > 0,
         })
-    
-    # ── Roadmap targets (based on contract: 640 j/h, 1 year, 5 phases)
+
+    # Roadmap targets (contract : 640 j/h, 1 an)
     roadmap = {
         'phase1_target': 'Mois 1-2 : Diagnostic + Inventaire',
         'phase2_target': 'Mois 3-4 : Connecteurs + Intégration',
         'phase3_target': 'Mois 5-6 : Automatisation + MDM',
         'total_jh': 640,
         'duration_months': 12,
-        'systems_target': total_systems,
-        'questionnaires_target': total_questionnaires,
+        'systems_target': agg['total_systems'],
+        'questionnaires_target': agg['total_questionnaires'],
     }
-    
+
     context = {
-        'total_systems': total_systems,
-        'systems_with_data': systems_with_data,
-        'systems_no_data': systems_no_data,
-        'crit_stats': crit_stats,
-        'total_questionnaires': total_questionnaires,
-        'q_not_started': q_not_started,
-        'q_in_progress': q_in_progress,
-        'q_completed': q_completed,
-        'total_questions': total_questions,
-        'total_answered': total_answered,
-        'total_validated': total_validated,
-        'questionnaire_progress': questionnaire_progress,
-        'validation_progress': validation_progress,
-        'phase_data': phase_data,
-        'total_flows': total_flows,
-        'automated_flows': automated_flows,
-        'manual_flows': manual_flows,
-        'critical_flows': critical_flows,
-        'total_samples': total_samples,
-        'system_progress': system_progress,
+        **agg,
         'roadmap': roadmap,
-        'phase_data_json': json_module.dumps(phase_data),
-        # Flow validation data
-        'total_hypotheses': total_hypotheses,
-        'hyp_confirmed': hyp_confirmed,
-        'hyp_partial': hyp_partial,
-        'hyp_incorrect': hyp_incorrect,
-        'hyp_pending': hyp_pending,
-        'hyp_validated_pct': hyp_validated_pct,
-        'total_flow_validations': total_flow_validations,
-        'fv_validated': fv_validated,
-        'fv_partial': fv_partial,
-        'fv_issues': fv_issues,
-        'flows_with_samples': flows_with_samples,
-        'systems_with_samples': systems_with_samples,
+        'phase_data_json': json_module.dumps(agg['phase_data']),
         'flow_validation_data': flow_validation_data,
+        'system_progress': system_progress,
     }
     return render(request, 'cartography/kpi_dashboard.html', context)
 
 
 def api_kpi_stats(request):
-    """API JSON pour les KPI temps réel (polling AJAX)"""
-    total_systems = System.objects.count()
-    systems_with_data = System.objects.filter(
-        Q(outgoing_flows__isnull=False) | Q(incoming_flows__isnull=False)
-    ).distinct().count()
-    
-    total_questionnaires = Questionnaire.objects.count()
-    q_completed = Questionnaire.objects.filter(status='COMPLETED').count()
-    q_in_progress = Questionnaire.objects.filter(status='IN_PROGRESS').count()
-    
-    total_questions = Question.objects.count()
-    # Questions répondues = réellement répondues + toutes les questions des questionnaires terminés
-    api_completed_qs = Questionnaire.objects.filter(status='COMPLETED')
-    api_completed_q_total = Question.objects.filter(section__questionnaire__in=api_completed_qs).count()
-    api_non_completed_answered = Question.objects.exclude(answer='').exclude(section__questionnaire__in=api_completed_qs).count()
-    total_answered = api_completed_q_total + api_non_completed_answered
-    total_validated = Question.objects.filter(validation_status='VALIDATED').count()
-    
-    # Per-phase
-    phases = []
-    for p in [1, 2, 3]:
-        pq = Question.objects.filter(section__questionnaire__phase=p)
-        pt = pq.count()
-        # Compter toutes les questions des questionnaires terminés comme répondues
-        p_completed_qs = Questionnaire.objects.filter(phase=p, status='COMPLETED')
-        p_completed_total = Question.objects.filter(section__questionnaire__in=p_completed_qs).count()
-        p_non_completed_answered = pq.exclude(answer='').exclude(section__questionnaire__in=p_completed_qs).count()
-        pa = p_completed_total + p_non_completed_answered
-        phases.append({
-            'phase': p,
-            'total': pt,
-            'answered': pa,
-            'progress': int((pa / pt * 100)) if pt > 0 else 0,
-            'completed_questionnaires': Questionnaire.objects.filter(phase=p, status='COMPLETED').count(),
-            'total_questionnaires': Questionnaire.objects.filter(phase=p).count(),
-        })
-    
+    """API JSON pour les KPI temps réel (polling AJAX, cache 30 s)."""
+    agg = _compute_kpi_aggregates()
+    phases = [
+        {
+            'phase': p['phase'],
+            'total': p['total_questions'],
+            'answered': p['answered'],
+            'progress': p['progress'],
+            'completed_questionnaires': p['completed'],
+            'total_questionnaires': p['total_systems'],
+        }
+        for p in agg['phase_data']
+    ]
+    total_questions = agg['total_questions']
+    total_answered = agg['total_answered']
+    total_validated = agg['total_validated']
+    total_systems = agg['total_systems']
     return JsonResponse({
         'total_systems': total_systems,
-        'systems_with_data': systems_with_data,
-        'systems_coverage': int((systems_with_data / total_systems * 100)) if total_systems > 0 else 0,
-        'total_questionnaires': total_questionnaires,
-        'questionnaires_completed': q_completed,
-        'questionnaires_in_progress': q_in_progress,
+        'systems_with_data': agg['systems_with_data'],
+        'systems_coverage':
+            int((agg['systems_with_data'] / total_systems * 100)) if total_systems > 0 else 0,
+        'total_questionnaires': agg['total_questionnaires'],
+        'questionnaires_completed': agg['q_completed'],
+        'questionnaires_in_progress': agg['q_in_progress'],
         'total_questions': total_questions,
         'total_answered': total_answered,
         'total_validated': total_validated,
-        'questionnaire_progress': int((total_answered / total_questions * 100)) if total_questions > 0 else 0,
-        'validation_progress': int((total_validated / total_questions * 100)) if total_questions > 0 else 0,
+        'questionnaire_progress':
+            int((total_answered / total_questions * 100)) if total_questions > 0 else 0,
+        'validation_progress':
+            int((total_validated / total_questions * 100)) if total_questions > 0 else 0,
         'phases': phases,
-        'total_flows': DataFlow.objects.count(),
-        'total_samples': DataSample.objects.count(),
+        'total_flows': agg['total_flows'],
+        'total_samples': agg['total_samples'],
     })
 
 

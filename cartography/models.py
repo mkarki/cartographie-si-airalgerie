@@ -437,33 +437,56 @@ class Questionnaire(models.Model):
     def phase_label(self):
         return {1: 'Phase 1 🔴', 2: 'Phase 2 🟠', 3: 'Phase 3 🟢'}.get(self.phase, '')
     
+    # ── Compteurs de questions ───────────────────────────────────────────
+    # Chaque property vérifie d'abord si la vue a pré-calculé la valeur
+    # (via `_cached_<nom>` sur l'instance), sinon elle retombe sur un
+    # count() naïf. Cela permet aux vues listant plusieurs questionnaires
+    # d'éviter le N+1 sans modifier les templates.
     @property
     def total_questions(self):
+        v = self.__dict__.get('_cached_total_questions')
+        if v is not None:
+            return v
         return Question.objects.filter(section__questionnaire=self).count()
-    
+
     @property
     def answered_questions(self):
+        v = self.__dict__.get('_cached_answered_questions')
+        if v is not None:
+            return v
         if self.status == 'COMPLETED':
             return self.total_questions
         return Question.objects.filter(section__questionnaire=self).exclude(answer='').count()
-    
+
     @property
     def progress_percent(self):
+        v = self.__dict__.get('_cached_progress_percent')
+        if v is not None:
+            return v
         total = self.total_questions
         if total == 0:
             return 0
         return int((self.answered_questions / total) * 100)
-    
+
     @property
     def validated_questions(self):
+        v = self.__dict__.get('_cached_validated_questions')
+        if v is not None:
+            return v
         return Question.objects.filter(section__questionnaire=self, validation_status='VALIDATED').count()
-    
+
     @property
     def rejected_questions(self):
+        v = self.__dict__.get('_cached_rejected_questions')
+        if v is not None:
+            return v
         return Question.objects.filter(section__questionnaire=self, validation_status='REJECTED').count()
-    
+
     @property
     def validation_percent(self):
+        v = self.__dict__.get('_cached_validation_percent')
+        if v is not None:
+            return v
         total = self.total_questions
         if total == 0:
             return 0
