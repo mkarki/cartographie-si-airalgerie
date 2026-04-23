@@ -1,3 +1,18 @@
+# =============================================================================
+# Cartographie SI - Render deployment
+#
+# Architecture (after VPS migration):
+#   - Web service (this) stays on Render
+#   - PostgreSQL now lives on VPS Algerie (cartsiairdz.alphaaerosystem.com)
+#   - Transport: SSH tunnel over port 22 (VPS provider NAT blocks 5432/6432
+#     direct ingress ; ticket de demande d'ouverture envoye a l'hebergeur)
+#
+# When the provider opens 5432/6432, simply unset SSH_TUNNEL_HOST on Render
+# and point DATABASE_URL directly at the VPS - no code change required.
+# =============================================================================
+
+# The managed Render PostgreSQL is kept for 30j post-bascule as a safety net
+# (rollback possible). Do NOT remove until VPS is stable > 30 days.
 databases:
   - name: cartographie-si-db
     plan: free
@@ -9,7 +24,8 @@ services:
     name: cartographie-si-airalgerie
     runtime: python
     buildCommand: "./build.sh"
-    startCommand: "python manage.py migrate --noinput && python manage.py createcachetable && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --timeout 120 --workers 2"
+    # start.sh handles: optional SSH tunnel -> migrations -> gunicorn
+    startCommand: "./start.sh"
     envVars:
       - key: SECRET_KEY
         generateValue: true
@@ -17,7 +33,21 @@ services:
         value: "False"
       - key: PYTHON_VERSION
         value: "3.10.12"
+      # ─── DATABASE_URL ──────────────────────────────────────────────────────
+      # IMPORTANT : cette valeur doit etre surchargee manuellement dans le
+      # dashboard Render (Environment) quand on bascule vers le VPS :
+      #   postgresql://cartography_prod:<pwd>@127.0.0.1:5433/cartographie_si?sslmode=require
+      # Voir .env.render.new et .secrets/airalgerie_vps.env
       - key: DATABASE_URL
         fromDatabase:
           name: cartographie-si-db
           property: connectionString
+      # ─── SSH Tunnel vers PostgreSQL VPS ────────────────────────────────────
+      # A positionner dans le dashboard Render (secrets) avant bascule :
+      #   SSH_TUNNEL_HOST          = cartsiairdz.alphaaerosystem.com
+      #   SSH_TUNNEL_USER          = pgtunnel
+      #   SSH_TUNNEL_LOCAL_PORT    = 5433
+      #   SSH_TUNNEL_REMOTE_PORT   = 6432
+      #   SSH_TUNNEL_PRIVATE_KEY   = <cle ed25519 base64, voir .secrets/vps/tunnel_ed25519>
+      #   SSH_TUNNEL_HOST_KEY      = <ligne known_hosts, voir .secrets/vps/known_hosts>
+      # Ne PAS mettre ici : ce sont des secrets.

@@ -98,6 +98,19 @@ if DATABASES['default'].get('ENGINE', '').endswith('postgresql'):
     DATABASES['default'].setdefault('OPTIONS', {})
     DATABASES['default']['OPTIONS']['sslmode'] = os.environ.get('PGSSLMODE', 'require')
 
+    # Si le serveur utilise une PKI interne, le CA est fourni via env var DB_CA_CERT.
+    # On l'écrit sur disque et on force sslmode=verify-full pour valider la chaîne.
+    _db_ca = os.environ.get('DB_CA_CERT', '').strip()
+    if _db_ca:
+        _ca_path = Path('/tmp/db-ca.crt')
+        if not _ca_path.exists() or _ca_path.read_text() != _db_ca:
+            _ca_path.write_text(_db_ca)
+            _ca_path.chmod(0o600)
+        DATABASES['default']['OPTIONS']['sslrootcert'] = str(_ca_path)
+        # verify-full valide le CN/SAN du cert contre l'hôte de DATABASE_URL.
+        # On prend verify-ca (moins strict) par défaut pour tolérer le switch IP/FQDN.
+        DATABASES['default']['OPTIONS']['sslmode'] = os.environ.get('PGSSLMODE', 'verify-ca')
+
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
