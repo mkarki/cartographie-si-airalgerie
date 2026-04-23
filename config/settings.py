@@ -80,6 +80,11 @@ DATABASES = {
         conn_max_age=600,
     )
 }
+# SSL obligatoire si la DB est externe (PostgreSQL distant)
+# Surchargable via env var PGSSLMODE si besoin
+if DATABASES['default'].get('ENGINE', '').endswith('postgresql'):
+    DATABASES['default'].setdefault('OPTIONS', {})
+    DATABASES['default']['OPTIONS']['sslmode'] = os.environ.get('PGSSLMODE', 'require')
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
