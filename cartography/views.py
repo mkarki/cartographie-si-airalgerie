@@ -15,8 +15,30 @@ from .models import (
     DataSample, FlowFieldHypothesis, FlowValidation,
     ReferenceData, FlowReferential, DataImportHistory, COUNTRY_CHOICES,
     Questionnaire, QuestionSection, Question, KeyUserAccess, AuditorAccess, DivisionAccess,
-    Process, ProcessStep
+    Process, ProcessStep,
+    AuditLog, RightsRequest
 )
+from .ratelimit import check_rate_limit, reset_rate_limit
+
+
+def _log_audit(request, action, actor='', target_type='', target_id='', success=True, details=None):
+    """Helper pour créer une entrée AuditLog explicite."""
+    try:
+        xff = request.META.get('HTTP_X_FORWARDED_FOR', '')
+        ip = xff.split(',')[0].strip() if xff else request.META.get('REMOTE_ADDR')
+        AuditLog.objects.create(
+            action=action,
+            actor=actor or '',
+            ip_address=ip,
+            user_agent=request.META.get('HTTP_USER_AGENT', '')[:500],
+            target_type=target_type,
+            target_id=str(target_id)[:50] if target_id else '',
+            path=request.path[:500],
+            success=success,
+            details=details or {},
+        )
+    except Exception:
+        pass
 
 
 # ─── Auth views ───────────────────────────────────────────────────────────
@@ -27,20 +49,31 @@ def login_view(request):
         return redirect('cartography:dashboard')
     error = None
     if request.method == 'POST':
+        if not check_rate_limit(request, scope='login'):
+            _log_audit(request, 'LOGIN_FAILED', actor='', success=False, details={'reason': 'rate_limited'})
+            error = 'Trop de tentatives. Réessayez dans quelques minutes.'
+            return render(request, 'cartography/login.html', {'error': error})
         username = request.POST.get('username', '')
         password = request.POST.get('password', '')
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
+            reset_rate_limit(request, scope='login')
+            _log_audit(request, 'LOGIN_SUCCESS', actor=username)
             next_url = request.GET.get('next', '/')
             return redirect(next_url)
         else:
+            _log_audit(request, 'LOGIN_FAILED', actor=username, success=False)
             error = 'Identifiants incorrects.'
     return render(request, 'cartography/login.html', {'error': error})
 
 
 def logout_view(request):
     """Déconnexion admin, key user ou auditeur"""
+    actor = request.user.username if request.user.is_authenticated else (
+        request.session.get('key_user_name') or request.session.get('auditor_name')
+        or request.session.get('division_name') or ''
+    )
     request.session.pop('key_user_token', None)
     request.session.pop('key_user_name', None)
     request.session.pop('key_user_questionnaire_id', None)
@@ -52,11 +85,15 @@ def logout_view(request):
     request.session.pop('division_structure_id', None)
     request.session.pop('division_structure_code', None)
     logout(request)
+    _log_audit(request, 'LOGOUT', actor=actor)
     return redirect('cartography:login')
 
 
 def unified_token_login(request):
     """Accès unifié — détecte automatiquement le type de token (auditeur, division, key user)"""
+    if not check_rate_limit(request, scope='token_access'):
+        _log_audit(request, 'TOKEN_INVALID', success=False, details={'reason': 'rate_limited'})
+        return render(request, 'cartography/login.html', {'error': 'Trop de tentatives. Réessayez dans quelques minutes.'})
     token = request.GET.get('token', '').strip()
     if not token:
         return redirect('cartography:login')
@@ -67,6 +104,8 @@ def unified_token_login(request):
         access.save(update_fields=['last_accessed'])
         request.session['auditor_token'] = token
         request.session['auditor_name'] = access.name
+        _log_audit(request, 'TOKEN_ACCESS', actor=access.name, target_type='auditor')
+        reset_rate_limit(request, scope='token_access')
         return redirect('cartography:kpi_dashboard')
     except AuditorAccess.DoesNotExist:
         pass
@@ -79,6 +118,8 @@ def unified_token_login(request):
         request.session['division_name'] = access.name
         request.session['division_structure_id'] = access.structure.pk
         request.session['division_structure_code'] = access.structure.code
+        _log_audit(request, 'TOKEN_ACCESS', actor=access.name, target_type='division', target_id=access.structure.code)
+        reset_rate_limit(request, scope='token_access')
         return redirect('cartography:division_dashboard')
     except DivisionAccess.DoesNotExist:
         pass
@@ -97,9 +138,12 @@ def unified_token_login(request):
             {'id': a.questionnaire.pk, 'name': a.questionnaire.system_name, 'token': a.token}
             for a in all_access
         ]
+        _log_audit(request, 'TOKEN_ACCESS', actor=access.name, target_type='key_user', target_id=str(access.questionnaire.pk))
+        reset_rate_limit(request, scope='token_access')
         return redirect('cartography:questionnaire_form', pk=access.questionnaire.pk)
     except KeyUserAccess.DoesNotExist:
         pass
+    _log_audit(request, 'TOKEN_INVALID', success=False, details={'token_prefix': token[:8]})
     return render(request, 'cartography/login.html', {'error': 'Code d\'accès invalide ou désactivé.'})
 
 
@@ -2598,6 +2642,57 @@ def question_attachment_download(request, question_id):
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     response['Content-Length'] = str(question.attachment_size or len(question.attachment_data))
     return response
+
+
+# ─── Conformité RGPD/Loi 18-07 ─────────────────────────────────────────────
+
+def privacy_view(request):
+    """Politique de confidentialité — art. 4 loi 18-07 (information des personnes)."""
+    from django.conf import settings as dj_settings
+    context = {
+        'dpo_name': getattr(dj_settings, 'DPO_CONTACT_NAME', 'À désigner'),
+        'dpo_email': getattr(dj_settings, 'DPO_CONTACT_EMAIL', 'dpo@airalgerie.dz'),
+        'retention_days_audit': getattr(dj_settings, 'RETENTION_AUDIT_DAYS', 365),
+    }
+    return render(request, 'cartography/privacy.html', context)
+
+
+def rights_request_view(request):
+    """Formulaire d'exercice des droits (accès, rectification, opposition, limitation)."""
+    submitted = False
+    error = None
+    if request.method == 'POST':
+        if not check_rate_limit(request, scope='rights_request'):
+            error = 'Trop de soumissions. Réessayez dans quelques minutes.'
+        else:
+            name = request.POST.get('name', '').strip()
+            email = request.POST.get('email', '').strip()
+            identifier = request.POST.get('identifier', '').strip()
+            req_type = request.POST.get('request_type', '').strip()
+            message = request.POST.get('message', '').strip()
+            valid_types = {k for k, _ in RightsRequest.REQUEST_TYPES}
+            if not name or not email or req_type not in valid_types or not message:
+                error = 'Merci de remplir tous les champs obligatoires (nom, email, type, message).'
+            else:
+                req = RightsRequest.objects.create(
+                    request_type=req_type,
+                    requester_name=name,
+                    requester_email=email,
+                    requester_identifier=identifier,
+                    message=message,
+                )
+                _log_audit(
+                    request, 'RIGHTS_REQUEST', actor=name,
+                    target_type='rights_request', target_id=str(req.pk),
+                    details={'request_type': req_type},
+                )
+                submitted = True
+    context = {
+        'submitted': submitted,
+        'error': error,
+        'request_types': RightsRequest.REQUEST_TYPES,
+    }
+    return render(request, 'cartography/rights_request.html', context)
 
 
 # ─── Process views ──────────────────────────────────────────────────────────

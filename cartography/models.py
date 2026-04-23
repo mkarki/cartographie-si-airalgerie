@@ -750,6 +750,97 @@ class ProcessStep(models.Model):
         return f"{self.process.code} — Étape {self.order}: {self.title}"
 
 
+class AuditLog(models.Model):
+    """
+    Journal d'audit des accès et actions sensibles — exigence loi 18-07 art. 2 (sécurité).
+    Conserve qui a fait quoi, quand, depuis où.
+    Rétention par défaut : 12 mois (ajustable via CLEANUP_AUDIT_DAYS settings).
+    """
+    ACTION_CHOICES = [
+        ('LOGIN_SUCCESS', 'Connexion réussie'),
+        ('LOGIN_FAILED', 'Échec de connexion'),
+        ('LOGOUT', 'Déconnexion'),
+        ('TOKEN_ACCESS', 'Accès par token'),
+        ('TOKEN_INVALID', 'Token invalide'),
+        ('VIEW_QUESTIONNAIRE', 'Consultation questionnaire'),
+        ('VIEW_SYSTEM', 'Consultation système'),
+        ('VIEW_FLOW', 'Consultation flux'),
+        ('SUBMIT_ANSWER', 'Soumission réponse'),
+        ('VALIDATE_ANSWER', 'Validation réponse'),
+        ('UPLOAD_ATTACHMENT', 'Upload pièce jointe'),
+        ('DOWNLOAD_ATTACHMENT', 'Téléchargement pièce jointe'),
+        ('EXPORT', 'Export de données'),
+        ('RIGHTS_REQUEST', 'Demande exercice des droits'),
+        ('ADMIN_ACTION', 'Action administrative'),
+        ('OTHER', 'Autre'),
+    ]
+
+    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
+    action = models.CharField(max_length=30, choices=ACTION_CHOICES, db_index=True)
+    actor = models.CharField(max_length=200, blank=True, help_text="Utilisateur (username ou matricule ou anonyme)")
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    target_type = models.CharField(max_length=50, blank=True, help_text="Type de ressource consultée (questionnaire, system, question...)")
+    target_id = models.CharField(max_length=50, blank=True)
+    path = models.CharField(max_length=500, blank=True)
+    details = models.JSONField(default=dict, blank=True, help_text="Contexte additionnel (JSON)")
+    success = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+        verbose_name = "Journal d'audit"
+        verbose_name_plural = "Journal d'audit"
+        indexes = [
+            models.Index(fields=['-timestamp']),
+            models.Index(fields=['action', '-timestamp']),
+            models.Index(fields=['actor', '-timestamp']),
+        ]
+
+    def __str__(self):
+        return f"[{self.timestamp:%Y-%m-%d %H:%M}] {self.action} / {self.actor or '(anonyme)'}"
+
+
+class RightsRequest(models.Model):
+    """
+    Demande d'exercice des droits d'une personne concernée (accès, rectification,
+    opposition, limitation) — loi 18-07 art. 4.
+    """
+    REQUEST_TYPES = [
+        ('ACCESS', 'Accès à mes données'),
+        ('RECTIFICATION', 'Rectification'),
+        ('DELETION', 'Suppression'),
+        ('OPPOSITION', 'Opposition au traitement'),
+        ('LIMITATION', 'Limitation du traitement'),
+        ('PORTABILITY', 'Portabilité'),
+    ]
+    STATUS_CHOICES = [
+        ('PENDING', 'En attente'),
+        ('IN_PROGRESS', 'En cours de traitement'),
+        ('RESOLVED', 'Résolue'),
+        ('REJECTED', 'Rejetée'),
+    ]
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    request_type = models.CharField(max_length=20, choices=REQUEST_TYPES)
+    requester_name = models.CharField(max_length=200)
+    requester_email = models.EmailField()
+    requester_identifier = models.CharField(max_length=100, blank=True, help_text="Matricule, fonction, numéro employé...")
+    message = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    response = models.TextField(blank=True)
+    responded_by = models.CharField(max_length=200, blank=True)
+    responded_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Demande d'exercice des droits"
+        verbose_name_plural = "Demandes d'exercice des droits"
+
+    def __str__(self):
+        return f"{self.get_request_type_display()} — {self.requester_name} ({self.get_status_display()})"
+
+
 class MatriculeMap(models.Model):
     """
     Table de correspondance matricule → variantes de nom à anonymiser.

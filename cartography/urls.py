@@ -63,6 +63,10 @@ urlpatterns = [
     path('form/<int:pk>/', views.questionnaire_form_view, name='questionnaire_form'),
     path('question/<int:question_id>/attachment/', views.question_attachment_download, name='question_attachment_download'),
     
+    # Conformité loi 18-07 / 25-11
+    path('privacy/', views.privacy_view, name='privacy'),
+    path('rights-request/', views.rights_request_view, name='rights_request'),
+    
     # API endpoints for graph data
     path('api/graph-data/', views.api_graph_data, name='api_graph_data'),
     path('api/graph-data-validation/', views.api_graph_data_with_validation, name='api_graph_data_validation'),

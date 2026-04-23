@@ -3,7 +3,8 @@ from .models import (
     Structure, SystemCategory, System, DataFlow, 
     DataField, MessageFormat, MessageField, DataDomain,
     Questionnaire, QuestionSection, Question, KeyUserAccess, AuditorAccess, DivisionAccess,
-    Process, ProcessStep
+    Process, ProcessStep,
+    AuditLog, RightsRequest, MatriculeMap,
 )
 
 
@@ -140,3 +141,44 @@ class ProcessStepAdmin(admin.ModelAdmin):
     list_filter = ['step_type', 'actor_structure', 'process']
     search_fields = ['title', 'description', 'actor_role']
     filter_horizontal = ['systems_used']
+
+
+@admin.register(AuditLog)
+class AuditLogAdmin(admin.ModelAdmin):
+    list_display = ['timestamp', 'action', 'actor', 'ip_address', 'target_type', 'target_id', 'success']
+    list_filter = ['action', 'success', 'target_type', 'timestamp']
+    search_fields = ['actor', 'ip_address', 'path', 'target_id']
+    readonly_fields = ['timestamp', 'action', 'actor', 'ip_address', 'user_agent',
+                       'target_type', 'target_id', 'path', 'details', 'success']
+    date_hierarchy = 'timestamp'
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(RightsRequest)
+class RightsRequestAdmin(admin.ModelAdmin):
+    list_display = ['created_at', 'request_type', 'requester_name', 'requester_email', 'status']
+    list_filter = ['request_type', 'status', 'created_at']
+    search_fields = ['requester_name', 'requester_email', 'requester_identifier', 'message']
+    readonly_fields = ['created_at', 'updated_at', 'request_type', 'requester_name',
+                       'requester_email', 'requester_identifier', 'message']
+    fieldsets = (
+        ('Demande', {'fields': ('created_at', 'updated_at', 'request_type',
+                                 'requester_name', 'requester_email', 'requester_identifier', 'message')}),
+        ('Traitement', {'fields': ('status', 'response', 'responded_by', 'responded_at')}),
+    )
+
+
+@admin.register(MatriculeMap)
+class MatriculeMapAdmin(admin.ModelAdmin):
+    list_display = ['matricule', 'variants_preview', 'updated_at']
+    search_fields = ['matricule']
+    ordering = ['matricule']
+
+    def variants_preview(self, obj):
+        return ', '.join(obj.variants[:3]) + ('…' if len(obj.variants) > 3 else '')
+    variants_preview.short_description = "Variantes (extrait)"

@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block title %}Exercer mes droits — Cartographie SI Air Algérie{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-6 py-10 text-gray-200">
+
+    <nav class="text-xs text-gray-500 mb-6">
+        <a href="{% url 'cartography:privacy' %}" class="hover:text-gray-300">← Politique de confidentialité</a>
+    </nav>
+
+    <h1 class="text-3xl font-bold text-white mb-2">Exercice des droits sur vos données</h1>
+    <p class="text-sm text-gray-400 mb-8">
+        Formulaire conforme à l'article 4 de la loi algérienne n° 18-07 modifiée 25-11.
+    </p>
+
+    {% if submitted %}
+    <div class="bg-green-900/30 border border-green-800 rounded-lg p-6 text-sm">
+        <div class="flex items-center gap-2 text-green-400 font-semibold mb-2">
+            <i data-lucide="check-circle" class="w-5 h-5"></i>
+            Demande enregistrée
+        </div>
+        <p class="text-gray-300">
+            Votre demande a bien été transmise au Délégué à la protection des données.
+            Conformément à la loi, vous recevrez une réponse sous <strong>1 mois maximum</strong>
+            à l'adresse email que vous avez indiquée.
+        </p>
+        <a href="{% url 'cartography:privacy' %}" class="inline-block mt-4 text-blue-400 hover:text-blue-300 text-xs">
+            Retour à la politique de confidentialité
+        </a>
+    </div>
+    {% else %}
+
+    {% if error %}
+    <div class="bg-red-900/30 border border-red-800 rounded-lg p-4 text-sm text-red-300 mb-4">
+        {{ error }}
+    </div>
+    {% endif %}
+
+    <form method="post" class="space-y-4 bg-white/5 border border-white/10 rounded-lg p-6">
+        {% csrf_token %}
+
+        <div>
+            <label class="block text-sm text-gray-400 mb-1">Nom complet <span class="text-red-400">*</span></label>
+            <input type="text" name="name" required
+                   class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-white text-sm">
+        </div>
+
+        <div>
+            <label class="block text-sm text-gray-400 mb-1">Email <span class="text-red-400">*</span></label>
+            <input type="email" name="email" required
+                   class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-white text-sm">
+            <p class="text-xs text-gray-500 mt-1">Utilisé uniquement pour vous répondre.</p>
+        </div>
+
+        <div>
+            <label class="block text-sm text-gray-400 mb-1">Identifiant (matricule, fonction, etc.)</label>
+            <input type="text" name="identifier"
+                   class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-white text-sm"
+                   placeholder="Optionnel — pour accélérer le traitement">
+        </div>
+
+        <div>
+            <label class="block text-sm text-gray-400 mb-1">Nature de la demande <span class="text-red-400">*</span></label>
+            <select name="request_type" required
+                    class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-white text-sm">
+                <option value="">-- Sélectionner --</option>
+                {% for value, label in request_types %}
+                <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label class="block text-sm text-gray-400 mb-1">Message / précision <span class="text-red-400">*</span></label>
+            <textarea name="message" required rows="5"
+                      class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-white text-sm"
+                      placeholder="Décrivez brièvement votre demande..."></textarea>
+        </div>
+
+        <div class="text-xs text-gray-500 bg-white/5 border border-white/10 rounded p-3">
+            Les données que vous fournissez ici seront utilisées uniquement pour traiter
+            votre demande et conservées 3 ans (délai de prescription). Elles ne seront
+            transmises qu'au Délégué à la protection des données.
+        </div>
+
+        <button type="submit"
+                class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium rounded py-2.5 text-sm transition">
+            Envoyer la demande
+        </button>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}

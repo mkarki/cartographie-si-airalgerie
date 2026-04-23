@@ -40,6 +40,7 @@ if os.environ.get('CLOUDINARY_CLOUD_NAME'):
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'cartography.middleware.SecurityHeadersMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -50,6 +51,7 @@ MIDDLEWARE += [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'cartography.middleware.AuditLogMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -110,3 +112,45 @@ if os.environ.get('CLOUDINARY_CLOUD_NAME'):
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.RawMediaCloudinaryStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ─── Sécurité (loi 18-07 art. 2 — mesures techniques) ────────────────────
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_HSTS_SECONDS = 31536000  # 1 an
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_HTTPONLY = False  # CSRF token lu par JS côté formulaire
+CSRF_COOKIE_SAMESITE = 'Lax'
+X_FRAME_OPTIONS = 'DENY'
+
+# Session expirée après 2 h d'inactivité
+SESSION_COOKIE_AGE = 60 * 60 * 2
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_SAVE_EVERY_REQUEST = True
+
+# ─── Rétention / conformité ───────────────────────────────────────────────
+# Nombre de jours avant purge automatique via management command cleanup_expired_data
+RETENTION_AUDIT_DAYS = int(os.environ.get('RETENTION_AUDIT_DAYS', 365))  # journal d'audit : 12 mois
+RETENTION_RIGHTS_REQUESTS_DAYS = int(os.environ.get('RETENTION_RIGHTS_REQUESTS_DAYS', 1095))  # 3 ans (contentieux)
+
+# ─── Rate limiting (simple, via cache) ────────────────────────────────────
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'cartography_cache',
+    }
+}
+RATELIMIT_LOGIN_ATTEMPTS = 5  # 5 tentatives
+RATELIMIT_LOGIN_WINDOW = 300  # par 5 min
+
+# ─── Contact DPO (affiché dans /privacy/) ─────────────────────────────────
+DPO_CONTACT_NAME = os.environ.get('DPO_CONTACT_NAME', 'À désigner')
+DPO_CONTACT_EMAIL = os.environ.get('DPO_CONTACT_EMAIL', 'dpo@airalgerie.dz')

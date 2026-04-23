@@ -43,6 +43,19 @@
 
 {% block content %}
 <div class="p-8 max-w-5xl mx-auto">
+    <!-- Bandeau d'information protection des données (loi 18-07) -->
+    <div class="mb-4 bg-blue-900/20 border border-blue-800/40 rounded-lg px-4 py-3 text-xs text-blue-200 flex items-start gap-2">
+        <i data-lucide="shield" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
+        <div class="flex-1">
+            Les informations saisies sur ce formulaire sont traitées par Air Algérie dans le cadre de la
+            mission de cartographie SI, conformément à la loi n° 18-07 modifiée 25-11.
+            Données anonymisées, accès journalisé, conservation limitée.
+            <a href="{% url 'cartography:privacy' %}" target="_blank" class="underline hover:text-blue-100">En savoir plus</a>
+            ·
+            <a href="{% url 'cartography:rights_request' %}" target="_blank" class="underline hover:text-blue-100">Exercer mes droits</a>
+        </div>
+    </div>
+
     <!-- Success message -->
     {% if saved %}
     <div class="success-banner mb-6 bg-green-900/50 border border-green-700 rounded-xl p-4 flex items-center gap-3">
