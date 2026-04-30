@@ -183,5 +183,5 @@ RATELIMIT_LOGIN_WINDOW = 300  # par 5 min
 
 # ─── Contact DPO (affiché dans /privacy/) ─────────────────────────────────
 # Délégué à la protection des données désigné (loi 18-07 art. 30)
-DPO_CONTACT_NAME = os.environ.get('DPO_CONTACT_NAME', 'M. DEBAB Noureddine')
-DPO_CONTACT_EMAIL = os.environ.get('DPO_CONTACT_EMAIL', 'debab.noureddine@airalgerie.dz')
+DPO_CONTACT_NAME = os.environ.get('DPO_CONTACT_NAME', 'M. SEKKAL Mohamed Djawed')
+DPO_CONTACT_EMAIL = os.environ.get('DPO_CONTACT_EMAIL', 'sekkal.djawed@airalgerie.dz')
