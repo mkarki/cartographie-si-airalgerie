@@ -3,7 +3,7 @@ from .models import (
     Structure, SystemCategory, System, DataFlow, 
     DataField, MessageFormat, MessageField, DataDomain,
     Questionnaire, QuestionSection, Question, KeyUserAccess, AuditorAccess, DivisionAccess,
-    Process, ProcessStep,
+    Process, ProcessStep, ProcessValidation, ProcessStructureValidation,
     AuditLog, RightsRequest, MatriculeMap,
 )
 
@@ -133,6 +133,24 @@ class ProcessAdmin(admin.ModelAdmin):
         ('Workflow IA', {'fields': ('workflow_mermaid', 'workflow_json', 'ai_generated'), 'classes': ('collapse',)}),
         ('Métadonnées', {'fields': ('created_at', 'updated_at')}),
     )
+
+
+@admin.register(ProcessStructureValidation)
+class ProcessStructureValidationAdmin(admin.ModelAdmin):
+    list_display = ['process', 'structure', 'status', 'validated_by', 'validated_at', 'updated_at']
+    list_filter = ['status', 'structure']
+    search_fields = ['process__code', 'process__name', 'structure__code', 'validated_by']
+    readonly_fields = ['token', 'created_at', 'updated_at']
+    raw_id_fields = ['process']
+
+
+@admin.register(ProcessValidation)
+class ProcessValidationAdmin(admin.ModelAdmin):
+    list_display = ['created_at', 'process', 'action', 'actor_name', 'structure', 'ip_address']
+    list_filter = ['action', 'structure']
+    search_fields = ['process__code', 'actor_name']
+    readonly_fields = ['created_at', 'ip_address']
+    raw_id_fields = ['process']
 
 
 @admin.register(ProcessStep)

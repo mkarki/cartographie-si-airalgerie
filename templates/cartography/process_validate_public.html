@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Validation du process — {{ process.code }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .mermaid-container { background: rgba(255,255,255,0.03); border-radius: 12px; padding: 1rem; }
+    .mermaid-container svg { max-width: 100%; height: auto; }
+    .step-card { background: rgba(255,255,255,0.03); border-left: 3px solid rgba(255,255,255,0.1); }
+    .step-card.DECISION { border-left-color: #f59e0b; }
+    .step-card.INPUT, .step-card.OUTPUT { border-left-color: #3b82f6; }
+    .step-card.AUTOMATED { border-left-color: #10b981; }
+    .step-card.WAIT { border-left-color: #ef4444; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto p-6 space-y-6">
+
+    <!-- Header -->
+    <div class="text-center mb-6">
+        <div class="inline-flex items-center gap-3 mb-3">
+            <div class="w-12 h-12 rounded-xl bg-violet-500/20 flex items-center justify-center">
+                <i data-lucide="check-circle-2" class="w-6 h-6 text-violet-400"></i>
+            </div>
+        </div>
+        <h1 class="text-2xl font-bold mb-1">Validation d'un process métier</h1>
+        <p class="text-gray-400 text-sm">Vous êtes invité à valider, rejeter ou demander la révision de ce process.</p>
+    </div>
+
+    {% if submitted_action %}
+    <!-- Confirmation de soumission -->
+    <div class="glass rounded-xl p-8 text-center border
+        {% if submitted_action == 'APPROVED' %}border-green-500/40 bg-green-500/5
+        {% elif submitted_action == 'REJECTED' %}border-red-500/40 bg-red-500/5
+        {% else %}border-amber-500/40 bg-amber-500/5{% endif %}">
+        {% if submitted_action == 'APPROVED' %}
+        <i data-lucide="check-circle-2" class="w-16 h-16 text-green-400 mx-auto mb-4"></i>
+        <h2 class="text-xl font-bold text-green-400 mb-2">Merci {{ actor_name }}</h2>
+        <p class="text-gray-300">Vous avez <strong>validé</strong> le process « {{ process.name }} ».</p>
+        {% elif submitted_action == 'REJECTED' %}
+        <i data-lucide="x-circle" class="w-16 h-16 text-red-400 mx-auto mb-4"></i>
+        <h2 class="text-xl font-bold text-red-400 mb-2">Merci {{ actor_name }}</h2>
+        <p class="text-gray-300">Vous avez <strong>rejeté</strong> le process « {{ process.name }} ».</p>
+        {% else %}
+        <i data-lucide="edit-3" class="w-16 h-16 text-amber-400 mx-auto mb-4"></i>
+        <h2 class="text-xl font-bold text-amber-400 mb-2">Merci {{ actor_name }}</h2>
+        <p class="text-gray-300">Vous avez <strong>demandé une révision</strong> du process « {{ process.name }} ».</p>
+        {% endif %}
+        <p class="text-xs text-gray-500 mt-4">L'équipe DSI a été notifiée de votre décision. Une trace d'audit a été enregistrée.</p>
+    </div>
+    {% else %}
+
+    <!-- Process info -->
+    <div class="glass rounded-xl p-6">
+        <div class="flex items-start justify-between mb-4">
+            <div>
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="text-xs font-mono bg-white/10 px-2 py-0.5 rounded text-gray-400">{{ process.code }}</span>
+                    <span class="text-xs px-2 py-0.5 rounded bg-violet-500/20 text-violet-400">{{ process.get_category_display }}</span>
+                </div>
+                <h2 class="text-xl font-bold">{{ process.name }}</h2>
+                {% if process.description %}<p class="text-gray-400 mt-2">{{ process.description }}</p>{% endif %}
+            </div>
+            <div class="text-right text-xs text-gray-500">
+                <p>Soumis le {{ process.validation_requested_at|date:"d/m/Y H:i" }}</p>
+                <p>Par {{ process.validation_requested_by }}</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mt-4 text-sm">
+            <div>
+                <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Structures concernées</p>
+                <div class="flex flex-wrap gap-1">
+                    {% for s in process.structures.all %}
+                    <span class="text-xs px-2 py-0.5 rounded bg-white/5 text-gray-300">{{ s.code }} — {{ s.name }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            <div>
+                <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Systèmes impliqués</p>
+                <div class="flex flex-wrap gap-1">
+                    {% for s in process.systems.all %}
+                    <span class="text-xs px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400">{{ s.code }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workflow Mermaid -->
+    {% if process.workflow_mermaid %}
+    <div class="glass rounded-xl p-6">
+        <h3 class="text-sm font-semibold mb-3 flex items-center gap-2">
+            <i data-lucide="git-branch" class="w-4 h-4 text-violet-400"></i>
+            Diagramme du workflow
+        </h3>
+        <div class="mermaid-container">
+            <div class="mermaid">{{ process.workflow_mermaid }}</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Étapes -->
+    {% if steps %}
+    <div class="glass rounded-xl p-6">
+        <h3 class="text-sm font-semibold mb-3 flex items-center gap-2">
+            <i data-lucide="list-ordered" class="w-4 h-4 text-blue-400"></i>
+            Étapes ({{ steps|length }})
+        </h3>
+        <div class="space-y-2">
+            {% for step in steps %}
+            <div class="step-card {{ step.step_type }} rounded p-3">
+                <div class="flex items-start gap-3">
+                    <div class="flex-shrink-0 w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold">{{ step.order }}</div>
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <h4 class="font-medium text-sm">{{ step.title }}</h4>
+                            <span class="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-gray-400">{{ step.get_step_type_display }}</span>
+                        </div>
+                        {% if step.description %}<p class="text-xs text-gray-400">{{ step.description }}</p>{% endif %}
+                        <div class="flex flex-wrap gap-3 mt-2 text-[11px] text-gray-500">
+                            {% if step.actor_role %}<span><i data-lucide="user" class="w-3 h-3 inline mr-1"></i>{{ step.actor_role }}</span>{% endif %}
+                            {% if step.actor_structure %}<span><i data-lucide="building-2" class="w-3 h-3 inline mr-1"></i>{{ step.actor_structure.code }}</span>{% endif %}
+                            {% for sys in step.systems_used.all %}<span class="text-cyan-400"><i data-lucide="server" class="w-3 h-3 inline mr-1"></i>{{ sys.code }}</span>{% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Problèmes & Recommandations -->
+    {% if process.problems or process.recommendations %}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {% if process.problems %}
+        <div class="glass rounded-xl p-5 border border-amber-500/20">
+            <h3 class="text-sm font-semibold mb-2 flex items-center gap-2 text-amber-400">
+                <i data-lucide="alert-triangle" class="w-4 h-4"></i> Problèmes identifiés
+            </h3>
+            <p class="text-sm text-gray-300 whitespace-pre-line">{{ process.problems }}</p>
+        </div>
+        {% endif %}
+        {% if process.recommendations %}
+        <div class="glass rounded-xl p-5 border border-green-500/20">
+            <h3 class="text-sm font-semibold mb-2 flex items-center gap-2 text-green-400">
+                <i data-lucide="lightbulb" class="w-4 h-4"></i> Recommandations
+            </h3>
+            <p class="text-sm text-gray-300 whitespace-pre-line">{{ process.recommendations }}</p>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Historique de validation -->
+    {% if history %}
+    <div class="glass rounded-xl p-6">
+        <h3 class="text-sm font-semibold mb-3 flex items-center gap-2">
+            <i data-lucide="history" class="w-4 h-4 text-gray-400"></i>
+            Historique
+        </h3>
+        <div class="space-y-2">
+            {% for h in history %}
+            <div class="flex items-start gap-3 text-xs py-2 border-b border-white/5">
+                <div class="flex-shrink-0 mt-0.5">
+                    {% if h.action == 'APPROVED' %}<i data-lucide="check-circle-2" class="w-4 h-4 text-green-400"></i>
+                    {% elif h.action == 'REJECTED' %}<i data-lucide="x-circle" class="w-4 h-4 text-red-400"></i>
+                    {% elif h.action == 'REVISION_REQUESTED' %}<i data-lucide="edit-3" class="w-4 h-4 text-amber-400"></i>
+                    {% elif h.action == 'REQUESTED' %}<i data-lucide="send" class="w-4 h-4 text-blue-400"></i>
+                    {% else %}<i data-lucide="circle" class="w-4 h-4 text-gray-500"></i>{% endif %}
+                </div>
+                <div class="flex-1">
+                    <p class="text-gray-300"><strong>{{ h.get_action_display }}</strong> · <span class="text-gray-500">{{ h.created_at|date:"d/m/Y H:i" }}</span></p>
+                    <p class="text-gray-500">Par <strong class="text-gray-300">{{ h.actor_name }}</strong>{% if h.actor_role %} ({{ h.actor_role }}){% endif %}{% if h.structure %} · {{ h.structure.code }}{% endif %}</p>
+                    {% if h.comment %}<p class="text-gray-400 mt-1 italic">« {{ h.comment }} »</p>{% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Formulaire de décision -->
+    {% if allowed_actions %}
+    <div class="glass rounded-xl p-6 border-2 border-violet-500/30">
+        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+            <i data-lucide="check-square" class="w-5 h-5 text-violet-400"></i>
+            Votre décision
+        </h3>
+
+        {% if error %}<div class="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-2 mb-4 text-sm text-red-400">{{ error }}</div>{% endif %}
+
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">Votre nom et prénom <span class="text-red-400">*</span></label>
+                    <input type="text" name="actor_name" required class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm" placeholder="Ex : Mohamed BENALI">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">Votre fonction <span class="text-red-400">*</span></label>
+                    <input type="text" name="actor_role" required class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm" placeholder="Ex : Directeur DOA / Chef de division DCS">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-400 mb-1">Structure (optionnel)</label>
+                <select name="structure_code" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm">
+                    <option value="">— Sélectionnez une structure —</option>
+                    {% for s in process.structures.all %}
+                    <option value="{{ s.code }}">{{ s.code }} — {{ s.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-400 mb-1">Commentaire (recommandé en cas de rejet ou de révision)</label>
+                <textarea name="comment" rows="3" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm" placeholder="Vos remarques, points à corriger, éléments manquants..."></textarea>
+            </div>
+
+            <div class="flex flex-wrap gap-3 pt-2">
+                <button type="submit" name="action" value="APPROVED" class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition">
+                    <i data-lucide="check-circle-2" class="w-4 h-4"></i> Valider le process
+                </button>
+                <button type="submit" name="action" value="REVISION_REQUESTED" class="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition">
+                    <i data-lucide="edit-3" class="w-4 h-4"></i> Demander une révision
+                </button>
+                <button type="submit" name="action" value="REJECTED" class="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition">
+                    <i data-lucide="x-circle" class="w-4 h-4"></i> Rejeter le process
+                </button>
+            </div>
+
+            <p class="text-[11px] text-gray-600 italic mt-2">
+                <i data-lucide="shield" class="w-3 h-3 inline"></i>
+                Une trace d'audit immuable sera enregistrée (date, IP, action, commentaire). Cette validation a valeur de confirmation par votre direction/division.
+            </p>
+        </form>
+    </div>
+    {% else %}
+    <div class="glass rounded-xl p-6 text-center border border-white/10">
+        <i data-lucide="lock" class="w-10 h-10 text-gray-500 mx-auto mb-3"></i>
+        <h3 class="text-sm font-semibold text-gray-300 mb-1">Validation déjà effectuée</h3>
+        <p class="text-xs text-gray-500">Ce process est déjà au statut « {{ process.get_validation_status_display }} ». Aucune nouvelle action n'est possible via ce lien.</p>
+    </div>
+    {% endif %}
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+    lucide.createIcons();
+    if (typeof mermaid !== 'undefined') {
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', securityLevel: 'loose' });
+    }
+</script>
+{% endblock %}

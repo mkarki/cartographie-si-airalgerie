@@ -7,3 +7,15 @@ staticfiles/
 media/
 *.sqlite3-journal
 .env
+
+# Dumps et backups BDD (jamais en git — confidentialité + poids)
+*.pgdump
+*.sql.gz
+db.sqlite3.bak*
+backup_*.pgdump
+backup_*.json
+backup_*.dump
+
+# Données scrapées de la prod (volumineux, à reconstruire avec fetch_prod_data.py)
+prod_data/
+backups/

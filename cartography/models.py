@@ -1,3 +1,5 @@
+import uuid
+
 from django.db import models
 
 
@@ -700,6 +702,14 @@ class Process(models.Model):
         ('OTHER', 'Autre'),
     ]
 
+    VALIDATION_STATUS_CHOICES = [
+        ('NOT_REQUESTED', 'Non demandée'),
+        ('PENDING', 'En attente de validation'),
+        ('VALIDATED', 'Validé'),
+        ('REJECTED', 'Rejeté'),
+        ('REVISION_REQUESTED', 'Révision demandée'),
+    ]
+
     name = models.CharField(max_length=300)
     code = models.CharField(max_length=50, unique=True, help_text="Code court (ex: PROC-WT-001)")
     description = models.TextField(blank=True, help_text="Description courte du process")
@@ -717,6 +727,22 @@ class Process(models.Model):
     created_by = models.CharField(max_length=200, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    # Workflow de validation par les responsables des structures rattachées
+    validation_status = models.CharField(
+        max_length=25, choices=VALIDATION_STATUS_CHOICES, default='NOT_REQUESTED',
+        help_text="Statut actuel du circuit de validation"
+    )
+    validation_token = models.UUIDField(
+        null=True, blank=True, unique=True,
+        help_text="Token d'accès public unique permettant aux validateurs externes de valider sans compte"
+    )
+    validation_requested_at = models.DateTimeField(null=True, blank=True)
+    validation_requested_by = models.CharField(max_length=200, blank=True)
+    validated_by = models.CharField(max_length=200, blank=True, help_text="Nom du dernier validateur")
+    validated_role = models.CharField(max_length=200, blank=True, help_text="Fonction du validateur (Directeur, Chef de division...)")
+    validated_at = models.DateTimeField(null=True, blank=True)
+    validation_comment = models.TextField(blank=True, help_text="Commentaire du validateur")
 
     class Meta:
         ordering = ['category', 'name']
@@ -737,6 +763,189 @@ class Process(models.Model):
     @property
     def system_names(self):
         return list(self.systems.values_list('name', flat=True))
+
+    def recompute_validation_status(self, save=True):
+        """Recalcule ``validation_status`` à partir des validations par structure.
+
+        Règle :
+            - VALIDATED si toutes les structures rattachées ont APPROVED
+            - REJECTED si au moins une structure a REJECTED
+            - REVISION_REQUESTED si au moins une a demandé révision (et aucune REJECTED)
+            - PENDING sinon (tant qu'il reste des validations en attente)
+            - NOT_REQUESTED s'il n'y a aucune validation par structure
+        """
+        validations = list(self.structure_validations.all())
+        if not validations:
+            new_status = 'NOT_REQUESTED'
+        else:
+            statuses = {v.status for v in validations}
+            if 'REJECTED' in statuses:
+                new_status = 'REJECTED'
+            elif 'REVISION_REQUESTED' in statuses:
+                new_status = 'REVISION_REQUESTED'
+            elif statuses == {'APPROVED'}:
+                new_status = 'VALIDATED'
+            else:
+                new_status = 'PENDING'
+
+        if new_status != self.validation_status:
+            self.validation_status = new_status
+            # Mettre à jour le status fonctionnel global si tout est validé
+            if new_status == 'VALIDATED':
+                self.status = 'VALIDATED'
+                # Agréger la date la plus récente de validation
+                from django.utils import timezone
+                self.validated_at = timezone.now()
+            if save:
+                self.save(update_fields=['validation_status', 'status', 'validated_at', 'updated_at'])
+        return new_status
+
+    def validation_progress(self):
+        """Retourne un dict d'avancement pour affichage tableau de bord.
+
+        Returns:
+            {
+                'total': int,
+                'approved': int,
+                'rejected': int,
+                'revision': int,
+                'pending': int,
+                'percent': int,             # % de structures APPROVED
+                'by_structure': [
+                    {'structure': Structure, 'status': str, 'validated_by': str,
+                     'validated_at': datetime|None, 'token': uuid, 'comment': str},
+                    ...
+                ],
+            }
+        """
+        validations = self.structure_validations.select_related('structure').all()
+        total = validations.count()
+        approved = sum(1 for v in validations if v.status == 'APPROVED')
+        rejected = sum(1 for v in validations if v.status == 'REJECTED')
+        revision = sum(1 for v in validations if v.status == 'REVISION_REQUESTED')
+        pending = sum(1 for v in validations if v.status == 'PENDING')
+        percent = int(round(approved / total * 100)) if total else 0
+        return {
+            'total': total,
+            'approved': approved,
+            'rejected': rejected,
+            'revision': revision,
+            'pending': pending,
+            'percent': percent,
+            'by_structure': [
+                {
+                    'structure': v.structure,
+                    'status': v.status,
+                    'status_display': v.get_status_display(),
+                    'validated_by': v.validated_by,
+                    'validated_role': v.validated_role,
+                    'validated_at': v.validated_at,
+                    'token': v.token,
+                    'comment': v.comment,
+                    'updated_at': v.updated_at,
+                }
+                for v in validations
+            ],
+        }
+
+
+class ProcessValidation(models.Model):
+    """Historique d'audit des actions de validation d'un process.
+
+    Chaque action de validation (soumission, approbation, rejet, demande de
+    révision) génère une entrée immuable, permettant de tracer le cycle de
+    validation par les directeurs et chefs de division.
+    """
+    ACTION_CHOICES = [
+        ('REQUESTED', 'Soumission pour validation'),
+        ('APPROVED', 'Validation accordée'),
+        ('REJECTED', 'Rejet'),
+        ('REVISION_REQUESTED', 'Révision demandée'),
+        ('CANCELLED', 'Demande annulée'),
+    ]
+
+    process = models.ForeignKey(
+        Process, on_delete=models.CASCADE, related_name='validations',
+        help_text="Process concerné"
+    )
+    action = models.CharField(max_length=25, choices=ACTION_CHOICES)
+    actor_name = models.CharField(
+        max_length=200,
+        help_text="Nom du validateur ou du demandeur (saisi sur la page publique de validation)"
+    )
+    actor_role = models.CharField(
+        max_length=200, blank=True,
+        help_text="Fonction du validateur (Directeur, Chef de division, etc.)"
+    )
+    structure = models.ForeignKey(
+        Structure, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='process_validations',
+        help_text="Structure au nom de laquelle l'action a été effectuée"
+    )
+    comment = models.TextField(blank=True, help_text="Commentaire libre")
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Action de validation"
+        verbose_name_plural = "Historique de validation"
+
+    def __str__(self):
+        return f"[{self.created_at:%Y-%m-%d %H:%M}] {self.get_action_display()} — {self.process.code} par {self.actor_name}"
+
+
+class ProcessStructureValidation(models.Model):
+    """Validation d'un process par une structure rattachée.
+
+    Pour chaque process multi-structure, une entrée est créée par structure
+    impactée au moment de la soumission à validation. Chaque structure dispose
+    de son propre token d'accès public et de son propre statut de validation.
+
+    Le statut global ``Process.validation_status`` est dérivé de l'agrégation
+    des statuts par structure :
+        - VALIDATED  : toutes les structures ont APPROVED
+        - REJECTED   : au moins une a REJECTED
+        - REVISION_REQUESTED : au moins une l'a demandée (et aucune REJECTED)
+        - PENDING    : sinon
+    """
+
+    STATUS_CHOICES = [
+        ('PENDING', 'En attente'),
+        ('APPROVED', 'Validée'),
+        ('REJECTED', 'Rejetée'),
+        ('REVISION_REQUESTED', 'Révision demandée'),
+    ]
+
+    process = models.ForeignKey(
+        Process, on_delete=models.CASCADE, related_name='structure_validations',
+        help_text="Process concerné"
+    )
+    structure = models.ForeignKey(
+        Structure, on_delete=models.CASCADE, related_name='pending_process_validations',
+        help_text="Structure responsable de cette validation"
+    )
+    status = models.CharField(max_length=25, choices=STATUS_CHOICES, default='PENDING', db_index=True)
+    token = models.UUIDField(
+        unique=True, default=uuid.uuid4,
+        help_text="Token public unique pour cette structure (lien d'invitation par mail)"
+    )
+    validated_by = models.CharField(max_length=200, blank=True, help_text="Nom du validateur")
+    validated_role = models.CharField(max_length=200, blank=True, help_text="Fonction du validateur")
+    validated_at = models.DateTimeField(null=True, blank=True)
+    comment = models.TextField(blank=True, help_text="Commentaire du validateur")
+    last_reminder_at = models.DateTimeField(null=True, blank=True, help_text="Dernière relance envoyée")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('process', 'structure')
+        ordering = ['process__code', 'structure__code']
+        verbose_name = "Validation par structure"
+        verbose_name_plural = "Validations par structure"
+
+    def __str__(self):
+        return f"{self.process.code} ↔ {self.structure.code} : {self.get_status_display()}"
 
 
 class ProcessStep(models.Model):

@@ -1,3 +1,54 @@
+# Sauvegarde État Production — 17 mai 2026, 12:54 (avant push validation multi-structure)
+
+| Indicateur | Valeur |
+|------------|--------|
+| Systèmes | 38 |
+| Flux | 68 |
+| Structures | 17 |
+| Questionnaires | 79 |
+| Questions | 1 204 |
+| Questions répondues | 679 (56 %) |
+| KeyUserAccess | 120 |
+| AuditorAccess | 4 |
+| DivisionAccess | 11 (sera +3 après push : CCO, DOS, DSC créés en local) |
+| Process | 5 |
+| ProcessSteps | 36 |
+| AuditLog | 439 |
+| RightsRequest | 1 |
+| Dernière migration prod | `0027_add_audit_log_and_rights_request` |
+
+## Backup BDD
+
+- **Dump complet PostgreSQL** : `backup_prod_avant_validation_multistruct_20260517_125434.pgdump` (format custom, 350 K)
+- Restauration possible via : `pg_restore -Fc -d cartographie_si <fichier>.pgdump`
+- Fichier conservé en local — **NON committé** (poids et confidentialité)
+
+## Migrations à pousser
+
+- `0028_process_validated_at_process_validated_by_and_more` — Ajoute le 1er workflow validation : champs `validation_status`, `validation_token`, `validated_by/at`, `validation_comment` sur `Process` + nouveau modèle `ProcessValidation` (audit log). Migration **additive**, sans destruction.
+- `0029_process_structure_validation` — Ajoute le modèle `ProcessStructureValidation` : une validation par couple (process, structure) pour permettre la validation indépendante de chaque structure rattachée. Migration **additive**.
+
+## Changements à pousser
+
+- **Workflow validation multi-structure** : un process à N structures rattachées génère N invitations indépendantes ; statut global = `VALIDATED` ssi toutes les structures ont approuvé.
+- **Vue publique** par structure (token unique) : `process_validate_public` accepte un token `ProcessStructureValidation`, met à jour cette ligne et recalcule le statut global.
+- **Nouvelle route** : `process_resend_invitation(pk, structure_code)` pour régénérer un lien périmé.
+- **Matrice de progression** dans `process_detail` : ligne par structure (statut, validateur, date, action).
+- **Dashboard divisionnaire** : nouvelle section « Process à valider » listant les `ProcessStructureValidation` PENDING du périmètre.
+- **Admin Django** : `ProcessStructureValidation` + `ProcessValidation` enregistrés.
+
+## Comptes ajoutés en local (à propager après push)
+
+| Structure | Validateur | Source |
+|---|---|---|
+| CCO | CHABANE Amel | Key user SUIVI-IRREG marquée (CCO) |
+| DOS | SALAH ROUANA Mohamed | Key user SITATEX marqué (DOS) |
+| DSC | SAMEUR Yacine | Key user Q-Pulse / AGS |
+
+Ces comptes sont créés dans la BDD locale uniquement. Pour la prod, il faudra refaire un `DivisionAccess.objects.create(...)` (via shell ou admin) une fois la migration appliquée. Les tokens locaux ne sont pas transférables vers PostgreSQL.
+
+---
+
 # Sauvegarde État Production — 12 avril 2026, 15:59 (avant push correction flux AMOS)
 
 | Indicateur | Valeur |

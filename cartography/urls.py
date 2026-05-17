@@ -84,4 +84,16 @@ urlpatterns = [
     path('processes/<int:pk>/edit/', views.process_edit, name='process_edit'),
     path('api/process/<int:pk>/generate/', views.api_process_generate_workflow, name='api_process_generate'),
     path('api/process/<int:pk>/save-mermaid/', views.api_process_save_mermaid, name='api_process_save_mermaid'),
+
+    # Process — édition d'étapes
+    path('api/process/<int:pk>/steps/', views.api_process_step_save, name='api_process_step_create'),
+    path('api/process/<int:pk>/steps/<int:step_id>/', views.api_process_step_save, name='api_process_step_update'),
+    path('api/process/<int:pk>/steps/<int:step_id>/delete/', views.api_process_step_delete, name='api_process_step_delete'),
+    path('api/process/<int:pk>/steps/reorder/', views.api_process_step_reorder, name='api_process_step_reorder'),
+
+    # Process — workflow de validation par les directeurs/chefs de division
+    path('processes/<int:pk>/submit-validation/', views.process_submit_validation, name='process_submit_validation'),
+    path('processes/<int:pk>/cancel-validation/', views.process_cancel_validation, name='process_cancel_validation'),
+    path('processes/<int:pk>/resend-invitation/<str:structure_code>/', views.process_resend_invitation, name='process_resend_invitation'),
+    path('valider-process/<uuid:token>/', views.process_validate_public, name='process_validate_public'),
 ]

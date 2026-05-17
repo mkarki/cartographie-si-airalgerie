@@ -55,10 +55,10 @@
                 {% endif %}
             </div>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-wrap">
             <button id="btn-generate" onclick="generateWorkflow()" class="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
                 <i data-lucide="sparkles" class="w-4 h-4"></i>
-                Générer le workflow
+                {% if process.workflow_mermaid %}Régénérer (IA){% else %}Générer le workflow{% endif %}
             </button>
             <a href="{% url 'cartography:process_edit' process.pk %}" class="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
                 <i data-lucide="pencil" class="w-4 h-4"></i>
@@ -66,6 +66,9 @@
             </a>
         </div>
     </div>
+
+    <!-- Bloc validation -->
+    {% include "cartography/_process_validation_block.html" %}
 
     <!-- Tags structures + systèmes -->
     <div class="flex flex-wrap gap-2">
@@ -124,17 +127,19 @@
     </div>
 
     <!-- Étapes du process -->
-    {% if steps %}
     <div class="glass rounded-xl overflow-hidden">
-        <div class="px-5 py-3 border-b border-white/10">
+        <div class="flex items-center justify-between px-5 py-3 border-b border-white/10">
             <h2 class="text-sm font-semibold flex items-center gap-2">
                 <i data-lucide="list-ordered" class="w-4 h-4 text-blue-400"></i>
                 Étapes du process ({{ steps|length }})
             </h2>
+            <button onclick="openStepEditor(null)" class="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i> Ajouter une étape
+            </button>
         </div>
-        <div class="divide-y divide-white/5">
+        <div class="divide-y divide-white/5" id="steps-list">
             {% for step in steps %}
-            <div class="step-card px-5 py-4">
+            <div class="step-card px-5 py-4" id="step-row-{{ step.id }}" data-step-id="{{ step.id }}">
                 <div class="flex items-start gap-4">
                     <!-- Numéro -->
                     <div class="flex-shrink-0 w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-sm font-bold text-gray-300">
@@ -173,13 +178,136 @@
                             <i data-lucide="alert-triangle" class="w-3 h-3 inline mr-1"></i>{{ step.problems }}
                         </div>
                         {% endif %}
+                        <!-- Données JSON pour modale d'édition -->
+                        <script type="application/json" id="step-data-{{ step.id }}">{
+                            "id": {{ step.id }},
+                            "order": {{ step.order }},
+                            "title": "{{ step.title|escapejs }}",
+                            "description": "{{ step.description|escapejs }}",
+                            "step_type": "{{ step.step_type }}",
+                            "actor_role": "{{ step.actor_role|escapejs }}",
+                            "actor_structure_code": "{{ step.actor_structure.code|default:'' }}",
+                            "data_inputs": "{{ step.data_inputs|escapejs }}",
+                            "data_outputs": "{{ step.data_outputs|escapejs }}",
+                            "interactions": "{{ step.interactions|escapejs }}",
+                            "problems": "{{ step.problems|escapejs }}",
+                            "duration_estimate": "{{ step.duration_estimate|escapejs }}",
+                            "system_codes": [{% for s in step.systems_used.all %}"{{ s.code }}"{% if not forloop.last %},{% endif %}{% endfor %}]
+                        }</script>
+                    </div>
+                    <!-- Actions édition / suppression -->
+                    <div class="flex items-center gap-1 flex-shrink-0">
+                        <button onclick="openStepEditor({{ step.id }})" class="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white transition" title="Éditer l'étape">
+                            <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <button onclick="deleteStep({{ step.id }}, '{{ step.title|escapejs }}')" class="p-1.5 rounded hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition" title="Supprimer l'étape">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
                     </div>
                 </div>
+            </div>
+            {% empty %}
+            <div class="px-5 py-8 text-center text-sm text-gray-500">
+                Aucune étape — cliquez sur « Ajouter une étape » ou « Générer le workflow » pour en créer.
             </div>
             {% endfor %}
         </div>
     </div>
-    {% endif %}
+
+    <!-- Modale édition d'étape -->
+    <div id="step-editor-modal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onclick="if(event.target===this)closeStepEditor()">
+        <div class="glass rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold" id="step-modal-title">Nouvelle étape</h3>
+                <button onclick="closeStepEditor()" class="p-1 rounded hover:bg-white/10 text-gray-400"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <form id="step-form" class="space-y-3">
+                <input type="hidden" id="step-id" value="">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Titre <span class="text-red-400">*</span></label>
+                        <input type="text" id="step-title" required class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Type</label>
+                        <select id="step-type" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm">
+                            <option value="MANUAL">Action manuelle</option>
+                            <option value="AUTOMATED">Action automatisée</option>
+                            <option value="DECISION">Point de décision</option>
+                            <option value="INPUT">Entrée / Déclencheur</option>
+                            <option value="OUTPUT">Sortie / Résultat</option>
+                            <option value="WAIT">Attente / Délai</option>
+                            <option value="PARALLEL">Actions parallèles</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">Description</label>
+                    <textarea id="step-description" rows="2" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm"></textarea>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Rôle / Acteur</label>
+                        <input type="text" id="step-actor-role" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm" placeholder="Ex : Agent escale, DSI...">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Structure</label>
+                        <select id="step-actor-structure" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm">
+                            <option value="">—</option>
+                            {% for s in process.structures.all %}
+                            <option value="{{ s.code }}">{{ s.code }} — {{ s.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">Systèmes utilisés</label>
+                    <div class="bg-black/30 border border-white/10 rounded-lg p-2 max-h-32 overflow-y-auto" id="step-systems-list">
+                        {% for s in process.systems.all %}
+                        <label class="flex items-center gap-2 py-0.5 text-xs hover:bg-white/5 px-1 rounded cursor-pointer">
+                            <input type="checkbox" class="step-system-cb" value="{{ s.code }}">
+                            <span class="text-gray-300">{{ s.code }}</span> <span class="text-gray-500">— {{ s.name }}</span>
+                        </label>
+                        {% empty %}
+                        <p class="text-xs text-gray-600 italic">Aucun système rattaché au process. Édite le process pour en ajouter.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Données entrée</label>
+                        <textarea id="step-data-inputs" rows="2" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Données sortie</label>
+                        <textarea id="step-data-outputs" rows="2" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs"></textarea>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Interactions</label>
+                        <textarea id="step-interactions" rows="2" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Durée estimée</label>
+                        <input type="text" id="step-duration" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm" placeholder="Ex : 5 min, 1h">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">Problèmes identifiés</label>
+                    <textarea id="step-problems" rows="2" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs"></textarea>
+                </div>
+
+                <div class="flex items-center justify-between pt-3 border-t border-white/5">
+                    <p class="text-[10px] text-gray-600 italic">Le diagramme Mermaid sera régénéré à partir des étapes après sauvegarde.</p>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="closeStepEditor()" class="text-xs bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg">Annuler</button>
+                        <button type="submit" class="text-xs bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg font-medium">Enregistrer</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- Problèmes & Recommandations -->
     {% if process.problems or process.recommendations %}
@@ -338,6 +466,105 @@
         toast.textContent = msg;
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 4000);
+    }
+
+    // ─── Édition d'étapes ───────────────────────────────────────────────
+    function openStepEditor(stepId) {
+        const modal = document.getElementById('step-editor-modal');
+        const title = document.getElementById('step-modal-title');
+        const form = document.getElementById('step-form');
+        form.reset();
+        // Décocher toutes les checkboxes systèmes
+        document.querySelectorAll('.step-system-cb').forEach(cb => cb.checked = false);
+        document.getElementById('step-id').value = '';
+
+        if (stepId) {
+            const dataEl = document.getElementById('step-data-' + stepId);
+            if (!dataEl) { showToast('Données étape introuvables', 'error'); return; }
+            const data = JSON.parse(dataEl.textContent);
+            title.textContent = 'Éditer l\'étape #' + data.order;
+            document.getElementById('step-id').value = data.id;
+            document.getElementById('step-title').value = data.title || '';
+            document.getElementById('step-description').value = data.description || '';
+            document.getElementById('step-type').value = data.step_type || 'MANUAL';
+            document.getElementById('step-actor-role').value = data.actor_role || '';
+            document.getElementById('step-actor-structure').value = data.actor_structure_code || '';
+            document.getElementById('step-data-inputs').value = data.data_inputs || '';
+            document.getElementById('step-data-outputs').value = data.data_outputs || '';
+            document.getElementById('step-interactions').value = data.interactions || '';
+            document.getElementById('step-problems').value = data.problems || '';
+            document.getElementById('step-duration').value = data.duration_estimate || '';
+            (data.system_codes || []).forEach(code => {
+                const cb = document.querySelector('.step-system-cb[value="' + code + '"]');
+                if (cb) cb.checked = true;
+            });
+        } else {
+            title.textContent = 'Nouvelle étape';
+        }
+        modal.classList.remove('hidden');
+        setTimeout(() => document.getElementById('step-title').focus(), 50);
+        lucide.createIcons();
+    }
+
+    function closeStepEditor() {
+        document.getElementById('step-editor-modal').classList.add('hidden');
+    }
+
+    document.getElementById('step-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const stepId = document.getElementById('step-id').value;
+        const payload = {
+            title: document.getElementById('step-title').value.trim(),
+            description: document.getElementById('step-description').value,
+            step_type: document.getElementById('step-type').value,
+            actor_role: document.getElementById('step-actor-role').value,
+            actor_structure_code: document.getElementById('step-actor-structure').value,
+            data_inputs: document.getElementById('step-data-inputs').value,
+            data_outputs: document.getElementById('step-data-outputs').value,
+            interactions: document.getElementById('step-interactions').value,
+            problems: document.getElementById('step-problems').value,
+            duration_estimate: document.getElementById('step-duration').value,
+            system_codes: Array.from(document.querySelectorAll('.step-system-cb:checked')).map(cb => cb.value),
+        };
+        if (!payload.title) {
+            showToast('Le titre est requis', 'error');
+            return;
+        }
+        const url = stepId
+            ? `/api/process/{{ process.pk }}/steps/${stepId}/`
+            : `/api/process/{{ process.pk }}/steps/`;
+        fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify(payload),
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                showToast(data.created ? 'Étape ajoutée — workflow régénéré' : 'Étape mise à jour — workflow régénéré', 'success');
+                setTimeout(() => location.reload(), 600);
+            } else {
+                showToast('Erreur: ' + data.error, 'error');
+            }
+        })
+        .catch(err => showToast('Erreur réseau: ' + err, 'error'));
+    });
+
+    function deleteStep(stepId, stepTitle) {
+        if (!confirm(`Supprimer l'étape « ${stepTitle} » ?\nLe workflow sera régénéré.`)) return;
+        fetch(`/api/process/{{ process.pk }}/steps/${stepId}/delete/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Étape supprimée — workflow régénéré', 'success');
+                setTimeout(() => location.reload(), 500);
+            } else {
+                showToast('Erreur: ' + (data.error || 'inconnue'), 'error');
+            }
+        });
     }
 </script>
 {% endblock %}

@@ -1,7 +1,8 @@
 import os
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse, HttpResponse
-from django.db.models import Count, Q, Avg
+from django.db.models import Count, Q, Avg, Max
+from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -15,7 +16,7 @@ from .models import (
     DataSample, FlowFieldHypothesis, FlowValidation,
     ReferenceData, FlowReferential, DataImportHistory, COUNTRY_CHOICES,
     Questionnaire, QuestionSection, Question, KeyUserAccess, AuditorAccess, DivisionAccess,
-    Process, ProcessStep,
+    Process, ProcessStep, ProcessValidation, ProcessStructureValidation,
     AuditLog, RightsRequest
 )
 from .ratelimit import check_rate_limit, reset_rate_limit
@@ -266,6 +267,43 @@ def division_dashboard(request):
                 'progress': s_progress,
             })
     
+    # ── Process à valider par la division (ou ses directions filles) ────
+    # On récupère toutes les validations PENDING ou REVISION_REQUESTED dont
+    # la structure rattachée fait partie du périmètre de cette division.
+    pending_validations = (
+        ProcessStructureValidation.objects
+        .filter(
+            structure__in=all_structures,
+            status__in=('PENDING', 'REVISION_REQUESTED'),
+        )
+        .select_related('process', 'structure')
+        .order_by('process__code')
+    )
+
+    # Validations déjà finalisées pour cette division (10 dernières)
+    finalized_validations = (
+        ProcessStructureValidation.objects
+        .filter(
+            structure__in=all_structures,
+            status__in=('APPROVED', 'REJECTED'),
+        )
+        .select_related('process', 'structure')
+        .order_by('-validated_at')[:10]
+    )
+
+    # Compteurs validation
+    val_stats = {
+        'pending': pending_validations.filter(status='PENDING').count(),
+        'revision': pending_validations.filter(status='REVISION_REQUESTED').count(),
+        'approved': ProcessStructureValidation.objects.filter(
+            structure__in=all_structures, status='APPROVED'
+        ).count(),
+        'rejected': ProcessStructureValidation.objects.filter(
+            structure__in=all_structures, status='REJECTED'
+        ).count(),
+    }
+    val_stats['total'] = sum(val_stats.values())
+
     context = {
         'division': division,
         'access': access,
@@ -278,6 +316,10 @@ def division_dashboard(request):
         'total_questions': total_questions,
         'total_answered': total_answered,
         'global_progress': global_progress,
+        # Validation process
+        'pending_validations': pending_validations,
+        'finalized_validations': finalized_validations,
+        'val_stats': val_stats,
     }
     return render(request, 'cartography/division_dashboard.html', context)
 
@@ -1865,7 +1907,7 @@ def api_save_answer(request):
 # ─── Organigramme ──────────────────────────────────────────────────────────
 
 def organigramme_view(request):
-    """Organigramme par département — hiérarchie + suivi réponses par direction"""
+    """Organigramme par département — hiérarchie + suivi réponses par direction + process"""
     if not request.user.is_authenticated and not request.session.get('auditor_token'):
         return redirect('cartography:login')
 
@@ -1875,9 +1917,16 @@ def organigramme_view(request):
         'systems__category',
         'systems__questionnaire',
         'children',
+        'processes',
     ).annotate(
-        system_count=Count('systems')
+        system_count=Count('systems', distinct=True)
     ).order_by('code')
+
+    # Process indexés par structure (1 query)
+    processes_by_struct = {}
+    for p in Process.objects.prefetch_related('structures', 'systems').order_by('code'):
+        for s in p.structures.all():
+            processes_by_struct.setdefault(s.pk, []).append(p)
 
     # 2. Counts de questions par questionnaire en 1 query agrégée, au lieu de
     #    ~5 queries × N questionnaires via les @property de Questionnaire.
@@ -1995,7 +2044,58 @@ def organigramme_view(request):
         
         dept_progress = int((dept_answered / dept_questions * 100)) if dept_questions > 0 else 0
         validation_progress = int((dept_validated / dept_questions * 100)) if dept_questions > 0 else 0
-        
+
+        # ─── Process rattachés à cette structure ───
+        process_list = processes_by_struct.get(struct.pk, [])
+        processes_data = []
+        proc_validated = 0
+        proc_pending = 0
+        proc_rejected = 0
+        for p in process_list:
+            v_status = p.validation_status
+            if v_status == 'VALIDATED':
+                proc_validated += 1
+                v_label = 'Validé'
+                v_class = 'text-green-400'
+                v_icon = 'check-circle-2'
+            elif v_status == 'PENDING':
+                proc_pending += 1
+                v_label = 'En attente'
+                v_class = 'text-amber-400'
+                v_icon = 'clock'
+            elif v_status == 'REJECTED':
+                proc_rejected += 1
+                v_label = 'Rejeté'
+                v_class = 'text-red-400'
+                v_icon = 'x-circle'
+            elif v_status == 'REVISION_REQUESTED':
+                proc_pending += 1
+                v_label = 'Révision demandée'
+                v_class = 'text-orange-400'
+                v_icon = 'edit-3'
+            else:
+                v_label = 'Non soumis'
+                v_class = 'text-gray-500'
+                v_icon = 'minus-circle'
+            processes_data.append({
+                'pk': p.pk,
+                'code': p.code,
+                'name': p.name,
+                'category': p.get_category_display(),
+                'status': p.status,
+                'status_label': p.get_status_display(),
+                'has_workflow': bool(p.workflow_mermaid),
+                'system_codes': [s.code for s in p.systems.all()],
+                'validation_status': v_status,
+                'validation_label': v_label,
+                'validation_class': v_class,
+                'validation_icon': v_icon,
+                'validated_by': p.validated_by,
+                'validated_at': p.validated_at,
+            })
+        total_processes = len(processes_data)
+        proc_validation_percent = int((proc_validated / total_processes * 100)) if total_processes else 0
+
         return {
             'pk': struct.pk,
             'code': struct.code,
@@ -2016,6 +2116,12 @@ def organigramme_view(request):
             'critiques': dept_critiques,
             'key_users': sorted(dept_key_users),
             'key_users_count': len(dept_key_users),
+            'processes': processes_data,
+            'total_processes': total_processes,
+            'processes_validated': proc_validated,
+            'processes_pending': proc_pending,
+            'processes_rejected': proc_rejected,
+            'processes_validation_percent': proc_validation_percent,
             'children': [],
         }
     
@@ -3084,3 +3190,396 @@ def api_process_save_mermaid(request, pk):
         return JsonResponse({'success': True})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
+
+
+# ─── Process : édition d'étapes ────────────────────────────────────────────
+
+def _rebuild_mermaid_from_steps(process):
+    """Reconstruit un diagramme Mermaid linéaire à partir des étapes du process.
+
+    Utilisé après une modification manuelle d'étape pour que le workflow
+    visuel reflète l'état courant. Le rendu n'aura pas la richesse du
+    rendu IA (pas de subgraphs sophistiqués) mais reste lisible.
+    """
+    steps = list(process.steps.all().order_by('order'))
+    if not steps:
+        return ''
+
+    SHAPE = {
+        'DECISION': ('{', '}'),
+        'INPUT': ('([', '])'),
+        'OUTPUT': ('([', '])'),
+        'WAIT': ('[/', '/]'),
+        'PARALLEL': ('[[', ']]'),
+        'MANUAL': ('[', ']'),
+        'AUTOMATED': ('[', ']'),
+    }
+    lines = ['flowchart TD']
+    for s in steps:
+        op, cl = SHAPE.get(s.step_type, ('[', ']'))
+        # Échappe les caractères problématiques
+        label = (s.title or f'Étape {s.order}').replace('"', "'").replace('|', '/')[:120]
+        lines.append(f'    S{s.id}{op}"{label}"{cl}')
+    # Transitions
+    for i, s in enumerate(steps[:-1]):
+        nxt = steps[i + 1]
+        lines.append(f'    S{s.id} --> S{nxt.id}')
+    # Styling par type
+    for s in steps:
+        if s.step_type == 'DECISION':
+            lines.append(f'    style S{s.id} fill:#fef3c7,stroke:#f59e0b,color:#000')
+        elif s.step_type in ('INPUT', 'OUTPUT'):
+            lines.append(f'    style S{s.id} fill:#dbeafe,stroke:#3b82f6,color:#000')
+        elif s.step_type == 'AUTOMATED':
+            lines.append(f'    style S{s.id} fill:#d1fae5,stroke:#10b981,color:#000')
+        elif s.step_type == 'WAIT':
+            lines.append(f'    style S{s.id} fill:#fee2e2,stroke:#ef4444,color:#000')
+    return '\n'.join(lines)
+
+
+@staff_member_required(login_url='/login/')
+def api_process_step_save(request, pk, step_id=None):
+    """API: crée ou met à jour une étape (POST).
+
+    `step_id` optionnel : si None, création ; sinon mise à jour.
+    Régénère automatiquement le Mermaid à partir des étapes après sauvegarde.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST requis'}, status=405)
+
+    import json as json_mod
+    process = get_object_or_404(Process, pk=pk)
+
+    try:
+        data = json_mod.loads(request.body)
+    except Exception:
+        return JsonResponse({'error': 'JSON invalide'}, status=400)
+
+    title = (data.get('title') or '').strip()
+    if not title:
+        return JsonResponse({'error': 'Le titre est requis.'}, status=400)
+
+    if step_id:
+        step = get_object_or_404(ProcessStep, pk=step_id, process=process)
+        created = False
+    else:
+        order_max = process.steps.aggregate(m=Max('order'))['m'] or 0
+        step = ProcessStep(process=process, order=order_max + 1)
+        created = True
+
+    step.title = title
+    step.description = (data.get('description') or '').strip()
+    step.step_type = data.get('step_type') or 'MANUAL'
+    step.actor_role = (data.get('actor_role') or '').strip()
+    step.data_inputs = (data.get('data_inputs') or '').strip()
+    step.data_outputs = (data.get('data_outputs') or '').strip()
+    step.interactions = (data.get('interactions') or '').strip()
+    step.problems = (data.get('problems') or '').strip()
+    step.duration_estimate = (data.get('duration_estimate') or '').strip()
+    if 'order' in data:
+        try:
+            step.order = int(data['order'])
+        except (TypeError, ValueError):
+            pass
+
+    struct_code = data.get('actor_structure_code') or ''
+    if struct_code:
+        try:
+            step.actor_structure = Structure.objects.get(code=struct_code)
+        except Structure.DoesNotExist:
+            step.actor_structure = None
+    elif 'actor_structure_code' in data:
+        step.actor_structure = None
+
+    step.save()
+
+    sys_codes = data.get('system_codes')
+    if isinstance(sys_codes, list):
+        step.systems_used.set(System.objects.filter(code__in=sys_codes))
+
+    # Régénérer Mermaid à partir des étapes (rendu linéaire rapide)
+    process.workflow_mermaid = _rebuild_mermaid_from_steps(process)
+    process.ai_generated = False  # marqueur : édité manuellement
+    process.save(update_fields=['workflow_mermaid', 'ai_generated', 'updated_at'])
+
+    return JsonResponse({
+        'success': True,
+        'created': created,
+        'step_id': step.id,
+        'mermaid': process.workflow_mermaid,
+    })
+
+
+@staff_member_required(login_url='/login/')
+def api_process_step_delete(request, pk, step_id):
+    """API: supprime une étape et régénère le Mermaid."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST requis'}, status=405)
+
+    process = get_object_or_404(Process, pk=pk)
+    step = get_object_or_404(ProcessStep, pk=step_id, process=process)
+    step.delete()
+
+    process.workflow_mermaid = _rebuild_mermaid_from_steps(process)
+    process.ai_generated = False
+    process.save(update_fields=['workflow_mermaid', 'ai_generated', 'updated_at'])
+
+    return JsonResponse({'success': True, 'mermaid': process.workflow_mermaid})
+
+
+@staff_member_required(login_url='/login/')
+def api_process_step_reorder(request, pk):
+    """API: réordonne les étapes (drag & drop).
+
+    Body JSON : { "order": [step_id1, step_id2, ...] } — nouvel ordre.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST requis'}, status=405)
+
+    import json as json_mod
+    process = get_object_or_404(Process, pk=pk)
+
+    try:
+        data = json_mod.loads(request.body)
+        order_ids = data.get('order') or []
+    except Exception:
+        return JsonResponse({'error': 'JSON invalide'}, status=400)
+
+    for new_order, step_id in enumerate(order_ids, start=1):
+        ProcessStep.objects.filter(pk=step_id, process=process).update(order=new_order)
+
+    process.workflow_mermaid = _rebuild_mermaid_from_steps(process)
+    process.save(update_fields=['workflow_mermaid', 'updated_at'])
+
+    return JsonResponse({'success': True, 'mermaid': process.workflow_mermaid})
+
+
+# ─── Process : workflow de validation par les directeurs/chefs ─────────────
+
+import uuid as _uuid_mod
+
+
+def _client_ip(request):
+    cf = request.META.get('HTTP_CF_CONNECTING_IP')
+    if cf:
+        return cf.strip()
+    xff = request.META.get('HTTP_X_FORWARDED_FOR', '')
+    return xff.split(',')[0].strip() if xff else request.META.get('REMOTE_ADDR')
+
+
+@staff_member_required(login_url='/login/')
+def process_submit_validation(request, pk):
+    """Soumet le process pour validation par TOUTES les structures rattachées.
+
+    Pour chaque structure rattachée au process, on crée (ou réinitialise) une
+    entrée ``ProcessStructureValidation`` avec un token public unique. Chaque
+    structure devra valider de son côté. Le statut global passe à VALIDATED
+    uniquement quand toutes les structures ont approuvé.
+    """
+    if request.method != 'POST':
+        return redirect('cartography:process_detail', pk=pk)
+
+    process = get_object_or_404(Process, pk=pk)
+    requester = (request.POST.get('requester_name') or '').strip() or (
+        request.user.get_full_name() or request.user.username or 'DSI'
+    )
+    comment = (request.POST.get('comment') or '').strip()
+
+    structures = list(process.structures.all())
+    if not structures:
+        messages.error(request, "Impossible de soumettre : aucune structure rattachée au process.")
+        return redirect('cartography:process_detail', pk=pk)
+
+    # Crée ou réinitialise une entrée par structure
+    created = 0
+    reset = 0
+    for structure in structures:
+        psv, was_created = ProcessStructureValidation.objects.get_or_create(
+            process=process, structure=structure,
+        )
+        if was_created:
+            created += 1
+        else:
+            # Réinitialise tout (sauf le token, qu'on conserve pour ne pas casser
+            # un lien déjà envoyé ; on peut le régénérer via process_resend)
+            psv.status = 'PENDING'
+            psv.validated_by = ''
+            psv.validated_role = ''
+            psv.validated_at = None
+            psv.comment = ''
+            psv.save()
+            reset += 1
+
+    # Statut global
+    process.validation_status = 'PENDING'
+    process.validation_requested_at = timezone.now()
+    process.validation_requested_by = requester
+    if not process.validation_token:
+        process.validation_token = _uuid_mod.uuid4()
+    process.save(update_fields=[
+        'validation_status', 'validation_requested_at',
+        'validation_requested_by', 'validation_token', 'updated_at',
+    ])
+
+    ProcessValidation.objects.create(
+        process=process,
+        action='REQUESTED',
+        actor_name=requester,
+        actor_role='DSI / Demandeur',
+        comment=comment,
+        ip_address=_client_ip(request),
+    )
+
+    messages.success(
+        request,
+        f"Process soumis à validation auprès de {len(structures)} structure(s) "
+        f"({created} créée(s), {reset} réinitialisée(s)). Les liens publics par "
+        f"structure sont visibles dans la matrice de progression ci-dessous."
+    )
+    return redirect('cartography:process_detail', pk=pk)
+
+
+@staff_member_required(login_url='/login/')
+def process_cancel_validation(request, pk):
+    """Annule une demande de validation en cours (toutes structures)."""
+    if request.method != 'POST':
+        return redirect('cartography:process_detail', pk=pk)
+
+    process = get_object_or_404(Process, pk=pk)
+    if process.validation_status not in ('PENDING', 'REVISION_REQUESTED'):
+        messages.error(request, "Aucune demande de validation en cours.")
+        return redirect('cartography:process_detail', pk=pk)
+
+    # Supprime toutes les validations PENDING (on conserve celles déjà APPROVED/REJECTED en historique)
+    deleted = process.structure_validations.filter(
+        status__in=('PENDING', 'REVISION_REQUESTED')
+    ).delete()[0]
+
+    process.validation_status = 'NOT_REQUESTED'
+    process.save(update_fields=['validation_status', 'updated_at'])
+
+    ProcessValidation.objects.create(
+        process=process,
+        action='CANCELLED',
+        actor_name=request.user.get_full_name() or request.user.username,
+        actor_role='DSI',
+        comment=f"{deleted} demande(s) annulée(s). " + (request.POST.get('comment') or '').strip(),
+        ip_address=_client_ip(request),
+    )
+    messages.info(request, f"Demande de validation annulée ({deleted} structure(s)).")
+    return redirect('cartography:process_detail', pk=pk)
+
+
+@staff_member_required(login_url='/login/')
+def process_resend_invitation(request, pk, structure_code):
+    """Régénère le token d'une structure et marque la relance.
+
+    Utile si la première invitation n'a pas été reçue ou si le destinataire
+    a changé. Le lien public précédent devient invalide.
+    """
+    if request.method != 'POST':
+        return redirect('cartography:process_detail', pk=pk)
+
+    process = get_object_or_404(Process, pk=pk)
+    structure = get_object_or_404(Structure, code=structure_code)
+    psv = get_object_or_404(ProcessStructureValidation, process=process, structure=structure)
+
+    import uuid as _u
+    psv.token = _u.uuid4()
+    psv.last_reminder_at = timezone.now()
+    # Si la validation était déjà finalisée, on la réouvre
+    if psv.status in ('REJECTED', 'REVISION_REQUESTED'):
+        psv.status = 'PENDING'
+        psv.validated_by = ''
+        psv.validated_role = ''
+        psv.validated_at = None
+    psv.save()
+
+    process.recompute_validation_status()
+    messages.success(
+        request,
+        f"Lien régénéré pour {structure.code}. Nouveau lien : "
+        f"{request.build_absolute_uri(reverse('cartography:process_validate_public', args=[psv.token]))}"
+    )
+    return redirect('cartography:process_detail', pk=pk)
+
+
+def process_validate_public(request, token):
+    """Page publique de validation par structure (accessible via token unique).
+
+    Permet à un directeur ou chef de la structure concernée d'examiner le
+    process et de le valider, le rejeter ou demander une révision pour SA
+    structure. Le statut global du process est recalculé automatiquement
+    une fois toutes les structures alignées.
+    """
+    # Cherche d'abord dans les tokens par structure (nouveau flow)
+    psv = ProcessStructureValidation.objects.filter(token=token).select_related(
+        'process', 'structure'
+    ).first()
+
+    if psv is None:
+        # Fallback : ancien flow (token process global) — pour compatibilité descendante
+        process = get_object_or_404(Process, validation_token=token)
+        psv = None
+    else:
+        process = psv.process
+
+    error = None
+    submitted_action = None
+    if request.method == 'POST':
+        action = (request.POST.get('action') or '').strip().upper()
+        actor_name = (request.POST.get('actor_name') or '').strip()
+        actor_role = (request.POST.get('actor_role') or '').strip()
+        comment = (request.POST.get('comment') or '').strip()
+
+        if not actor_name:
+            error = "Merci de renseigner votre nom."
+        elif action not in ('APPROVED', 'REJECTED', 'REVISION_REQUESTED'):
+            error = "Action inconnue."
+        elif psv is None:
+            error = (
+                "Ce lien correspond à un ancien format de validation. "
+                "Merci de demander à la DSI de relancer une nouvelle invitation par structure."
+            )
+        elif psv.status not in ('PENDING', 'REVISION_REQUESTED'):
+            error = (
+                f"Cette validation est déjà finalisée pour la structure {psv.structure.code} "
+                f"(statut : {psv.get_status_display()})."
+            )
+        else:
+            # Mise à jour de la validation par structure
+            psv.status = action
+            psv.validated_by = actor_name
+            psv.validated_role = actor_role
+            psv.validated_at = timezone.now()
+            psv.comment = comment
+            psv.save()
+
+            # Audit log
+            ProcessValidation.objects.create(
+                process=process,
+                action=action,
+                actor_name=actor_name,
+                actor_role=actor_role,
+                structure=psv.structure,
+                comment=comment,
+                ip_address=_client_ip(request),
+            )
+
+            # Recalcule le statut global
+            process.recompute_validation_status()
+
+            submitted_action = action
+
+    # GET ou POST réussi : afficher la page
+    return render(request, 'cartography/process_validate_public.html', {
+        'process': process,
+        'psv': psv,
+        'structure': psv.structure if psv else None,
+        'progress': process.validation_progress(),
+        'steps': process.steps.all().order_by('order'),
+        'history': process.validations.all()[:20],
+        'error': error,
+        'submitted_action': submitted_action,
+        'allowed_actions': psv is not None and psv.status in ('PENDING', 'REVISION_REQUESTED'),
+    })

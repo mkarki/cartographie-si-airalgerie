@@ -1,0 +1,264 @@
+{% load static %}
+{% comment %}
+Bloc de validation multi-structure d'un process.
+Affiche : statut global + progression par structure + actions DSI.
+Contexte attendu : process (avec .validation_progress() côté view ou template).
+{% endcomment %}
+
+{% with progress=process.validation_progress %}
+<div class="glass rounded-xl p-5 border
+    {% if process.validation_status == 'VALIDATED' %}border-green-500/40 bg-green-500/5
+    {% elif process.validation_status == 'REJECTED' %}border-red-500/40 bg-red-500/5
+    {% elif process.validation_status == 'PENDING' %}border-amber-500/40 bg-amber-500/5
+    {% elif process.validation_status == 'REVISION_REQUESTED' %}border-orange-500/40 bg-orange-500/5
+    {% else %}border-white/10{% endif %}">
+
+    {# ── 1. EN-TÊTE : statut global + actions DSI ────────────────────────── #}
+    <div class="flex items-start justify-between gap-4 flex-wrap">
+        <div class="flex items-start gap-3">
+            <div class="w-10 h-10 rounded-lg flex items-center justify-center
+                {% if process.validation_status == 'VALIDATED' %}bg-green-500/20
+                {% elif process.validation_status == 'REJECTED' %}bg-red-500/20
+                {% elif process.validation_status == 'PENDING' %}bg-amber-500/20
+                {% elif process.validation_status == 'REVISION_REQUESTED' %}bg-orange-500/20
+                {% else %}bg-white/5{% endif %}">
+                {% if process.validation_status == 'VALIDATED' %}<i data-lucide="check-circle-2" class="w-5 h-5 text-green-400"></i>
+                {% elif process.validation_status == 'REJECTED' %}<i data-lucide="x-circle" class="w-5 h-5 text-red-400"></i>
+                {% elif process.validation_status == 'PENDING' %}<i data-lucide="clock" class="w-5 h-5 text-amber-400"></i>
+                {% elif process.validation_status == 'REVISION_REQUESTED' %}<i data-lucide="edit-3" class="w-5 h-5 text-orange-400"></i>
+                {% else %}<i data-lucide="shield" class="w-5 h-5 text-gray-400"></i>{% endif %}
+            </div>
+            <div>
+                <h3 class="text-sm font-semibold mb-1">Validation par les responsables des structures</h3>
+                <p class="text-sm
+                    {% if process.validation_status == 'VALIDATED' %}text-green-400
+                    {% elif process.validation_status == 'REJECTED' %}text-red-400
+                    {% elif process.validation_status == 'PENDING' %}text-amber-400
+                    {% elif process.validation_status == 'REVISION_REQUESTED' %}text-orange-400
+                    {% else %}text-gray-400{% endif %}">
+                    Statut global : <strong>{{ process.get_validation_status_display }}</strong>
+                </p>
+                {% if process.validation_status == 'PENDING' or process.validation_status == 'REVISION_REQUESTED' %}
+                <p class="text-xs text-gray-500 mt-1">
+                    Soumis par {{ process.validation_requested_by }} le {{ process.validation_requested_at|date:"d/m/Y à H:i" }}
+                </p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+            {% if process.validation_status == 'NOT_REQUESTED' or process.validation_status == 'REJECTED' %}
+            <button onclick="document.getElementById('modal-submit-validation').classList.remove('hidden')" class="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                <i data-lucide="send" class="w-3.5 h-3.5"></i> Soumettre à validation
+            </button>
+            {% elif process.validation_status == 'PENDING' or process.validation_status == 'REVISION_REQUESTED' %}
+            <form method="post" action="{% url 'cartography:process_cancel_validation' process.pk %}" class="inline" onsubmit="return confirm('Annuler toutes les demandes de validation en cours ?')">
+                {% csrf_token %}
+                <button type="submit" class="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-gray-400 px-3 py-1.5 rounded-lg text-xs transition">
+                    <i data-lucide="x" class="w-3.5 h-3.5"></i> Annuler la demande
+                </button>
+            </form>
+            {% elif process.validation_status == 'VALIDATED' %}
+            <button onclick="document.getElementById('modal-submit-validation').classList.remove('hidden')" class="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition" title="Soumettre à nouveau (après modifications)">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Nouvelle soumission
+            </button>
+            {% endif %}
+
+            {% if process.validations.count > 0 %}
+            <button onclick="document.getElementById('validation-history').classList.toggle('hidden')" class="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-gray-400 px-3 py-1.5 rounded-lg text-xs transition">
+                <i data-lucide="history" class="w-3.5 h-3.5"></i> Historique ({{ process.validations.count }})
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    {# ── 2. BARRE DE PROGRESSION ────────────────────────────────────────── #}
+    {% if progress.total > 0 %}
+    <div class="mt-4">
+        <div class="flex items-center justify-between text-xs mb-1.5">
+            <span class="text-gray-400">
+                <strong class="text-gray-200">{{ progress.approved }}</strong> / {{ progress.total }}
+                structure{{ progress.total|pluralize }} ont validé
+                {% if progress.pending %}<span class="text-amber-400 ml-1">· {{ progress.pending }} en attente</span>{% endif %}
+                {% if progress.rejected %}<span class="text-red-400 ml-1">· {{ progress.rejected }} rejet{{ progress.rejected|pluralize:"é,és" }}</span>{% endif %}
+                {% if progress.revision %}<span class="text-orange-400 ml-1">· {{ progress.revision }} révision{{ progress.revision|pluralize }} demandée{{ progress.revision|pluralize }}</span>{% endif %}
+            </span>
+            <span class="text-gray-300 font-medium">{{ progress.percent }} %</span>
+        </div>
+        <div class="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+            <div class="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all"
+                 style="width: {{ progress.percent }}%"></div>
+        </div>
+    </div>
+
+    {# ── 3. MATRICE PAR STRUCTURE ────────────────────────────────────────── #}
+    <div class="mt-5 overflow-hidden border border-white/5 rounded-lg">
+        <table class="w-full text-xs">
+            <thead>
+                <tr class="bg-white/[0.03] border-b border-white/5">
+                    <th class="text-left px-3 py-2 font-medium text-gray-500 uppercase tracking-wider">Structure</th>
+                    <th class="text-left px-3 py-2 font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                    <th class="text-left px-3 py-2 font-medium text-gray-500 uppercase tracking-wider">Validé par</th>
+                    <th class="text-left px-3 py-2 font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th class="text-right px-3 py-2 font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in progress.by_structure %}
+                <tr class="border-b border-white/[0.03] hover:bg-white/[0.02]">
+                    <td class="px-3 py-2.5">
+                        <div class="flex items-center gap-2">
+                            <span class="font-mono text-[11px] font-medium text-gray-300">{{ row.structure.code }}</span>
+                            <span class="text-gray-500 truncate max-w-xs">{{ row.structure.name }}</span>
+                        </div>
+                    </td>
+                    <td class="px-3 py-2.5">
+                        {% if row.status == 'APPROVED' %}
+                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] bg-green-500/15 text-green-400 border border-green-500/20">
+                            <i data-lucide="check-circle-2" class="w-3 h-3"></i> Validée
+                        </span>
+                        {% elif row.status == 'REJECTED' %}
+                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] bg-red-500/15 text-red-400 border border-red-500/20">
+                            <i data-lucide="x-circle" class="w-3 h-3"></i> Rejetée
+                        </span>
+                        {% elif row.status == 'REVISION_REQUESTED' %}
+                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] bg-orange-500/15 text-orange-400 border border-orange-500/20">
+                            <i data-lucide="edit-3" class="w-3 h-3"></i> Révision
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] bg-amber-500/15 text-amber-400 border border-amber-500/20">
+                            <i data-lucide="clock" class="w-3 h-3"></i> En attente
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-3 py-2.5">
+                        {% if row.validated_by %}
+                        <div>
+                            <p class="text-gray-300">{{ row.validated_by }}</p>
+                            {% if row.validated_role %}<p class="text-[10px] text-gray-500">{{ row.validated_role }}</p>{% endif %}
+                        </div>
+                        {% else %}
+                        <span class="text-gray-600">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-3 py-2.5 text-gray-400">
+                        {% if row.validated_at %}{{ row.validated_at|date:"d/m/Y H:i" }}{% else %}<span class="text-gray-600">—</span>{% endif %}
+                    </td>
+                    <td class="px-3 py-2.5 text-right">
+                        <div class="inline-flex items-center gap-1">
+                            <button type="button"
+                                    onclick="copyStructureLink('{{ row.token }}', '{{ row.structure.code|escapejs }}')"
+                                    class="inline-flex items-center gap-1 px-2 py-1 rounded bg-white/5 hover:bg-white/10 text-gray-300 text-[10px]"
+                                    title="Copier le lien de validation pour cette structure">
+                                <i data-lucide="link" class="w-3 h-3"></i> Lien
+                            </button>
+                            {% if row.status == 'PENDING' or row.status == 'REVISION_REQUESTED' or row.status == 'REJECTED' %}
+                            <form method="post" action="{% url 'cartography:process_resend_invitation' process.pk row.structure.code %}" class="inline" onsubmit="return confirm('Régénérer le lien pour {{ row.structure.code }} ? L\'ancien lien deviendra invalide.')">
+                                {% csrf_token %}
+                                <button type="submit"
+                                        class="inline-flex items-center gap-1 px-2 py-1 rounded bg-white/5 hover:bg-white/10 text-gray-400 text-[10px]"
+                                        title="Régénérer le lien et relancer cette structure">
+                                    <i data-lucide="refresh-cw" class="w-3 h-3"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                        {% if row.comment %}
+                        <p class="text-[10px] text-gray-500 italic mt-1 max-w-xs truncate" title="{{ row.comment }}">« {{ row.comment }} »</p>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {# Cache caché pour copier les liens #}
+        {% for row in progress.by_structure %}
+        <input type="hidden" id="link-{{ row.structure.code }}" value="{{ request.scheme }}://{{ request.get_host }}{% url 'cartography:process_validate_public' row.token %}">
+        {% endfor %}
+    </div>
+    {% else %}
+    {# Aucune validation par structure encore créée — invite à soumettre #}
+    <div class="mt-3 text-xs text-gray-500">
+        <i data-lucide="info" class="w-3.5 h-3.5 inline-block align-middle"></i>
+        Le process n'a pas encore été soumis à validation. La soumission générera un lien d'invitation
+        pour chacune des <strong class="text-gray-300">{{ process.structures.count }}</strong> structure(s) rattachée(s).
+    </div>
+    {% endif %}
+
+    {# ── 4. HISTORIQUE D'AUDIT (caché par défaut) ───────────────────────── #}
+    {% if process.validations.count > 0 %}
+    <div id="validation-history" class="hidden mt-4 pt-4 border-t border-white/5">
+        <h4 class="text-xs uppercase tracking-wider text-gray-500 mb-3">Historique d'audit</h4>
+        <div class="space-y-2">
+            {% for h in process.validations.all|slice:":30" %}
+            <div class="flex items-start gap-3 text-xs py-2 border-b border-white/[0.03]">
+                <div class="flex-shrink-0 mt-0.5">
+                    {% if h.action == 'APPROVED' %}<i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-green-400"></i>
+                    {% elif h.action == 'REJECTED' %}<i data-lucide="x-circle" class="w-3.5 h-3.5 text-red-400"></i>
+                    {% elif h.action == 'REVISION_REQUESTED' %}<i data-lucide="edit-3" class="w-3.5 h-3.5 text-amber-400"></i>
+                    {% elif h.action == 'REQUESTED' %}<i data-lucide="send" class="w-3.5 h-3.5 text-blue-400"></i>
+                    {% else %}<i data-lucide="circle" class="w-3.5 h-3.5 text-gray-500"></i>{% endif %}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-gray-300"><strong>{{ h.get_action_display }}</strong> <span class="text-gray-600">·</span> <span class="text-gray-500">{{ h.created_at|date:"d/m/Y H:i" }}</span></p>
+                    <p class="text-gray-500">Par <strong class="text-gray-300">{{ h.actor_name }}</strong>{% if h.actor_role %} ({{ h.actor_role }}){% endif %}{% if h.structure %} <span class="text-gray-600">·</span> <span class="text-gray-300">{{ h.structure.code }}</span>{% endif %}{% if h.ip_address %} <span class="text-gray-700">·</span> <span class="text-gray-600 font-mono text-[10px]">{{ h.ip_address }}</span>{% endif %}</p>
+                    {% if h.comment %}<p class="text-gray-400 mt-1 italic">« {{ h.comment }} »</p>{% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{# ── 5. MODALE DE SOUMISSION ──────────────────────────────────────────── #}
+<div id="modal-submit-validation" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onclick="if(event.target===this)this.classList.add('hidden')">
+    <div class="glass rounded-xl p-6 max-w-lg w-full">
+        <h3 class="text-lg font-bold mb-1">Soumettre à validation</h3>
+        <p class="text-xs text-gray-500 mb-4">
+            Un lien d'invitation sera généré pour <strong class="text-gray-300">chacune</strong> des
+            <strong class="text-gray-300">{{ process.structures.count }}</strong> structures rattachées.
+            Le process ne sera marqué <em>validé</em> que lorsque toutes auront approuvé.
+        </p>
+
+        <div class="mb-4 p-3 bg-white/[0.03] rounded-lg border border-white/5">
+            <p class="text-[11px] text-gray-500 uppercase tracking-wider mb-2">Structures concernées</p>
+            <div class="flex flex-wrap gap-1.5">
+                {% for s in process.structures.all %}
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-white/5 text-[11px] text-gray-300">
+                    <span class="font-mono">{{ s.code }}</span>
+                    <span class="text-gray-500">— {{ s.name }}</span>
+                </span>
+                {% endfor %}
+            </div>
+        </div>
+
+        <form method="post" action="{% url 'cartography:process_submit_validation' process.pk %}" class="space-y-3">
+            {% csrf_token %}
+            <div>
+                <label class="block text-xs font-medium text-gray-400 mb-1">Votre nom (demandeur)</label>
+                <input type="text" name="requester_name" value="{{ request.user.get_full_name|default:request.user.username }}" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-400 mb-1">Message (optionnel)</label>
+                <textarea name="comment" rows="2" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm" placeholder="Note pour les validateurs..."></textarea>
+            </div>
+            <div class="flex items-center justify-end gap-2 pt-2">
+                <button type="button" onclick="document.getElementById('modal-submit-validation').classList.add('hidden')" class="text-xs bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg">Annuler</button>
+                <button type="submit" class="text-xs bg-violet-600 hover:bg-violet-700 text-white px-4 py-1.5 rounded-lg font-medium">Soumettre</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function copyStructureLink(token, structureCode) {
+    const el = document.getElementById('link-' + structureCode);
+    if (!el) { alert('Lien introuvable'); return; }
+    navigator.clipboard.writeText(el.value).then(() => {
+        if (typeof showToast === 'function') showToast('Lien copié pour ' + structureCode, 'success');
+        else alert('Lien copié (' + structureCode + ') :\n' + el.value);
+    });
+}
+</script>
+{% endwith %}
