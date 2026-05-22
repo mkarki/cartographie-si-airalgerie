@@ -201,17 +201,24 @@
 <script>
     lucide.createIcons();
     
-    // Toggle for hierarchy tree nodes (top section)
+    // Toggle for hierarchy tree nodes (top section) — toggles both systems and process subsections
     function toggleNode(code) {
         const detail = document.getElementById('node-detail-' + code);
+        const procDetail = document.getElementById('node-detail-' + code + '-proc');
         const chevron = document.querySelector('.node-chevron-' + code);
-        if (detail) {
-            detail.classList.toggle('hidden');
-            if (chevron) {
-                chevron.style.transform = detail.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
-            }
-            lucide.createIcons();
+        // Si au moins une des deux sections est cachée, on les ouvre toutes les deux ;
+        // sinon on les ferme toutes les deux.
+        const anyHidden = (detail && detail.classList.contains('hidden')) ||
+                          (procDetail && procDetail.classList.contains('hidden'));
+        [detail, procDetail].forEach(el => {
+            if (!el) return;
+            if (anyHidden) el.classList.remove('hidden');
+            else el.classList.add('hidden');
+        });
+        if (chevron) {
+            chevron.style.transform = anyHidden ? 'rotate(180deg)' : 'rotate(0deg)';
         }
+        lucide.createIcons();
     }
     
     // Toggle for flat grid cards (bottom section)

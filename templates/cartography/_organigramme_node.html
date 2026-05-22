@@ -14,7 +14,7 @@
                         <span class="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-gray-500 uppercase tracking-wider">{{ dept.level }}</span>
                         {% endif %}
                     </div>
-                    <div class="flex items-center gap-2 text-[11px] text-gray-500 mt-0.5">
+                    <div class="flex items-center gap-2 text-[11px] text-gray-500 mt-0.5 flex-wrap">
                         {% if dept.responsable %}<span class="text-gray-400"><i data-lucide="user" class="w-2.5 h-2.5 inline"></i> {{ dept.responsable }}</span><span class="text-gray-700">·</span>{% endif %}
                         <span>{{ dept.system_count }} sys.</span>
                         {% if dept.total_questions > 0 %}
@@ -22,8 +22,15 @@
                         <span class="{% if dept.progress == 100 %}text-green-400{% elif dept.progress > 0 %}text-blue-400{% else %}text-gray-600{% endif %}">{{ dept.progress }}% répondu</span>
                         {% if dept.validation_progress > 0 %}
                         <span class="text-gray-700">·</span>
-                        <span class="text-purple-400">{{ dept.validation_progress }}% validé</span>
+                        <span class="text-purple-400">{{ dept.validation_progress }}% validé Q.</span>
                         {% endif %}
+                        {% endif %}
+                        {% if dept.total_processes > 0 %}
+                        <span class="text-gray-700">·</span>
+                        <span class="text-cyan-400"><i data-lucide="git-branch" class="w-2.5 h-2.5 inline"></i> {{ dept.total_processes }} process{% if dept.total_processes > 1 %}s{% endif %}</span>
+                        {% if dept.processes_validated > 0 %}<span class="text-green-400">· {{ dept.processes_validated }} ✓</span>{% endif %}
+                        {% if dept.processes_pending > 0 %}<span class="text-amber-400">· {{ dept.processes_pending }} ⏳</span>{% endif %}
+                        {% if dept.processes_rejected > 0 %}<span class="text-red-400">· {{ dept.processes_rejected }} ✗</span>{% endif %}
                         {% endif %}
                     </div>
                 </div>
@@ -107,6 +114,73 @@
                         {% endfor %}
                     </tbody>
                 </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Processes section -->
+        {% if dept.processes %}
+        <div class="node-detail hidden" id="node-detail-{{ dept.code }}-proc">
+            <div class="border-t border-white/5 px-4 py-2 bg-white/[0.02]">
+                <div class="flex items-center justify-between mb-2">
+                    <h4 class="text-[11px] uppercase text-gray-500 tracking-wider flex items-center gap-1.5">
+                        <i data-lucide="git-branch" class="w-3 h-3 text-cyan-400"></i>
+                        Process métier ({{ dept.total_processes }})
+                        {% if dept.processes_validation_percent > 0 %}
+                        <span class="text-[10px] text-green-400 normal-case tracking-normal">· {{ dept.processes_validation_percent }}% validés</span>
+                        {% endif %}
+                    </h4>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs">
+                        <thead>
+                            <tr class="text-[10px] text-gray-500 uppercase border-b border-white/5">
+                                <th class="text-left px-2 py-1.5">Code</th>
+                                <th class="text-left px-2 py-1.5">Nom</th>
+                                <th class="text-left px-2 py-1.5">Systèmes</th>
+                                <th class="text-center px-2 py-1.5">Workflow</th>
+                                <th class="text-center px-2 py-1.5">Validation</th>
+                                <th class="text-right px-2 py-1.5"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for proc in dept.processes %}
+                            <tr class="border-b border-white/[0.03] hover:bg-white/[0.03]">
+                                <td class="px-2 py-1.5">
+                                    <span class="font-mono text-[10px] text-gray-300">{{ proc.code }}</span>
+                                </td>
+                                <td class="px-2 py-1.5">
+                                    <p class="text-gray-200 truncate max-w-[260px]" title="{{ proc.name }}">{{ proc.name|truncatechars:60 }}</p>
+                                    <p class="text-[10px] text-gray-500">{{ proc.category }}</p>
+                                </td>
+                                <td class="px-2 py-1.5">
+                                    {% if proc.system_codes %}
+                                    <div class="flex flex-wrap gap-1">
+                                        {% for sc in proc.system_codes|slice:":3" %}<span class="text-[9px] px-1 py-0.5 rounded bg-white/5 text-gray-400">{{ sc }}</span>{% endfor %}
+                                        {% if proc.system_codes|length > 3 %}<span class="text-[9px] text-gray-600">+{{ proc.system_codes|length|add:-3 }}</span>{% endif %}
+                                    </div>
+                                    {% else %}<span class="text-gray-700 text-[10px]">—</span>{% endif %}
+                                </td>
+                                <td class="px-2 py-1.5 text-center">
+                                    {% if proc.has_workflow %}
+                                    <span class="inline-flex items-center text-green-400" title="Workflow Mermaid disponible"><i data-lucide="check-circle-2" class="w-3 h-3"></i></span>
+                                    {% else %}
+                                    <span class="inline-flex items-center text-gray-700" title="Pas de workflow"><i data-lucide="minus-circle" class="w-3 h-3"></i></span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-2 py-1.5 text-center">
+                                    <span class="inline-flex items-center gap-1 {{ proc.validation_class }} text-[10px] font-medium whitespace-nowrap" title="{% if proc.validated_by %}Validé par {{ proc.validated_by }} le {{ proc.validated_at|date:'d/m/Y' }}{% endif %}">
+                                        <i data-lucide="{{ proc.validation_icon }}" class="w-3 h-3"></i> {{ proc.validation_label }}
+                                    </span>
+                                </td>
+                                <td class="px-2 py-1.5 text-right">
+                                    <a href="{% url 'cartography:process_detail' proc.pk %}" class="text-gray-400 hover:text-white transition" title="Détail process"><i data-lucide="external-link" class="w-3 h-3 inline"></i></a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
         {% endif %}

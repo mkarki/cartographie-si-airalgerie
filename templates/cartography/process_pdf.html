@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>{{ title }}</title>
+<style>
+@page {
+    size: A4;
+    margin: 18mm 16mm 22mm 16mm;
+    @top-left {
+        content: "Cartographie Air Algérie — Processus";
+        font-family: "Helvetica", Arial, sans-serif;
+        font-size: 9pt;
+        color: #6b7280;
+    }
+    @top-right {
+        content: "{{ generation_date }}";
+        font-family: "Helvetica", Arial, sans-serif;
+        font-size: 9pt;
+        color: #6b7280;
+    }
+    @bottom-center {
+        content: "Page " counter(page) " / " counter(pages);
+        font-family: "Helvetica", Arial, sans-serif;
+        font-size: 9pt;
+        color: #6b7280;
+    }
+}
+@page :first {
+    @top-left { content: ""; }
+    @top-right { content: ""; }
+}
+
+* { box-sizing: border-box; }
+body {
+    font-family: "Helvetica", "Arial", sans-serif;
+    font-size: 10.5pt;
+    line-height: 1.45;
+    color: #1f2937;
+}
+
+/* Cover */
+.cover {
+    page-break-after: always;
+    text-align: center;
+    padding-top: 60mm;
+}
+.cover .brand {
+    font-size: 11pt;
+    color: #C8102E;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 30mm;
+}
+.cover h1 {
+    font-size: 28pt;
+    color: #0B2545;
+    margin: 0 0 8mm;
+    line-height: 1.2;
+}
+.cover .subtitle {
+    font-size: 13pt;
+    color: #4b5563;
+    margin-bottom: 30mm;
+}
+.cover .meta {
+    font-size: 10pt;
+    color: #6b7280;
+    line-height: 1.8;
+}
+.cover .meta strong { color: #0B2545; }
+.cover .accent-bar {
+    width: 60mm;
+    height: 3px;
+    background: #C8102E;
+    margin: 8mm auto 12mm;
+}
+
+/* TOC */
+.toc-page { page-break-after: always; }
+.toc-title {
+    font-size: 18pt;
+    color: #0B2545;
+    border-bottom: 2px solid #C8102E;
+    padding-bottom: 4mm;
+    margin: 0 0 8mm;
+}
+.toc-list { list-style: none; padding: 0; margin: 0; column-count: 2; column-gap: 8mm; }
+.toc-list li {
+    font-size: 9pt;
+    padding: 1.5mm 0;
+    border-bottom: 1px dotted #d1d5db;
+    break-inside: avoid;
+}
+.toc-list .toc-code {
+    font-family: "Courier New", monospace;
+    color: #6b7280;
+    font-size: 8pt;
+}
+.toc-list .toc-cat {
+    font-size: 8pt;
+    color: #C8102E;
+    text-transform: uppercase;
+}
+
+/* Process card */
+.process {
+    page-break-before: always;
+    page-break-inside: avoid;
+}
+.process h1 {
+    font-size: 16pt;
+    color: #0B2545;
+    margin: 0 0 1mm;
+    border-bottom: 2px solid #C8102E;
+    padding-bottom: 2mm;
+}
+.process .pcode {
+    font-family: "Courier New", monospace;
+    font-size: 9pt;
+    color: #6b7280;
+    margin-bottom: 5mm;
+}
+
+/* Meta box */
+.meta-box {
+    background: #f8fafc;
+    border-left: 3px solid #D4A24C;
+    padding: 4mm 5mm;
+    margin: 4mm 0 6mm;
+    font-size: 9.5pt;
+}
+.meta-box .row { margin-bottom: 1mm; }
+.meta-box .lbl {
+    display: inline-block;
+    width: 28mm;
+    color: #6b7280;
+    font-weight: 600;
+}
+.meta-box .badge {
+    display: inline-block;
+    padding: 0.5mm 2mm;
+    border-radius: 2mm;
+    font-size: 8pt;
+    margin-right: 1mm;
+    background: #e5e7eb;
+    color: #1f2937;
+}
+.badge-struct { background: #dbeafe; color: #1e3a8a; }
+.badge-system { background: #fee2e2; color: #991b1b; }
+.badge-air-algerie { background: #fef3c7; color: #92400e; }
+
+/* Sections */
+h2 {
+    font-size: 12pt;
+    color: #C8102E;
+    margin: 6mm 0 2mm;
+    padding-bottom: 1mm;
+    border-bottom: 1px solid #e5e7eb;
+}
+h3 {
+    font-size: 10.5pt;
+    color: #0B2545;
+    margin: 4mm 0 1.5mm;
+}
+
+p { margin: 0 0 2mm; text-align: justify; }
+
+/* Steps table */
+table.steps {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 2mm 0;
+    font-size: 8.5pt;
+}
+table.steps th {
+    background: #0B2545;
+    color: #fff;
+    text-align: left;
+    padding: 1.5mm 2mm;
+    font-weight: 600;
+}
+table.steps td {
+    padding: 1.5mm 2mm;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: top;
+}
+table.steps tr:nth-child(even) td { background: #f9fafb; }
+table.steps .col-num { width: 8mm; text-align: center; font-weight: 700; color: #C8102E; }
+table.steps .col-type { width: 18mm; }
+table.steps .col-actor { width: 28mm; font-size: 8pt; }
+table.steps .col-systems { width: 24mm; font-size: 8pt; }
+.step-type {
+    display: inline-block;
+    padding: 0.3mm 1.5mm;
+    border-radius: 1mm;
+    font-size: 7.5pt;
+    font-weight: 600;
+    color: #fff;
+}
+.step-MANUAL { background: #3b82f6; }
+.step-AUTOMATED { background: #22c55e; }
+.step-DECISION { background: #f97316; }
+.step-INPUT { background: #a855f7; }
+.step-OUTPUT { background: #ec4899; }
+.step-WAIT { background: #eab308; }
+.step-PARALLEL { background: #14b8a6; }
+
+/* Mermaid block */
+.mermaid-block {
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 2mm;
+    padding: 3mm;
+    font-family: "Courier New", monospace;
+    font-size: 8pt;
+    color: #1f2937;
+    white-space: pre-wrap;
+    word-break: break-all;
+    margin: 2mm 0;
+}
+
+/* Workflow render (SVG / PNG) */
+.workflow-render {
+    background: #fafbff;
+    border: 1px solid #e0e7ff;
+    border-radius: 2mm;
+    padding: 4mm;
+    margin: 2mm 0;
+    text-align: center;
+    page-break-inside: avoid;
+}
+.workflow-render svg {
+    max-width: 100% !important;
+    height: auto !important;
+    display: block;
+    margin: 0 auto;
+}
+.workflow-render img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
+/* Problems / reco */
+.pb-block {
+    background: #fef2f2;
+    border-left: 3px solid #ef4444;
+    padding: 3mm 4mm;
+    margin: 2mm 0;
+    font-size: 9.5pt;
+}
+.reco-block {
+    background: #f0fdf4;
+    border-left: 3px solid #22c55e;
+    padding: 3mm 4mm;
+    margin: 2mm 0;
+    font-size: 9.5pt;
+}
+.pb-block strong, .reco-block strong { display: block; margin-bottom: 1mm; }
+
+ul, ol { margin: 1mm 0 2mm 6mm; padding: 0; }
+li { margin-bottom: 0.5mm; }
+
+.muted { color: #6b7280; font-style: italic; font-size: 9pt; }
+.empty-section { color: #9ca3af; font-style: italic; font-size: 9pt; padding: 1mm 0; }
+
+</style>
+</head>
+<body>
+
+<!-- Cover -->
+<div class="cover">
+    <div class="brand">Air Algérie · Direction des Systèmes d'Information</div>
+    <h1>Cartographie des Processus<br>Métier &amp; Support</h1>
+    <div class="accent-bar"></div>
+    <div class="subtitle">Recueil consolidé des {{ count }} processus documentés</div>
+    <div class="meta">
+        <div><strong>Phase 1 / Lot 1</strong> — Diagnostic des données et inventaire SI</div>
+        <div>Contrat n° xx/DAG/2026 — EURL Alpha Aero Systems × Air Algérie</div>
+        <div style="margin-top:6mm">Version <strong>1.0</strong> — {{ generation_date }}</div>
+        <div>Auteur : M. KARKI — Chef de projet Alpha Aero Systems</div>
+    </div>
+</div>
+
+<!-- TOC -->
+<div class="toc-page">
+    <h1 class="toc-title">Sommaire</h1>
+    <ol class="toc-list">
+    {% for p in processes %}
+        <li>
+            <span class="toc-code">{{ p.code }}</span> — {{ p.name }}<br>
+            <span class="toc-cat">{{ p.category|default:"—" }}</span>
+            {% for s in p.structures.all %}<span class="toc-cat">· {{ s.code }}</span>{% endfor %}
+        </li>
+    {% endfor %}
+    </ol>
+</div>
+
+<!-- Processes -->
+{% for p in processes %}
+<div class="process">
+    <h1>{{ p.name }}</h1>
+    <div class="pcode">{{ p.code }}{% if p.category %} · Catégorie : {{ p.category }}{% endif %}{% if p.status %} · Statut : {{ p.status }}{% endif %}</div>
+
+    <div class="meta-box">
+        <div class="row"><span class="lbl">Structures</span>
+            {% for s in p.structures.all %}<span class="badge badge-struct">{{ s.code }}</span>{% empty %}<span class="muted">— non précisé —</span>{% endfor %}
+        </div>
+        <div class="row"><span class="lbl">Systèmes</span>
+            {% for s in p.systems.all %}<span class="badge badge-system">{{ s.code }}</span>{% empty %}<span class="muted">— non précisé —</span>{% endfor %}
+        </div>
+        <div class="row"><span class="lbl">Étapes</span>{{ p.steps.all|length }} étape{{ p.steps.all|length|pluralize }}</div>
+        {% if p.source_questionnaire %}<div class="row"><span class="lbl">Source</span><span class="badge badge-air-algerie">Air Algérie</span> {{ p.source_questionnaire }}</div>{% endif %}
+    </div>
+
+    {% if p.description %}
+    <h2>Description</h2>
+    <p>{{ p.description|linebreaksbr }}</p>
+    {% endif %}
+
+    {% if p.context %}
+    <h2>Contexte</h2>
+    <p>{{ p.context|linebreaksbr }}</p>
+    {% endif %}
+
+    {% with steps=p.steps.all %}
+    {% if steps %}
+    <h2>Étapes du processus ({{ steps|length }})</h2>
+    <table class="steps">
+        <thead>
+            <tr>
+                <th class="col-num">#</th>
+                <th>Titre & description</th>
+                <th class="col-type">Type</th>
+                <th class="col-actor">Acteur</th>
+                <th class="col-systems">Systèmes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for st in steps %}
+            <tr>
+                <td class="col-num">{{ st.order }}</td>
+                <td>
+                    <strong>{{ st.title }}</strong>
+                    {% if st.description %}<br><span style="font-size:8pt;color:#4b5563;">{{ st.description|truncatechars:280 }}</span>{% endif %}
+                    {% if st.problems %}<br><span style="font-size:7.5pt;color:#dc2626;">⚠ {{ st.problems|truncatechars:160 }}</span>{% endif %}
+                </td>
+                <td><span class="step-type step-{{ st.step_type }}">{{ st.step_type }}</span></td>
+                <td>{% if st.actor_role %}{{ st.actor_role }}{% endif %}{% if st.actor_structure %}<br><em>{{ st.actor_structure.code }}</em>{% endif %}</td>
+                <td>{% for sy in st.systems_used.all %}<span class="badge badge-system" style="font-size:7pt;">{{ sy.code }}</span> {% endfor %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+    {% endwith %}
+
+    {% if p.problems %}
+    <h2>Points de friction identifiés</h2>
+    <div class="pb-block">{{ p.problems|linebreaksbr }}</div>
+    {% endif %}
+
+    {% if p.recommendations %}
+    <h2>Recommandations</h2>
+    <div class="reco-block">{{ p.recommendations|linebreaksbr }}</div>
+    {% endif %}
+
+    {% if p.workflow_png_b64 %}
+    <h2>Diagramme du workflow</h2>
+    <div class="workflow-render">
+        <img src="data:image/png;base64,{{ p.workflow_png_b64 }}" alt="Workflow {{ p.code }}" />
+    </div>
+    <p class="muted" style="margin-top:1mm;">Diagramme g&eacute;n&eacute;r&eacute; automatiquement (source Mermaid disponible dans la plateforme <code>cartographie_si</code>).</p>
+    {% elif p.workflow_mermaid %}
+    <h2>Diagramme du workflow (source Mermaid)</h2>
+    <div class="mermaid-block">{{ p.workflow_mermaid }}</div>
+    <p class="muted">Visualisation graphique disponible dans la plateforme <code>cartographie_si</code> &mdash; rendu PDF indisponible.</p>
+    {% endif %}
+
+</div>
+{% endfor %}
+
+</body>
+</html>
