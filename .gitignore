@@ -19,3 +19,18 @@ backup_*.dump
 # Données scrapées de la prod (volumineux, à reconstruire avec fetch_prod_data.py)
 prod_data/
 backups/
+
+# Base SQLite locale — Render utilise PostgreSQL via DATABASE_URL, db.sqlite3 contient
+# des données prod (679 réponses key-users) → on ne le pousse plus.
+db.sqlite3
+
+# Scripts contenant des secrets en clair (tokens auditeur, mots de passe admin).
+# À externaliser dans .env / variables d'environnement si on veut les versionner.
+fetch_prod_data.py
+generate_mails_acces.py
+
+# Données métier (key users, canevas, référentiel) — potentiellement PII.
+*.xlsx
+
+# Artefact d'extraction Excel (regénérable via extract_processes_airdz.py)
+process_airdz_extracted.json
