@@ -63,14 +63,14 @@
 
 ### Questions techniques
 
-1. Quelle est la version exacte d'AMOS en production ?
-2. Quelle est l'architecture du système ? Le SGBD est-il Oracle ? Quelle version ?
-3. Le schéma de la base de données Oracle est-il documenté ? Pouvez-vous fournir la structure des tables principales ?
-4. Le module AMOS Connect est-il activé ou disponible dans le contrat actuel avec Swiss-AS ?
-5. Si AMOS Connect n'est pas disponible, est-il possible d'accéder directement à la base Oracle en lecture seule ?
+1. Quelle est la version exacte d'AMOS en production ? **→ Rép. : AMOS 25.6**
+2. Quelle est l'architecture du système ? Le SGBD est-il PostgreSQL ? Quelle version ? **→ Rép. : client/serveur, PostgreSQL 14 (et non Oracle)**
+3. Le schéma de la base de données PostgreSQL est-il documenté ? Pouvez-vous fournir la structure des tables principales ? **→ Rép. : description des tables PostgreSQL exportable**
+4. Le module AMOS Connect est-il activé ou disponible dans le contrat actuel avec Swiss-AS ? **→ Rép. : NON ⚠️**
+5. Si AMOS Connect n'est pas disponible, est-il possible d'accéder directement à la base PostgreSQL en lecture seule ? *(à confirmer)*
 6. Quelles sont les conditions contractuelles Swiss-AS pour l'accès aux données (API, réplication, export) ?
 7. Sur quel serveur AMOS est-il hébergé (nom, OS, IP) ? Quel est le mode d'accès réseau ?
-8. Quelle est la politique de sauvegarde actuelle ? Est-il possible de mettre en place une réplication Oracle read-only ?
+8. Quelle est la politique de sauvegarde actuelle ? Est-il possible de mettre en place une réplication **PostgreSQL** read-only ?
 9. Comment les données de SAGE STOCK (pièces) sont-elles actuellement échangées avec AMOS ? Ce flux est-il automatisé ou manuel ?
 10. Comment AMOS reçoit-il les heures de vol et les cycles depuis AIMS ? Ce flux est-il automatisé ?
 
@@ -817,8 +817,8 @@
 | Éditeur | Système | Objet | Statut |
 |---------|---------|-------|--------|
 | Amadeus | Altéa | Data feeds SFTP/API | |
-| Solution Soft | AIMS | BDD read-only ou API | |
-| Swiss-AS | AMOS | AMOS Connect ou réplication Oracle | |
+| Solution Soft | AIMS | BDD **MS SQL Server 2017** read-only (schéma crypté) ou exports CSV/SSIM | |
+| Swiss-AS | AMOS | AMOS Connect (NON activé) ou réplication **PostgreSQL 14** | |
 | Accelya | Rapid + Distribution | API exports | |
 | SITA | SITATEX + World Tracer | Logs + API | |
 | Collins ARINC | ACARS | Logs Hermes | |

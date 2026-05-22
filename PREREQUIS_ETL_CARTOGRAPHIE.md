@@ -356,17 +356,17 @@ FLUX → AIMS, Dashboards CCO, SITATEX — Fréquence : temps réel
 - [ ] Suivi AD/SB/CDCCL, lien SAGE STOCK
 
 ### Prérequis techniques
-- [ ] Version, architecture Oracle, schéma BDD, API AMOS Connect, contrat Swiss-AS
+- [x] **AMOS 25.6** — client/serveur — SGBD : **PostgreSQL 14** (et non Oracle) — AMOS Connect **NON activé** au contrat ⚠️ — description des tables exportable
 
 ### ETL cible
 ```
-SOURCE : AMOS (on-premise, Oracle)
-EXTRACT : AMOS Connect API ou connecteur Oracle
+SOURCE : AMOS (on-premise, **PostgreSQL 14**)
+EXTRACT : AMOS Connect API (à négocier) ou connecteur **PostgreSQL** read-only
 TRANSFORM : Calcul MTBF/MTTR, suivi navigabilité, rapprochement SAGE STOCK
 LOAD : fact_work_orders, fact_maintenance — RÉFÉRENTIEL : REF Maintenance
 FLUX ← AIMS : heures vol/cycles | FLUX ← SAGE STOCK : pièces | FLUX → AIMS : dispo avions
 Fréquence : quotidien
-⚠️ PRIORITÉ : réplication Oracle read-only ou AMOS Connect
+⚠️ PRIORITÉ : réplication **PostgreSQL 14** read-only ou activation **AMOS Connect** (négo Swiss-AS)
 ```
 
 ---

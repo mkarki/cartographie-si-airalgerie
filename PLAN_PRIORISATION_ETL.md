@@ -103,9 +103,9 @@
 | **Indicateurs critiques** | Calcul MTBF/MTTR indispensable pour la planification maintenance |
 
 ### Actions prioritaires
-1. **Négocier l'accès AMOS Connect ou réplication Oracle read-only** (contrat Swiss-AS)
-2. Documenter le schéma Oracle
-3. Développer le connecteur Oracle ou AMOS Connect API
+1. **Négocier l'accès AMOS Connect ou réplication PostgreSQL 14 read-only** (contrat Swiss-AS) — AMOS Connect **NON activé** au contrat actuel
+2. Documenter le schéma **PostgreSQL** (description des tables exportable)
+3. Développer le connecteur **PostgreSQL** ou AMOS Connect API
 4. Implémenter le rapprochement SAGE STOCK (pièces)
 5. Charger : `fact_work_orders`, `fact_maintenance`
 
@@ -855,7 +855,7 @@
 |---------|---------|------------------------|-------|
 | **Amadeus** | Altéa | Accès data feeds SFTP/API | Phase 1 |
 | **Solution Soft** | AIMS | Accès BDD read-only ou API | Phase 1 |
-| **Swiss-AS** | AMOS | AMOS Connect ou réplication Oracle | Phase 1 |
+| **Swiss-AS** | AMOS | AMOS Connect ou réplication **PostgreSQL 14** | Phase 1 |
 | **Accelya** | Rapid + Distribution | API exports | Phase 1 + 2 |
 | **SITA** | SITATEX + World Tracer | Logs SITATEX + API World Tracer | Phase 1 + 2 |
 | **Collins ARINC** | ACARS | Accès logs Hermes | Phase 1 |
