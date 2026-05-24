@@ -83,6 +83,7 @@ urlpatterns = [
     path('processes/<int:pk>/', views.process_detail, name='process_detail'),
     path('processes/<int:pk>/edit/', views.process_edit, name='process_edit'),
     path('api/process/<int:pk>/generate/', views.api_process_generate_workflow, name='api_process_generate'),
+    path('api/process/<int:pk>/rebuild-mermaid/', views.api_process_rebuild_mermaid, name='api_process_rebuild_mermaid'),
     path('api/process/<int:pk>/save-mermaid/', views.api_process_save_mermaid, name='api_process_save_mermaid'),
 
     # Process — édition d'étapes

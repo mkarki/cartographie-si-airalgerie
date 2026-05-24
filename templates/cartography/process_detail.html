@@ -56,10 +56,16 @@
             </div>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
-            <button id="btn-generate" onclick="generateWorkflow()" class="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+            <button id="btn-generate" onclick="generateWorkflow()" class="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition" title="Régénère étapes ET diagramme via Claude (écrase les étapes existantes)">
                 <i data-lucide="sparkles" class="w-4 h-4"></i>
                 {% if process.workflow_mermaid %}Régénérer (IA){% else %}Générer le workflow{% endif %}
             </button>
+            {% if process.steps.count %}
+            <button id="btn-rebuild-mermaid" onclick="rebuildMermaid()" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition" title="Régénère uniquement le diagramme à partir des étapes existantes (sans IA, sans risque)">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                Régénérer le diagramme
+            </button>
+            {% endif %}
             <a href="{% url 'cartography:process_edit' process.pk %}" class="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
                 <i data-lucide="pencil" class="w-4 h-4"></i>
                 Éditer
@@ -441,6 +447,40 @@
             btn.innerHTML = '<i data-lucide="sparkles" class="w-4 h-4"></i> Générer le workflow';
             btn.disabled = false;
             btn.classList.remove('generating');
+            lucide.createIcons();
+        });
+    }
+
+    function rebuildMermaid() {
+        const btn = document.getElementById('btn-rebuild-mermaid');
+        if (!btn) return;
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Régénération...';
+        btn.disabled = true;
+        lucide.createIcons();
+
+        fetch('{% url "cartography:api_process_rebuild_mermaid" process.pk %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+            },
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                showToast(`Diagramme régénéré depuis ${data.steps_count} étapes`, 'success');
+                setTimeout(() => location.reload(), 500);
+            } else {
+                showToast('Erreur: ' + data.error, 'error');
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+                lucide.createIcons();
+            }
+        })
+        .catch(err => {
+            showToast('Erreur réseau: ' + err, 'error');
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
             lucide.createIcons();
         });
     }

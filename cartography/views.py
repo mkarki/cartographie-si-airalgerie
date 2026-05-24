@@ -3194,6 +3194,35 @@ def api_process_save_mermaid(request, pk):
 
 # ─── Process : édition d'étapes ────────────────────────────────────────────
 
+@staff_member_required(login_url='/login/')
+def api_process_rebuild_mermaid(request, pk):
+    """API: régénère uniquement le diagramme Mermaid à partir des étapes existantes.
+
+    N'appelle PAS l'IA, ne touche PAS aux étapes — utile pour rafraîchir le
+    rendu visuel après une édition manuelle d'étapes, sans risquer un écrasement.
+    Repasse `ai_generated=False` pour signaler que le rendu est statique.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST requis'}, status=405)
+
+    process = get_object_or_404(Process, pk=pk)
+    steps_count = process.steps.count()
+    if steps_count == 0:
+        return JsonResponse({
+            'error': "Aucune étape à diagrammer. Ajoutez d'abord des étapes au process.",
+        }, status=400)
+
+    process.workflow_mermaid = _rebuild_mermaid_from_steps(process)
+    process.ai_generated = False
+    process.save(update_fields=['workflow_mermaid', 'ai_generated', 'updated_at'])
+
+    return JsonResponse({
+        'success': True,
+        'mermaid': process.workflow_mermaid,
+        'steps_count': steps_count,
+    })
+
+
 def _rebuild_mermaid_from_steps(process):
     """Reconstruit un diagramme Mermaid linéaire à partir des étapes du process.
 

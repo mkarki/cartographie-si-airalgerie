@@ -1,0 +1,2901 @@
+{
+  "structures": [
+    {
+      "id": 2,
+      "code": "DC",
+      "name": "Division Commerciale",
+      "parent_id": 24
+    },
+    {
+      "id": 26,
+      "code": "DRM",
+      "name": "Direction du Revenue Management",
+      "parent_id": 2
+    },
+    {
+      "id": 27,
+      "code": "DVR",
+      "name": "Direction des Ventes et Réseau",
+      "parent_id": 2
+    }
+  ],
+  "systems": [
+    {
+      "id": 12,
+      "code": "ATPCO",
+      "name": "ATPCO",
+      "description": "Application Web pour l'introduction des tarifs AH et le paramétrage des conditions d'application.",
+      "vendor": "ATPCO",
+      "criticality": "HAUTE",
+      "mode": "SAAS",
+      "version": "",
+      "country": "DZ",
+      "modules": "[]",
+      "category": "Distribution & Commercial",
+      "structure_code": "DRM"
+    },
+    {
+      "id": 38,
+      "code": "OAG",
+      "name": "OAG / INNOVATA",
+      "description": "Diffusion programme vol mondial.",
+      "vendor": "OAG",
+      "criticality": "HAUTE",
+      "mode": "SAAS",
+      "version": "",
+      "country": "DZ",
+      "modules": "[]",
+      "category": "Distribution & Commercial",
+      "structure_code": "DRM"
+    },
+    {
+      "id": 9,
+      "code": "SITEWEB",
+      "name": "Site WEB Air Algérie",
+      "description": "www.airalgerie.dz - E-commerce international depuis 2008.",
+      "vendor": "KYO",
+      "criticality": "HAUTE",
+      "mode": "CLOUD",
+      "version": "",
+      "country": "DZ",
+      "modules": "[]",
+      "category": "Distribution & Commercial",
+      "structure_code": "DRM"
+    },
+    {
+      "id": 11,
+      "code": "ACCELYA-DIST",
+      "name": "ACCELYA Distribution",
+      "description": "Sous-traitance de la gestion et du contrôle de la distribution.",
+      "vendor": "ACCELYA",
+      "criticality": "HAUTE",
+      "mode": "CLOUD",
+      "version": "",
+      "country": "DZ",
+      "modules": "[]",
+      "category": "Distribution & Commercial",
+      "structure_code": "DVR"
+    },
+    {
+      "id": 26,
+      "code": "BAC",
+      "name": "BAC (Amadeus)",
+      "description": "Outil BI Amadeus booking.",
+      "vendor": "Amadeus",
+      "criticality": "MOYENNE",
+      "mode": "SAAS",
+      "version": "",
+      "country": "DZ",
+      "modules": "[]",
+      "category": "BI & Analytics",
+      "structure_code": "DVR"
+    },
+    {
+      "id": 10,
+      "code": "BSPLINK",
+      "name": "BSP Link",
+      "description": "Plateforme IATA pour la gestion des ventes des agences de voyage.",
+      "vendor": "IATA",
+      "criticality": "HAUTE",
+      "mode": "SAAS",
+      "version": "",
+      "country": "DZ",
+      "modules": "[]",
+      "category": "Distribution & Commercial",
+      "structure_code": "DVR"
+    },
+    {
+      "id": 34,
+      "code": "EDOLEANCE",
+      "name": "E-doléance",
+      "description": "Système traitement de la réclamation client.",
+      "vendor": "DSI (In-house)",
+      "criticality": "MOYENNE",
+      "mode": "INHOUSE",
+      "version": "",
+      "country": "DZ",
+      "modules": "[]",
+      "category": "Communication & Support",
+      "structure_code": "DVR"
+    },
+    {
+      "id": 8,
+      "code": "VOCALCOM",
+      "name": "Hermes Call Center",
+      "description": "Solution Centre d'appel & Relation Client. Multicanal.",
+      "vendor": "VocalCom",
+      "criticality": "MOYENNE",
+      "mode": "ONPREMISE",
+      "version": "",
+      "country": "DZ",
+      "modules": "[]",
+      "category": "Distribution & Commercial",
+      "structure_code": "DVR"
+    }
+  ],
+  "flows": [
+    {
+      "id": 44,
+      "name": "Bookings BAC",
+      "description": "Données réservations vers BAC Amadeus",
+      "frequency": "REALTIME",
+      "protocol": "PROPRIETARY",
+      "format": "",
+      "is_automated": 1,
+      "is_critical": 0,
+      "volume": "",
+      "source_code": "ALTEA",
+      "source_name": "Suite Altéa Amadeus",
+      "target_code": "BAC",
+      "target_name": "BAC (Amadeus)"
+    },
+    {
+      "id": 12,
+      "name": "Compensation BSP",
+      "description": "Données de compensation depuis BSP",
+      "frequency": "WEEKLY",
+      "protocol": "FILE",
+      "format": "BIDT",
+      "is_automated": 1,
+      "is_critical": 1,
+      "volume": "",
+      "source_code": "BSPLINK",
+      "source_name": "BSP Link",
+      "target_code": "ACCELYA",
+      "target_name": "Rapid Passagers (Accelya)"
+    },
+    {
+      "id": 24,
+      "name": "Contrôle Distribution",
+      "description": "Rapports de contrôle distribution vers Revenue Accounting",
+      "frequency": "WEEKLY",
+      "protocol": "FILE",
+      "format": "",
+      "is_automated": 1,
+      "is_critical": 0,
+      "volume": "",
+      "source_code": "ACCELYA-DIST",
+      "source_name": "ACCELYA Distribution",
+      "target_code": "ACCELYA",
+      "target_name": "Rapid Passagers (Accelya)"
+    },
+    {
+      "id": 18,
+      "name": "Disponibilités IBE",
+      "description": "Disponibilités et tarifs vers le site web",
+      "frequency": "REALTIME",
+      "protocol": "API_REST",
+      "format": "JSON",
+      "is_automated": 1,
+      "is_critical": 1,
+      "volume": "",
+      "source_code": "ALTEA",
+      "source_name": "Suite Altéa Amadeus",
+      "target_code": "SITEWEB",
+      "target_name": "Site WEB Air Algérie"
+    },
+    {
+      "id": 23,
+      "name": "Données Distribution",
+      "description": "Données de distribution vers Accelya Distribution",
+      "frequency": "DAILY",
+      "protocol": "FILE",
+      "format": "",
+      "is_automated": 1,
+      "is_critical": 0,
+      "volume": "",
+      "source_code": "ALTEA",
+      "source_name": "Suite Altéa Amadeus",
+      "target_code": "ACCELYA-DIST",
+      "target_name": "ACCELYA Distribution"
+    },
+    {
+      "id": 20,
+      "name": "Données PNR Call Center",
+      "description": "Accès aux PNR pour le centre d'appel",
+      "frequency": "REALTIME",
+      "protocol": "API_REST",
+      "format": "JSON",
+      "is_automated": 1,
+      "is_critical": 0,
+      "volume": "",
+      "source_code": "ALTEA",
+      "source_name": "Suite Altéa Amadeus",
+      "target_code": "VOCALCOM",
+      "target_name": "Hermes Call Center"
+    },
+    {
+      "id": 21,
+      "name": "Modifications PNR",
+      "description": "Modifications de réservations depuis le call center",
+      "frequency": "REALTIME",
+      "protocol": "API_REST",
+      "format": "JSON",
+      "is_automated": 1,
+      "is_critical": 0,
+      "volume": "",
+      "source_code": "VOCALCOM",
+      "source_name": "Hermes Call Center",
+      "target_code": "ALTEA",
+      "target_name": "Suite Altéa Amadeus"
+    },
+    {
+      "id": 58,
+      "name": "Programme OAG Retour",
+      "description": "Validation programme depuis OAG",
+      "frequency": "DAILY",
+      "protocol": "FILE",
+      "format": "SSIM",
+      "is_automated": 1,
+      "is_critical": 0,
+      "volume": "",
+      "source_code": "OAG",
+      "source_name": "OAG / INNOVATA",
+      "target_code": "ALTEA",
+      "target_name": "Suite Altéa Amadeus"
+    },
+    {
+      "id": 2,
+      "name": "Programme de Vol OAG (à confirmer)",
+      "description": "Diffusion du programme de vol vers OAG/INNOVATA. À confirmer avec le key user OAG.",
+      "frequency": "DAILY",
+      "protocol": "FILE",
+      "format": "SSIM",
+      "is_automated": 1,
+      "is_critical": 0,
+      "volume": "",
+      "source_code": "AIMS",
+      "source_name": "Aircraft Information Management System",
+      "target_code": "OAG",
+      "target_name": "OAG / INNOVATA"
+    },
+    {
+      "id": 49,
+      "name": "Réclamations Passagers",
+      "description": "Données passagers vers E-doléance",
+      "frequency": "ONDEMAND",
+      "protocol": "API_REST",
+      "format": "",
+      "is_automated": 1,
+      "is_critical": 0,
+      "volume": "",
+      "source_code": "ALTEA",
+      "source_name": "Suite Altéa Amadeus",
+      "target_code": "EDOLEANCE",
+      "target_name": "E-doléance"
+    },
+    {
+      "id": 19,
+      "name": "Réservations Web",
+      "description": "Réservations créées depuis le site web",
+      "frequency": "REALTIME",
+      "protocol": "API_REST",
+      "format": "JSON",
+      "is_automated": 1,
+      "is_critical": 1,
+      "volume": "",
+      "source_code": "SITEWEB",
+      "source_name": "Site WEB Air Algérie",
+      "target_code": "ALTEA",
+      "target_name": "Suite Altéa Amadeus"
+    },
+    {
+      "id": 15,
+      "name": "Tarifs ATPCO",
+      "description": "Tarifs et conditions depuis ATPCO vers Altéa",
+      "frequency": "DAILY",
+      "protocol": "FILE",
+      "format": "ATPCO",
+      "is_automated": 1,
+      "is_critical": 1,
+      "volume": "",
+      "source_code": "ATPCO",
+      "source_name": "ATPCO",
+      "target_code": "ALTEA",
+      "target_name": "Suite Altéa Amadeus"
+    },
+    {
+      "id": 22,
+      "name": "Ventes Agences",
+      "description": "Transactions de vente vers BSP",
+      "frequency": "DAILY",
+      "protocol": "FILE",
+      "format": "BIDT",
+      "is_automated": 1,
+      "is_critical": 1,
+      "volume": "",
+      "source_code": "ALTEA",
+      "source_name": "Suite Altéa Amadeus",
+      "target_code": "BSPLINK",
+      "target_name": "BSP Link"
+    },
+    {
+      "id": 34,
+      "name": "Ventes BSP France",
+      "description": "Données BSP vers Datawings pour répartition",
+      "frequency": "WEEKLY",
+      "protocol": "FILE",
+      "format": "",
+      "is_automated": 1,
+      "is_critical": 0,
+      "volume": "",
+      "source_code": "BSPLINK",
+      "source_name": "BSP Link",
+      "target_code": "DATAWINGS",
+      "target_name": "Datawings"
+    }
+  ],
+  "questionnaires": [
+    {
+      "id": 17,
+      "system_name": "ACCELYA DISTRIBUTION",
+      "phase": 2,
+      "priority_in_phase": 11,
+      "direction": "DC / DVR",
+      "editor": "Accelya",
+      "key_users": "SAAD Nasima",
+      "key_users_backup": "HALISSE Abderrahim",
+      "responsible": "BOUNEB Brahim Nihad",
+      "status": "COMPLETED",
+      "interview_date": null,
+      "interview_notes": "",
+      "sections": [
+        {
+          "id": 66,
+          "title": "A — Canaux de distribution",
+          "ord": 0,
+          "questions": [
+            {
+              "id": 193,
+              "ord": 0,
+              "number": "Q1",
+              "text": "Quels canaux de distribution sont gérés via Accelya Distribution (agences propres, agences IATA, site web, GDS, BSP) ? Quelle est la répartition des ventes par canal ?",
+              "is_answered": 1,
+              "answer": "Concernant la plateforme mise à la disposition de la SDGD/DVR, intitulée « BIDT Audit & Intelligence », celle-ci couvre le canal de distribution indirect, à savoir le BSP ainsi que les agences de voyage en Algérie, lesquelles opèrent, comme il se doit, via les systèmes GDS.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 194,
+              "ord": 1,
+              "number": "Q2",
+              "text": "Comment fonctionne le processus d'émission de billets par canal ? Y a-t-il des différences de processus entre les canaux (règles de validation, plafonds, autorisations) ?",
+              "is_answered": 1,
+              "answer": "A ma connaissance pas de différence.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 195,
+              "ord": 2,
+              "number": "Q3",
+              "text": "Comment sont gérées les agences de vente (accréditation, suivi des ventes, commissions, plafonds de crédit) ?",
+              "is_answered": 1,
+              "answer": "En Algérie, une agence doit d’abord passer par le bureau AIP/DVR pour obtenir l’accréditation IATA. Une fois accréditée, elle peut choisir de travailler avec Air Algérie ou avec d’autres compagnies.\n\nDans le cas où elle opte pour Air Algérie, le dossier est ensuite déposé auprès de la Direction Régionale. Le suivi des ventes est assuré au niveau des représentations et des directions régionales, avec un suivi centralisé.\n\nActuellement, le modèle « commission zéro » avec application de frais de service est adopté sur l’ensemble des marchés. Néanmoins, trois contrats incentive ont été conclus avec les trois meilleures agences en Algérie.\n\nConcernant les plafonds de crédit, si la question concerne le cautionnement, les agences en Algérie déposent une caution d’un million de dinars au profit d’Air Algérie, ainsi que deux millions de dinars auprès d’IATA avant l’accréditation.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            }
+          ]
+        },
+        {
+          "id": 67,
+          "title": "B — Rapports et suivi commercial",
+          "ord": 1,
+          "questions": [
+            {
+              "id": 196,
+              "ord": 0,
+              "number": "Q4",
+              "text": "Quels rapports de ventes sont produits à partir d'Accelya Distribution (ventes par canal, par agence, par destination, par période) ? À quelle fréquence ?",
+              "is_answered": 1,
+              "answer": "La plateforme BIDT Audit & Intelligence génère des rapports liés aux ADMs (Agency Debit Memo), détaillant les irrégularités de réservation par type, marché et période. Elle permet également d’extraire les coûts GDS par marché, par GDS et par période",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 197,
+              "ord": 1,
+              "number": "Q5",
+              "text": "Comment se fait le rapprochement entre les ventes Accelya et les données BSP Link ? Quels écarts sont fréquents ?",
+              "is_answered": 1,
+              "answer": "La question a été partagée avec la Sous-direction Recettes Commerciales habilitée à répondre. ",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 198,
+              "ord": 2,
+              "number": "Q6",
+              "text": "Comment sont suivies les commissions agents et les incentives ? Le calcul est-il automatique dans Accelya ou manuel ?",
+              "is_answered": 1,
+              "answer": "Les redressements de commission agents sont générés automatiquement par Accelya. Pour les incentives, nous n’avons pas d’outil automatique et recevons des fichiers Excel de la DSI.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            }
+          ]
+        },
+        {
+          "id": 68,
+          "title": "C — Besoins et irritants",
+          "ord": 2,
+          "questions": [
+            {
+              "id": 199,
+              "ord": 0,
+              "number": "Q7",
+              "text": "Quels sont les principaux irritants avec Accelya Distribution aujourd'hui ? Y a-t-il des problèmes de reporting, de délai ou de qualité des données ?",
+              "is_answered": 1,
+              "answer": "En comparant l’outil Accelya à l’outil précédent, nous constatons plusieurs manques, notamment l’absence de filtres personnalisés. Auparavant, nous pouvions extraire les coûts GDS seuls. Aujourd’hui, bien que cela soit possible, nous relevons toujours des différences par rapport aux fichiers transmis par l’équipe Accelya. Nous n'arrivons toujours pas à s'adapter avec cet outil.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 200,
+              "ord": 1,
+              "number": "Q8",
+              "text": "Quelles analyses commerciales aimeriez-vous réaliser (performance par canal, rentabilité par agence, tendances de vente, prévisions) ?",
+              "is_answered": 1,
+              "answer": "Nous aimerions réaliser des analyses par canal, par agence, tendance de vente, part/agence, tendance des ventes/période, prévisions, market share, typologie des clients.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "system_name": "ATPCO",
+      "phase": 2,
+      "priority_in_phase": 2,
+      "direction": "DC / DVR",
+      "editor": "ATPCO",
+      "key_users": "LAIDANI Zakaria",
+      "key_users_backup": "FAIDI Foued",
+      "responsible": "BRAHIM BOUNAB Nihad",
+      "status": "COMPLETED",
+      "interview_date": null,
+      "interview_notes": "",
+      "sections": [
+        {
+          "id": 32,
+          "title": "A — Publication tarifaire",
+          "ord": 0,
+          "questions": [
+            {
+              "id": 103,
+              "ord": 0,
+              "number": "Q1",
+              "text": "Quels types de tarifs sont publiés via ATPCO (tarifs publics, tarifs négociés, tarifs promotionnels, tarifs de groupe) ? Quelle est la volumétrie par type ?",
+              "is_answered": 1,
+              "answer": "•\tTarifs publics: 29869\n•\tTarifs private/négociés: 2488\n•\tTarifs promotionnels: 1144\n•\tLes groupe sont gérés via Amadeus Groupe Management (Département Groupe / SDRM)",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 104,
+              "ord": 1,
+              "number": "Q2",
+              "text": "Quel est le processus de création et de publication d'un tarif, de la décision commerciale jusqu'à la mise en vente ? Quels acteurs interviennent et quels sont les délais ?",
+              "is_answered": 1,
+              "answer": "•\tDécision commerciale : (Ouverture d’une nouvelle ligne / Action promotionnelle)\n•\tSDP : réalisation d’un benchmark (entre 1Jrs et 2Jrs)\n•\tSDRM : réalisation d’un comparatif d’engagement des vols (entre 1Jrs et 2Jrs)\n•\tSDP : Proposition du niveau tarifaire ainsi que les conditions d’application (entre 1Jrs et 2Jrs)\n•\tDRM : Validation de la proposition (entre 1Jrs et 2Jrs)\n•\tSDP : Affichage du tarif sur systèmes de réservations via ATPCO (entre 1Jrs et 2Jrs)\n•\tE-COM : Pour publication sur site web AH (entre 1Jrs et 2Jrs)\n•\tDBM : Pour communication sur les réseaux sociaux. (entre 1Jrs et 2Jrs)\n",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 105,
+              "ord": 2,
+              "number": "Q3",
+              "text": "À quelle fréquence les tarifs sont-ils publiés ou modifiés ? Y a-t-il des pics d'activité (lancements de saison, promotions) ?",
+              "is_answered": 1,
+              "answer": "•\tL’activité est en constante évolution, nécessitant l’anticipation des actions, tout en réagissant aux initiatives des concurrents.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 106,
+              "ord": 3,
+              "number": "Q4",
+              "text": "Quelles règles tarifaires sont associées aux tarifs (conditions d'achat, pénalités de changement/annulation, validité, blackout dates) ? Sont-elles toutes gérées dans ATPCO ?",
+              "is_answered": 1,
+              "answer": "•\tConditions tarifaires: Eligibilité, Day/Time, Seasonality, Flight Application, Advance RES/TKT, Minimum/Maximum Stay, Stopover, Transfers, Combinations, Blackout, Surcharges, Accompanied Travel, Travel / Sales Restrictions, Penalties, Higher Intermediate Point, TKT Endorsement, Child Discount, Voluntary Changes / Refund, Negotiated Fares.\n•\tToutes les conditions sont gérées via ATPCO",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            }
+          ]
+        },
+        {
+          "id": 33,
+          "title": "B — Marchés et classes",
+          "ord": 1,
+          "questions": [
+            {
+              "id": 107,
+              "ord": 0,
+              "number": "Q5",
+              "text": "Quels marchés (O&D — origine/destination) sont couverts par les publications ATPCO ? Y a-t-il des marchés gérés différemment (domestique vs international) ?",
+              "is_answered": 1,
+              "answer": "•\tTous les marchés sont gérés via ATPCO.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 108,
+              "ord": 1,
+              "number": "Q6",
+              "text": "Comment sont structurées les classes de réservation et les familles tarifaires ? Combien de classes et de niveaux tarifaires existent ?",
+              "is_answered": 1,
+              "answer": "•\tIl existe 15 classes de reservation M/L/N/Q/V/K/B/H/Y/S/W/I/C/A/F\n•\tLes niveaux tarifaires varient selon le marché pas de limitations\n•\tFamilles tarifaires : Un projet est en cours afin de définir les Branded Fares\n",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            }
+          ]
+        },
+        {
+          "id": 34,
+          "title": "C — Contrôle et veille concurrentielle",
+          "ord": 2,
+          "questions": [
+            {
+              "id": 109,
+              "ord": 0,
+              "number": "Q7",
+              "text": "Comment vérifiez-vous que les tarifs publiés sont correctement repris dans Altéa et les GDS ? Existe-t-il un processus de contrôle qualité ?",
+              "is_answered": 1,
+              "answer": "•\tLe contrôle est effectué via le système de réservation à travers des simulations tarifaires.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 110,
+              "ord": 1,
+              "number": "Q8",
+              "text": "Utilisez-vous ATPCO pour faire de la veille tarifaire concurrentielle ? Si oui, quelles compagnies et quels marchés surveillez-vous ?",
+              "is_answered": 1,
+              "answer": "•\tNon, Nous n’utilisons pas ATPCO pour la veille concurrentielle",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            }
+          ]
+        },
+        {
+          "id": 35,
+          "title": "D — Besoins et irritants",
+          "ord": 3,
+          "questions": [
+            {
+              "id": 111,
+              "ord": 0,
+              "number": "Q9",
+              "text": "Quels sont les principaux irritants avec ATPCO aujourd'hui ? Y a-t-il des problèmes de délai de publication, d'erreurs ou de complexité ?",
+              "is_answered": 1,
+              "answer": "•\tIl arrive que nous constations une certaine lenteur lors de l’exécution des requêtes sur ATPCO, notamment aux heures de pics.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 112,
+              "ord": 1,
+              "number": "Q10",
+              "text": "Quelles analyses tarifaires aimeriez-vous réaliser qui ne sont pas possibles aujourd'hui (historique des tarifs, comparaison concurrentielle, impact des promotions) ?",
+              "is_answered": 1,
+              "answer": "•\tHistorique des tarifs : ATPCO conserve l’historique des modifications pendant une semaine, au-delà de ce délai, toute requête devient payante.\n•\tComparaison concurrentielle « Benchmark » : Nous ne disposons pas actuellement d’un outil dédié à la veille concurrentielle.\n•\tImpact des promotions : Il est actuellement évalué via l’ERP (Power BI), à travers le nombre de documents vendus ainsi que le revenu généré.\n",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "system_name": "BAC (Amadeus)",
+      "phase": 2,
+      "priority_in_phase": 3,
+      "direction": "DC – DIVEX / DOS / DRM",
+      "editor": "Amadeus",
+      "key_users": "HASSISSENE Chemseddine",
+      "key_users_backup": "BENMADI Soumeya",
+      "responsible": "BERRABIA Mokrane (DOS) / FAIDI Fouad (DRM)",
+      "status": "COMPLETED",
+      "interview_date": null,
+      "interview_notes": "",
+      "sections": [
+        {
+          "id": 36,
+          "title": "A — Processus interline",
+          "ord": 0,
+          "questions": [
+            {
+              "id": 113,
+              "ord": 0,
+              "number": "Q1",
+              "text": "Avec quelles compagnies aériennes Air Algérie a-t-elle des accords interline actifs ? Quel est le volume mensuel de transactions interline (coupons émis par d'autres compagnies sur des vols AH et inversement) ?",
+              "is_answered": 1,
+              "answer": " géré par la S/D coopération/DRM et S/D Recettes commerciales/DF. On dispose de 150 accords interline. 2 code share : turkish et qatar Airways.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 114,
+              "ord": 1,
+              "number": "Q2",
+              "text": "Quel est le processus complet de facturation interline, de la réception du coupon jusqu'au règlement financier ? Quelles sont les étapes et les délais du cycle ?",
+              "is_answered": 1,
+              "answer": "Géré par le département  Interline - Facturation Reçue -\nS/D Recettes commerciales-DF",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 115,
+              "ord": 2,
+              "number": "Q3",
+              "text": "Comment fonctionne la proration des revenus interline ? Quelles méthodes sont appliquées (prorate IATA, accords bilatéraux spécifiques) ?",
+              "is_answered": 1,
+              "answer": "Géré par le département  Interline - Facturation Reçue -\nS/D Recettes commerciales-DF",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            }
+          ]
+        },
+        {
+          "id": 37,
+          "title": "B — Rapprochement et litiges",
+          "ord": 1,
+          "questions": [
+            {
+              "id": 116,
+              "ord": 0,
+              "number": "Q4",
+              "text": "Comment se fait le rapprochement entre les données BAC et les données Rapid ? Quels types d'écarts sont fréquents et comment sont-ils résolus ?",
+              "is_answered": 1,
+              "answer": "Il y a une différence de l’offre (capacité) due aux multi-tronçons (Afrique et domestique) sur Rapid, qui sont comptés en double pour chaque tronçon ",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 117,
+              "ord": 1,
+              "number": "Q5",
+              "text": "Comment sont gérés les rejets et les litiges interline ? Quel est le volume de rejets et le délai moyen de résolution ?",
+              "is_answered": 1,
+              "answer": " géré par la S/D coopération/DRM et S/D Recettes commerciales/DF",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 118,
+              "ord": 2,
+              "number": "Q6",
+              "text": "Quels rapports de facturation interline sont produits ? À quelle fréquence et pour quels destinataires (DFC, DRM) ?",
+              "is_answered": 1,
+              "answer": " géré par la S/D coopération/DRM et S/D Recettes commerciales/DF",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            }
+          ]
+        },
+        {
+          "id": 38,
+          "title": "C — Besoins et irritants",
+          "ord": 2,
+          "questions": [
+            {
+              "id": 119,
+              "ord": 0,
+              "number": "Q7",
+              "text": "Quels sont les principaux irritants avec BAC aujourd'hui ? Y a-t-il des problèmes de délai, de qualité des données ou de complexité des formats EDIFACT ?",
+              "is_answered": 1,
+              "answer": "Absence de DCS au départ de SVO, avec des appareils qui ne s’affichent pas dans la totalité de l’offre.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 120,
+              "ord": 1,
+              "number": "Q8",
+              "text": "Quelles analyses interline aimeriez-vous réaliser (rentabilité par partenaire, tendances, optimisation des accords) ?",
+              "is_answered": 1,
+              "answer": " géré par la S/D coopération/DRM et S/D Recettes commerciales/DF",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "system_name": "BSP LINK",
+      "phase": 3,
+      "priority_in_phase": 1,
+      "direction": "DC / DVR",
+      "editor": "IATA",
+      "key_users": "SAAD Nassima",
+      "key_users_backup": "HALISSE Abderrahim",
+      "responsible": "BRAHIM BOUNAB Nihad",
+      "status": "COMPLETED",
+      "interview_date": null,
+      "interview_notes": "",
+      "sections": [
+        {
+          "id": 83,
+          "title": "A — Rapports BSP et exploitation",
+          "ord": 0,
+          "questions": [
+            {
+              "id": 240,
+              "ord": 0,
+              "number": "Q1",
+              "text": "Quels rapports BSP sont consultés régulièrement sur le portail BSP Link (Hot File, Billing Analysis, Agent Sales Summary, Refund Report) ? Qui les consulte et à quelle fréquence ?",
+              "is_answered": 1,
+              "answer": "Le rapport le plus téléchargé par les unités s’intitule Airline_Billing.zip. Il est mis à disposition sur la plateforme BSP de manière hebdomadaire pour la plupart des marchés, et bimensuelle pour les marchés africains en particulier. ",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 241,
+              "ord": 1,
+              "number": "Q2",
+              "text": "Comment se fait le rapprochement entre les données BSP et les données internes (Accelya Distribution, Rapid) ? Quels types d'écarts sont fréquents et comment sont-ils résolus ?",
+              "is_answered": 1,
+              "answer": "Question transmise à la Sous-Direction des Recettes Commerciales habilitée à répondre.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 242,
+              "ord": 2,
+              "number": "Q3",
+              "text": "Quels marchés BSP sont couverts (Algérie, France, autres) ? Y a-t-il des spécificités par marché ?",
+              "is_answered": 1,
+              "answer": "l'Algérie n'est pas un marché BSP\nAir Algérie adhére à plus de 30 marchés BSP à savoir:\nFrance, Espagne, Allemagne, Grande Bretagne, Italie, Belgique, Hollande, Suisse, Autriche, Hongrie, Russie, Portugal, Turquie, Canada, Emirats Arabes, Arabie Saoudite, Qatar, Tunisie, Liban, Jordanie, Egypte, Sénégal, Niger, Burkina Faso, Mali, Mauritanie, Nigeria, Tchad, Cameroun, Ethiopie, Cote d'Ivoire, Afrique du Sud, Chine (ASD) et USA (ARC)\nIl existe des spécificités notamment concernant le calendrier des virement de chaque marché et certaines fonctionnalités comme les remboursements qui n'existent pas sur ARC ",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            }
+          ]
+        },
+        {
+          "id": 84,
+          "title": "B — Gestion des agences",
+          "ord": 1,
+          "questions": [
+            {
+              "id": 243,
+              "ord": 0,
+              "number": "Q4",
+              "text": "Comment sont suivies les performances des agences IATA à travers les données BSP (volume de ventes, taux de remboursement, incidents de paiement) ?",
+              "is_answered": 1,
+              "answer": "Les performances des agences IATA BSP peuvent être suivies à travers le chiffre d'affaire, taux de remboursement, le nombre d'ADM. Les incidents de paiement sont quasiment inexistants car IATA à travers son système assure un réconciliation. Contrairement à ce qui se fait en Algérie Les incidents de paiement sont fréquents et doivent être controlés par l'humain.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 244,
+              "ord": 1,
+              "number": "Q5",
+              "text": "Comment sont gérés les cas de défaut de paiement d'une agence ? Le suivi est-il dans BSP Link ou dans un autre système ?",
+              "is_answered": 1,
+              "answer": "Les cas de défaut de paiement sont gérés à travers le BSP, la compensation se fait à travers le BSP sauf pour l'Algérie. Pour le cas de L'algérie fichier excel et suivi manuel",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            }
+          ]
+        },
+        {
+          "id": 85,
+          "title": "C — Besoins et irritants",
+          "ord": 2,
+          "questions": [
+            {
+              "id": 245,
+              "ord": 0,
+              "number": "Q6",
+              "text": "Quels sont les principaux irritants avec BSP Link aujourd'hui ? Y a-t-il des données manquantes ou des rapports insuffisants ?",
+              "is_answered": 1,
+              "answer": "Les responsables marchés sont mieux placés pour répondre à cette question. Néanmoins, à mon avis le BSP offre des informations multiples pour faciliter la réconciliation et IATA sur son portail met à la disposition des utilisateurs un espace pour créer des requêtes et poser toutes les questions possibles + un chat et numéro de téléphone.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 246,
+              "ord": 1,
+              "number": "Q7",
+              "text": "Quelles analyses aimeriez-vous réaliser à partir des données BSP (tendances de ventes par agence, par marché, saisonnalité, comparaison avec les données internes) ?",
+              "is_answered": 1,
+              "answer": "Nous aimerions exploiter toutes les données disponibles: analyse des ventes par agence, par marché et par période, si possible par forme de paiement (cash, cc, EP) et par type de carte.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "system_name": "E-DOLÉANCE",
+      "phase": 3,
+      "priority_in_phase": 2,
+      "direction": "DC / DRM / DVR",
+      "editor": "DSI (in-house)",
+      "key_users": "AKKACHA Mohamed Amine (DVR)",
+      "key_users_backup": "BELDJERDI Zakaria (DRM)",
+      "responsible": "BOUNEB Brahim Nihad (DVR) / FAIDI Fouad (DRM)",
+      "status": "NOT_STARTED",
+      "interview_date": null,
+      "interview_notes": "",
+      "sections": [
+        {
+          "id": 86,
+          "title": "A — Types de réclamations et processus",
+          "ord": 0,
+          "questions": [
+            {
+              "id": 247,
+              "ord": 0,
+              "number": "Q1",
+              "text": "Quels types de réclamations sont gérés dans E-Doléance (retard/annulation de vol, bagages, service à bord, service au sol, remboursement, surbooking) ? Quelle est la répartition par type et le volume mensuel ?",
+              "is_answered": 1,
+              "answer": "1-\t Réclamations liées aux annulations de vols ou aux retards.\n2- Réclamations liées au refus d'embarquement.\n3- Litiges bagages (suivi d'une réclamation déjà déposée).\n4- Réclamations relatives à un déclassement de cabine (Remboursement différence tarifaire)\n5- Signaler une anomalie de paiement lors d'une réservation (Compte débité billet non émis).\n6- Réclamations concernant la qualité des services fournis en agence, à l'aéroport ou à bord.\n7- Signaler un problème lié aux comptes Air Algérie Plus Miles non crédités, compte bloqué, ou toute autre anomalie concernant le programme de fidélités.\n8- Demande de remboursement de billet non utilises ou partiellement utilises (Achat site web et contact center uniquement)\n9- Avis et suggestions (avis, suggestions ou idées pour améliorer les services AH et l'expérience client).\n",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 248,
+              "ord": 1,
+              "number": "Q2",
+              "text": "Quel est le circuit complet de traitement d'une réclamation, de la réception jusqu'à la clôture ? Quels acteurs interviennent à chaque étape et quels sont les délais cibles ?",
+              "is_answered": 1,
+              "answer": "Réception de la doléance via la plateforme, interaction avec le client via la plateforme . demande d'investigation via mail avec les unités non présentes sur la plateforme si nécessaire.  \n- Unités décentralisées en Alger et à l'étrangers (Responsable de traitement)\n- Equipe E-commerce DRM\n- Equipe Contact Center DVR\n- Equipe FFP DVR\n- Equipe litiges bagages DIVEX",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 249,
+              "ord": 2,
+              "number": "Q3",
+              "text": "Comment sont classifiées les réclamations en termes de priorité et de gravité ? Existe-t-il des règles d'escalade automatiques ?",
+              "is_answered": 1,
+              "answer": "Aucune règle d'escalade via E-doléances mise à part les sollicitation de l'équipe de la sous direction relation clients par les différentes unités.\n1-\t   Signaler une anomalie de paiement lors d'une réservation (Compte débité billet non émis).\n2-\tRéclamations liées aux annulations de vols ou aux retards.\n3-\tRéclamations concernant la qualité des services fournis en agence, à l'aéroport ou à bord.\n4-\tRéclamations liées au refus d'embarquement.\n5-\tRéclamations relatives à un déclassement de cabine (Remboursement différence tarifaire)\n6-\tLitiges bagages (suivi d'une réclamation déjà déposée).\n7-\tDemande de remboursement de billet non utilises ou partiellement utilises (Achat site web et contact center uniquement)\n8-\tSignaler un problème lié aux comptes Air Algérie Plus Miles non crédités, compte bloqué, ou toute autre anomalie concernant le programme de fidélités.\n9-\tAvis et suggestions (avis, suggestions ou idées pour améliorer les services AH et l'expérience client).\n",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 250,
+              "ord": 3,
+              "number": "Q4",
+              "text": "Par quels canaux les réclamations arrivent-elles (formulaire web, email, courrier, call center, réseaux sociaux, escales) ? Tous les canaux alimentent-ils E-Doléance ?",
+              "is_answered": 1,
+              "answer": "Les clients peuvent transmettre leurs réclamations via trois canaux :\n•\tLa plateforme E-Doléances : saisie directe par le client en ligne ;\n•\tLe courrier : lettre adressée à l'unité décentralisée ;\n•\tLe registre des doléances : formulaire rempli en agence ou en escale.\nToute réclamation reçue par courrier ou sur registre est obligatoirement retranscrite sur E-Doléances avant toute action. Une fois enregistrée, elle est automatiquement assignée à la structure compétente.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            }
+          ]
+        },
+        {
+          "id": 87,
+          "title": "B — Indemnisation et suivi",
+          "ord": 1,
+          "questions": [
+            {
+              "id": 251,
+              "ord": 0,
+              "number": "Q5",
+              "text": "Comment sont gérées les indemnisations passagers ? Quelles règles sont appliquées (réglementation algérienne, Convention de Montréal, politique interne) ?",
+              "is_answered": 1,
+              "answer": "Application du barème de la PS10 avec indemnisation sous forme d'EMD sauf si application d'une réglementation en vigueur du pays ex: jurisprudences CE261/2004 pour l'Europe",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 252,
+              "ord": 1,
+              "number": "Q6",
+              "text": "Comment est suivi le délai de réponse aux réclamations ? Quel est le délai moyen actuel et quel est l'objectif ?",
+              "is_answered": 1,
+              "answer": "le suivi se fait via le Dashboard de l'application chatwoot par unité le module reporting étant indisponible pour l'application (une demande a été formellement introduire à la DSI) .\nObjectif QPI AH moins de 30 JRS",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 253,
+              "ord": 2,
+              "number": "Q7",
+              "text": "Les réclamations sont-elles liées aux données de vol (PNR Altéa, données de retard AIMS/ACARS) pour vérifier les faits ? Si oui, comment ? Si non, serait-ce utile ?",
+              "is_answered": 1,
+              "answer": "- Automatiquement via la solution NON.\nLes investigations sont faites manuellement via d'autres solutions:\n- ALTEA pour les PNR\n- ERP ETKT pour les billets archivés\n- Power BI (AIMS) pour les MVT de vols (Données de retard)\n- LMS pour l'équipe FFP (Clients fidèles)\n- Worldtracer pour litiges bagages.\n- Plateforme Satim pour l'équipe E-commerce\n- Plateforme ELAVONE pour l'équipe E-commerce\nune interaction entre les systèmes est souhaitée principalement pour les MVT de vols ",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            }
+          ]
+        },
+        {
+          "id": 88,
+          "title": "C — Rapports et indicateurs",
+          "ord": 2,
+          "questions": [
+            {
+              "id": 254,
+              "ord": 0,
+              "number": "Q8",
+              "text": "Quels rapports et statistiques sont produits à partir d'E-Doléance (volume par type, délai de traitement, taux de satisfaction, coût des indemnisations) ? Pour quels destinataires ?",
+              "is_answered": 1,
+              "answer": "aucun module reporting sur le chatwoot (Dashboard uniquement qui ne présente aucune donnée croisée)\nles rapports sont traités manuellement.  (une demande a été formellement introduire à la DSI)",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 255,
+              "ord": 1,
+              "number": "Q9",
+              "text": "Les données de réclamation sont-elles croisées avec les données du call center (Hermes) pour avoir une vue complète du service client ?",
+              "is_answered": 1,
+              "answer": "Non pas pour le moment. Cette perspective a été inscrite dans le cadre du projet CRM",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            }
+          ]
+        },
+        {
+          "id": 89,
+          "title": "D — Besoins et irritants",
+          "ord": 3,
+          "questions": [
+            {
+              "id": 256,
+              "ord": 0,
+              "number": "Q10",
+              "text": "Quels sont les principaux irritants avec E-Doléance aujourd'hui ? Y a-t-il des problèmes de complétude, d'ergonomie ou de suivi ?",
+              "is_answered": 1,
+              "answer": "- Absence d’automatisation pour les investigations.\n- Reporting limité ou inexploitable.\n- Manque d’alertes / relances automatiques pour les unités au flux important.\n- Absence de visibilité sur le statut (réclamation perdue dans le système pour les unités au flux important).\n- Pas de développement pour les workflow métiers.\n- Champs obligatoires non respectés (Email non vérifié au niveau des formulaires web).\n\n\n",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 257,
+              "ord": 1,
+              "number": "Q11",
+              "text": "Quelles améliorations ou analyses supplémentaires aimeriez-vous (analyse des causes racines, corrélation avec les irrégularités, prédiction des réclamations, benchmark) ?",
+              "is_answered": 1,
+              "answer": "- Disposer d’un lien entre incident opérationnel/réclamation/impact financier à travers des interactions systèmes (ALTEA/AIMS/ERP) pour les analyses prédictives.\nPrédire le volume de réclamations par période / les pics liés à la saisonnalité / Identifier les situations à risque(vols à forte probabilité de réclamations / combinaisons critiques (escale + retard + type client).\nvia un module de reporting dynamique ",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "system_name": "HERMES CALL CENTER",
+      "phase": 3,
+      "priority_in_phase": 4,
+      "direction": "DC / DVR",
+      "editor": "Vocalcom",
+      "key_users": "BOUCHIK Mounir",
+      "key_users_backup": "FODILI Mohamed Yacine",
+      "responsible": "BRAHIM BOUNAB Nihad",
+      "status": "COMPLETED",
+      "interview_date": null,
+      "interview_notes": "",
+      "sections": [
+        {
+          "id": 93,
+          "title": "A — Organisation et volumétrie",
+          "ord": 0,
+          "questions": [
+            {
+              "id": 266,
+              "ord": 0,
+              "number": "Q1",
+              "text": "Comment est organisé le call center (nombre d'agents, horaires d'ouverture, langues, files d'attente par motif) ? Y a-t-il plusieurs sites ?",
+              "is_answered": 1,
+              "answer": "- Le Contact Center est operrationnel 24/24 et 7j/j\n- Langues parlées: Arabe, Tamazight,  Français, Anglais, Espagnol, Italien, Turque, Allemand.\n- Nombre de téléopérateurs production + vente + emission  :104 \n- Files d'attente :\nInformation DZ FR\nInformation DZ\nRéservation DZ FR\nRéservation DZ\nRéservation ES\nInformation ES\nRéservation FR\nInformation FR\nRéservation UK\nInformation UK\nInformation KSA\nVente",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 267,
+              "ord": 1,
+              "number": "Q2",
+              "text": "Quel est le volume d'appels quotidien/mensuel ? Quelle est la répartition par motif (réservation, information, réclamation, modification, annulation, bagages) ?",
+              "is_answered": 1,
+              "answer": "Le volume d’appels quotidien varie en fonction de plusieurs paramètres, notamment le jour de la semaine, les promotions lancées ou encore les irrégularités de vols.\nÀ titre d’exemple, la moyenne enregistrée entre le 1er avril et le 19 avril est d’environ 7 000 appels par jour, avec des pics dépassant les 9 000 appels correspondant aux lancements des promotions, tandis que d’autres journées enregistrent des volumes plus faibles, autour de 5 000 appels.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 268,
+              "ord": 2,
+              "number": "Q3",
+              "text": "Quels sont les pics d'activité (saisonnalité, jours de la semaine, heures) et comment sont-ils gérés ?",
+              "is_answered": 1,
+              "answer": "Les pics d’activité sont principalement observés durant les périodes de forte demande (vacances, saison estivale), en début de semaine, ainsi qu’aux heures de pointe, notamment en matinée et en soirée à partir de 20h.\n\nAfin d’y faire face, une adaptation des plannings est mise en place, avec un renforcement des effectifs sur ces créneaux. Un suivi en temps réel des indicateurs de performance (temps d’attente, taux de décroché, durée moyenne de traitement) est également assuré, permettant de garantir la qualité de service et d’optimiser la gestion des flux.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            }
+          ]
+        },
+        {
+          "id": 94,
+          "title": "B — Processus et outils agents",
+          "ord": 1,
+          "questions": [
+            {
+              "id": 269,
+              "ord": 0,
+              "number": "Q4",
+              "text": "Quels outils les agents utilisent-ils pendant un appel (Hermes pour la téléphonie, Altéa pour les PNR, E-Doléance pour les réclamations, autres) ? Comment naviguent-ils entre ces outils ?",
+              "is_answered": 1,
+              "answer": "les outils utilisés:\n- Hermes-net pour la téléphonie,\n- ARD web pour la réservation, tarification et vente,\n- OPS pour la vérification des e-tickets archivés,\n- Système ALMS pour la gestion des clients fidèles,\n",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 270,
+              "ord": 1,
+              "number": "Q5",
+              "text": "Les agents peuvent-ils effectuer des réservations et des modifications directement dans Altéa depuis le call center ? Quelles opérations sont autorisées ?",
+              "is_answered": 1,
+              "answer": "Au niveau du centre d’appels, les agents sont habilités à effectuer des réservations ainsi que des modifications (revalidation), la vente des documents de voyage via la transmission de lien de paiement ainsi que le remboursement.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 271,
+              "ord": 2,
+              "number": "Q6",
+              "text": "Comment sont tracés les motifs d'appel ? Les agents saisissent-ils un code motif à chaque appel ou est-ce automatique ?",
+              "is_answered": 1,
+              "answer": "Après la clôture de l’appel, l’agent est tenu de qualifier l’appel en identifiant le motif du contact client.\nPour cela, il dispose de plusieurs catégories de qualification qu'il doit sélectionner, avec précision, celle qui correspond le mieux à la raison de l’appel ( demande client )",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            }
+          ]
+        },
+        {
+          "id": 95,
+          "title": "C — Indicateurs et reporting",
+          "ord": 2,
+          "questions": [
+            {
+              "id": 272,
+              "ord": 0,
+              "number": "Q7",
+              "text": "Quels indicateurs de performance du call center sont suivis (taux de décroché, temps d'attente moyen, durée moyenne d'appel, taux d'abandon, taux de résolution au premier appel) ?",
+              "is_answered": 1,
+              "answer": "Les indicateurs de performance du centre d’appels sont les suivants \nLa Qualité de Service (QS) : elle correspond au ratio entre le nombre d’appels traités et le nombre total d’appels reçus (appels traités + appels abandonnés).\nLa Relation Client : elle mesure la qualité des interactions entre les agents et les clients, \nLa Durée Moyenne de Traitement (DMT) : elle représente le temps moyen consacré par un agent pour traiter un appel.\nLa Durée Moyenne d’Attente (DMA) : elle correspond au temps moyen d’attente des clients avant la prise en charge de leur appel.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 273,
+              "ord": 1,
+              "number": "Q8",
+              "text": "Quels rapports sont produits et pour quels destinataires ? À quelle fréquence ?",
+              "is_answered": 1,
+              "answer": "En matière de reporting, un rapport quotidien est transmis aux superviseurs des brigades, incluant la QS J-1, le nombre d’appels traités et abandonnés sur la plage horaire 00h01–23h59 avec un détail par campagne, ainsi que les indicateurs moyens tels que la durée de communication, la durée moyenne de traitement (DMT) et les abandons moyens. Il comprend également la répartition des qualifications par campagne ainsi que le nombre d’appels traités par chaque agent. Par ailleurs, un rapport mensuel est établi à la fin de chaque mois afin de fournir une vision globale et consolidée de la performance et de l’évolution de l’activité.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            }
+          ]
+        },
+        {
+          "id": 96,
+          "title": "D — Besoins et irritants",
+          "ord": 3,
+          "questions": [
+            {
+              "id": 274,
+              "ord": 0,
+              "number": "Q9",
+              "text": "Quels sont les principaux irritants avec Hermes aujourd'hui ? Y a-t-il des problèmes de performance, d'intégration avec Altéa ou de reporting ?",
+              "is_answered": 1,
+              "answer": "Solution stable dans son ensemble.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 275,
+              "ord": 1,
+              "number": "Q10",
+              "text": "Quelles analyses aimeriez-vous réaliser (corrélation appels/réclamations, prédiction de charge, analyse de la satisfaction, optimisation des effectifs) ?",
+              "is_answered": 1,
+              "answer": "Analyse de la satisfaction du client. Module existant sur hermes non exploité.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "system_name": "OAG / INNOVATA",
+      "phase": 3,
+      "priority_in_phase": 5,
+      "direction": "DIVEX / DC / DIVEX + DRM",
+      "editor": "OAG",
+      "key_users": "SAFAR ZITOUN Naim (DRM)",
+      "key_users_backup": "KARI Fateh (DRM)",
+      "responsible": "BOUTEMADJA Samu El Karim (DIVEX) / BOULAOUAD Said (DIVEX) / BERRABIA Mokrane (DOS)",
+      "status": "COMPLETED",
+      "interview_date": null,
+      "interview_notes": "",
+      "sections": [
+        {
+          "id": 97,
+          "title": "A — Usage et données",
+          "ord": 0,
+          "questions": [
+            {
+              "id": 276,
+              "ord": 0,
+              "number": "Q1",
+              "text": "Comment OAG/Innovata est-il utilisé au quotidien ? Quels types d'analyses sont réalisés (étude de marché, analyse concurrentielle, planification réseau, benchmark) ?",
+              "is_answered": 1,
+              "answer": "OAG/INN pour la partie de la S/D FDM est actuellement configuré sur le PSS Amadeus sur la partie external systems afin de transmettre automatiquement le schedule AH via message SSIM et sur des adresses TTY respectives.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 277,
+              "ord": 1,
+              "number": "Q2",
+              "text": "Quels marchés et quelles compagnies concurrentes sont surveillés via OAG ? À quelle fréquence les données sont-elles consultées ?",
+              "is_answered": 1,
+              "answer": "Suite  à une recherche sur internet il apparait que :\n\nOAG fournit des données de vol, des analyses et des solutions de planification à plus de 900 compagnies aériennes, aéroports et agences de voyages dans le monde entier.\nInnovata est un important fournisseur de données complètes sur les horaires de vols, largement utilisé, avec plus de 900 compagnies aériennes qui contribuent directement à sa base de données.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 278,
+              "ord": 2,
+              "number": "Q3",
+              "text": "Les données OAG sont-elles comparées avec les programmes AIMS d'Air Algérie ? Si oui, pour quelles analyses (parts de marché, fréquences, capacités) ?",
+              "is_answered": 1,
+              "answer": "Non, les données comparées avec AIMS sont celle introduites par Air Algérie sur le PSS, des comparatifs réalisés entre le schedule AH sur 1A et AIMS sur les points suivants :\njours de fréquences, \nnuméros de vols, \nrelations, \ntemps de vols.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            }
+          ]
+        },
+        {
+          "id": 98,
+          "title": "B — Exploitation pour le réseau",
+          "ord": 1,
+          "questions": [
+            {
+              "id": 279,
+              "ord": 0,
+              "number": "Q4",
+              "text": "Comment les données OAG alimentent-elles les décisions de planification réseau (ouverture/fermeture de lignes, ajustement de fréquences, choix d'horaires) ?",
+              "is_answered": 1,
+              "answer": "La S/D FDM utilise OAG uniquement pour la transmission du programme de vols vers les GDS.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 280,
+              "ord": 1,
+              "number": "Q5",
+              "text": "Les données OAG sont-elles utilisées pour des présentations ou rapports réguliers (comité réseau, direction commerciale, DG) ?",
+              "is_answered": 1,
+              "answer": "Ces rapports ne sont pas utilisés à notre niveau (Sous-Direction).",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            }
+          ]
+        },
+        {
+          "id": 99,
+          "title": "C — Besoins et irritants",
+          "ord": 2,
+          "questions": [
+            {
+              "id": 281,
+              "ord": 0,
+              "number": "Q6",
+              "text": "Quels sont les principaux irritants avec OAG aujourd'hui ? Y a-t-il des données manquantes ou des analyses impossibles à réaliser ?",
+              "is_answered": 1,
+              "answer": "A ce jour, aucun manquement n'a été détecté.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 282,
+              "ord": 1,
+              "number": "Q7",
+              "text": "Quelles analyses supplémentaires aimeriez-vous (simulation d'ouverture de ligne, prévision de trafic, analyse de connectivité) ?",
+              "is_answered": 1,
+              "answer": "Ces analyses ne sont pas utilisées à notre niveau (Sous-Direction).",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "system_name": "SITE WEB AIR ALGÉRIE",
+      "phase": 2,
+      "priority_in_phase": 10,
+      "direction": "DC / DRM",
+      "editor": "KYO",
+      "key_users": "BELDJERDI Zakaria",
+      "key_users_backup": "BACHA Amine",
+      "responsible": "FAIDI Fouad",
+      "status": "COMPLETED",
+      "interview_date": null,
+      "interview_notes": "",
+      "sections": [
+        {
+          "id": 62,
+          "title": "A — Fonctionnalités et parcours client",
+          "ord": 0,
+          "questions": [
+            {
+              "id": 182,
+              "ord": 0,
+              "number": "Q1",
+              "text": "Quelles fonctionnalités sont disponibles sur le site web aujourd'hui (recherche de vols, réservation, paiement en ligne, check-in en ligne, gestion de réservation, programme de fidélité) ? Lesquelles sont les plus utilisées ?",
+              "is_answered": 1,
+              "answer": "Les fonctionnalités disponibles sur le site web sont :\n- Recherche de vols\n- Réservation de vol (émission de billets)\n- Paiement en ligne\n- Consultation des horaires et des tarifs\n- Gestion de réservation\n- Informations générales\n\nLe site web et l'application mobile (iOS et Android) proposent des fonctionnalités quasi-identiques, l'application étant la version responsive du e-commerce web. L'ensemble du moteur de réservation, d'émission et de paiement en ligne est porté par la solution IBE (Internet Booking Engine) d'Amadeus, mutualisée entre site web et app.\n\nLa fonctionnalité la plus utilisée est la réservation de vol : le volume combiné web + app mobile atteint environ 5 000 transactions par jour (cf. Q5).\n\nLe programme de fidélité Air Algérie Plus est accessible depuis le site via des API de redirection vers la plateforme FFP externe (cf. Q9).",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 183,
+              "ord": 1,
+              "number": "Q2",
+              "text": "Quel est le parcours client type pour une réservation en ligne, de la recherche jusqu'à la confirmation ? Quels sont les principaux points d'abandon ?",
+              "is_answered": 1,
+              "answer": "Parcours client type : recherche de vols → sélection → saisie passagers → paiement → émission du billet.\n\nPrincipaux points d'abandon identifiés :\n1. **Paiement en dinars (CB algérienne et Edahabia / CCP)** : les plateformes de paiement nationales ne sont pas intégrées nativement à l'IBE Amadeus, ce qui impose des redirections entre l'IBE et les passerelles bancaires. Ces redirections génèrent des coupures qui provoquent des échecs de capture de paiement et la non-émission des billets.\n2. **Parcours jugé long** : plusieurs utilisateurs remontent un parcours de réservation trop long (constat issu de l'enquête menée par la mission cartographie). Ce point doit être adressé par le déploiement de la nouvelle solution RFX d'Amadeus (cf. Q11).\n3. **Lenteur générale du site** (cf. Q10).\n\nÀ l'inverse, le paiement en devises (Visa / Mastercard) est intégré directement dans l'IBE Amadeus, sans redirection et donc sans échec lié à la rupture de parcours.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 184,
+              "ord": 2,
+              "number": "Q3",
+              "text": "Quels moyens de paiement sont acceptés en ligne (carte bancaire, CIB, paiement en agence après réservation) ? Y a-t-il des contraintes spécifiques au marché algérien ?",
+              "is_answered": 1,
+              "answer": "Moyens de paiement acceptés en ligne :\n- **Cartes en devises** (Visa, Mastercard) : intégrées nativement à l'IBE Amadeus (pas de redirection).\n- **Carte CIB (CB algérienne)** : via passerelle de paiement nationale, en redirection depuis l'IBE.\n- **Carte Edahabia (Algérie Poste / CCP)** : via une seconde passerelle nationale distincte, également en redirection.\n\nContraintes spécifiques au marché algérien :\n- **Deux plateformes de paiement nationales distinctes** (CIB et CCP Edahabia) avec redirection obligatoire → ruptures de session et échecs d'émission de billets.\n- **Instruction 082001 de la Banque d'Algérie** : contrainte réglementaire qui impose des comportements spécifiques non supportés nativement par la solution communautaire Amadeus. Des scripts en arrière-plan (CSS et logique) sont utilisés pour forcer le fonctionnement conforme.\n- **Stratégies internes Air Algérie** également imposées par forçage via scripts, avec un impact direct sur la performance du site (cf. Q10).\n\nÉchantillon de données IBE (transactions Edahabia reçu le 27/03/2026) : transactions en DZD, Office ID `ALGAH08AA`, type AMOP (Alternate Means of Payment), statuts Initialization → Creation → Validated.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 185,
+              "ord": 3,
+              "number": "Q4",
+              "text": "Le check-in en ligne est-il actif ? Si oui, quel est le taux d'utilisation ? Si non, est-il prévu et quels sont les freins ?",
+              "is_answered": 1,
+              "answer": "Non abordé spécifiquement lors de la réunion du 29/03/2026 avec KU010. À valider avec le métier (DC) et les équipes Amadeus pour confirmer :\n- si le module check-in en ligne de la suite Altéa est activé pour Air Algérie,\n- le taux d'utilisation éventuel,\n- les freins identifiés (réglementaires, techniques, UX).",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            }
+          ]
+        },
+        {
+          "id": 63,
+          "title": "B — Performance commerciale",
+          "ord": 1,
+          "questions": [
+            {
+              "id": 186,
+              "ord": 0,
+              "number": "Q5",
+              "text": "Quel est le volume de réservations réalisées via le site web par mois ? Quelle part représente-t-il dans les ventes totales (vs agences, vs call center) ?",
+              "is_answered": 1,
+              "answer": "Volume combiné site web + application mobile : **environ 5 000 transactions par jour**.\n\nCe chiffre combine web + mobile car la solution e-commerce est mutualisée : l'application mobile est la version responsive du site web, avec le même IBE Amadeus en backend.\n\nForte saisonnalité et sensibilité aux périodes de promotion. Les pics sont monitorés pour anticiper les besoins en bande passante et en capacité serveur (scaling en période de forte sollicitation).\n\nLa **part relative du web+app par rapport aux autres canaux de vente** (agences, call center, agences de voyage / BSP) n'a pas été communiquée lors de la réunion → à compléter avec la DC.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 187,
+              "ord": 1,
+              "number": "Q6",
+              "text": "Quel est le taux de conversion actuel (visiteurs → réservations confirmées) ? Quels sont les objectifs ?",
+              "is_answered": 1,
+              "answer": "Le taux de conversion est suivi via **Google Analytics**, qui permet d'obtenir en temps réel :\n- taux de conversion (visiteurs → réservations confirmées),\n- nombre de sessions,\n- nombre d'utilisateurs en temps réel.\n\nLa valeur actuelle du taux de conversion et les objectifs fixés n'ont pas été communiqués lors de la réunion → à compléter avec la DC et l'équipe digitale.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 188,
+              "ord": 2,
+              "number": "Q7",
+              "text": "Quels indicateurs de trafic web sont suivis aujourd'hui (visiteurs uniques, pages vues, taux de rebond, sources de trafic) ? Quel outil analytics est utilisé ?",
+              "is_answered": 1,
+              "answer": "Outil analytics utilisé : **Google Analytics**.\n\nIndicateurs suivis :\n- Taux de conversion\n- Nombre de sessions\n- Nombre d'utilisateurs en temps réel\n\nLes autres indicateurs classiques (visiteurs uniques, pages vues, taux de rebond, sources de trafic, durée moyenne de session) sont a priori disponibles via GA mais n'ont pas été explicitement cités lors de la réunion → à compléter.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            }
+          ]
+        },
+        {
+          "id": 64,
+          "title": "C — Contenu et gestion",
+          "ord": 2,
+          "questions": [
+            {
+              "id": 189,
+              "ord": 0,
+              "number": "Q8",
+              "text": "Comment est géré le contenu du site (CMS) ? Qui met à jour les informations (horaires, promotions, actualités) et à quelle fréquence ?",
+              "is_answered": 1,
+              "answer": "Architecture technique du site web :\n- **Frontend** : **WordPress** (gestion du contenu éditorial et de l'affichage).\n- **Backend** : **PHP** (logique applicative et développements spécifiques).\n- **Moteur e-commerce** : **IBE Amadeus** (réservation, émission billets, paiement en ligne).\n\nMaîtrise d'œuvre :\n- Le **portail web** (WordPress + PHP) est développé et maintenu par une **agence de développement algérienne** (prestataire externe).\n- L'**application mobile** (iOS + Android) est un produit **Amadeus de bout en bout**.\n- Une **équipe interne** est en cours de constitution et de formation pour développer des modules spécifiques et améliorer la UX.\n\nLa fréquence de mise à jour du contenu et le workflow éditorial (qui publie, qui valide, à quelle cadence) n'ont pas été détaillés lors de la réunion → à compléter avec la DC / équipe communication.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 190,
+              "ord": 1,
+              "number": "Q9",
+              "text": "Existe-t-il un programme de fidélité en ligne ? Si oui, comment fonctionne-t-il et combien de membres compte-t-il ?",
+              "is_answered": 1,
+              "answer": "Programme de fidélité : **Air Algérie Plus** (FFP — Frequent Flyer Program).\n\nGouvernance et technique :\n- Le programme est **géré par une structure distincte** d'Air Algérie (entité FFP dédiée).\n- Le backend de gestion des clients FFP (création de dossiers, enregistrement, suivi des miles) est porté par les **outils FFP eux-mêmes**.\n- Le **site web n'héberge pas la donnée client FFP** : il utilise uniquement des **API de redirection** pour solliciter la plateforme FFP (inscription, consultation du compte, gestion des miles).\n\nLe nombre de membres et les indicateurs d'utilisation (taux d'adhésion, taux de réservation avec miles, etc.) n'ont pas été communiqués lors de la réunion → à demander directement à la structure FFP.",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            }
+          ]
+        },
+        {
+          "id": 65,
+          "title": "D — Besoins et irritants",
+          "ord": 3,
+          "questions": [
+            {
+              "id": 191,
+              "ord": 0,
+              "number": "Q10",
+              "text": "Quels sont les principaux irritants avec le site web aujourd'hui (lenteur, bugs, parcours client, paiement, disponibilité) ?",
+              "is_answered": 1,
+              "answer": "Irritants principaux identifiés sur le site web actuel :\n\n1. **Lenteur du site web** : causée par les scripts en arrière-plan (CSS et logique) utilisés pour forcer le fonctionnement standard de la solution communautaire Amadeus à respecter :\n   - l'**instruction 082001 de la Banque d'Algérie**,\n   - les **stratégies internes Air Algérie**.\n   La solution Amadeus étant mutualisée entre plusieurs compagnies, elle ne porte pas nativement ces spécificités → forçage par scripts avec impact perf.\n\n2. **Échecs de paiement et non-émission des billets** sur les cartes algériennes (CB CIB et Edahabia) dus aux **redirections** entre l'IBE et les passerelles nationales de paiement (ruptures de session).\n\n3. **Parcours de réservation jugé long** par les utilisateurs (retour d'enquête mission cartographie).\n\n4. **Dépendance forte à la roadmap Amadeus** : peu de développement spécifique possible côté Air Algérie, les évolutions UX majeures dépendent des produits livrés par Amadeus (ex : RFX).",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            },
+            {
+              "id": 192,
+              "ord": 1,
+              "number": "Q11",
+              "text": "Quelles fonctionnalités ou analyses aimeriez-vous avoir (personnalisation, ancillary services, A/B testing, analyse comportementale) ?",
+              "is_answered": 1,
+              "answer": "Projets et fonctionnalités en cours ou souhaités :\n\n1. **Déploiement de la solution RFX (Reference Experience) d'Amadeus** — chantier principal en cours.\n   - Nouveau design et nouvelle UX.\n   - Nouvelles fonctionnalités e-commerce.\n   - Objectif : corriger la lenteur du site et raccourcir le parcours de réservation.\n\n2. **Montée en compétence d'une équipe interne** pour porter des développements spécifiques et des améliorations UX au-delà de ce que livre Amadeus en standard.\n\n3. **Anticipation de la saisonnalité** : augmentation dynamique de la bande passante et des capacités serveur en période de pic (déjà en place, à industrialiser).\n\nPoints de vigilance / demandes complémentaires (côté mission) :\n- **Extraction d'échantillons de données IBE** depuis le site web et l'app → à valider avec les équipes Amadeus centrales pour accéder au modèle de données complet (CSV reçu le 27/03/2026 pour la partie AMOP Edahabia).\n- **Clarification des flux IBE ↔ ALTÉA PSS ↔ systèmes comptabilité** : le site web (via IBE) transmet bien à Altéa PSS, mais la liaison avec la comptabilité Air Algérie passe par Amadeus et non par le site lui-même (à documenter côté DFC / Amadeus).",
+              "notes": "",
+              "validation_status": "PENDING",
+              "attachment_filename": ""
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "key_users": [
+    {
+      "id": 17,
+      "name": "SAAD Nasima",
+      "email": "",
+      "is_active": 1,
+      "last_accessed": null,
+      "created_at": "2026-03-15 13:36:46.198598",
+      "system_name": "ACCELYA DISTRIBUTION"
+    },
+    {
+      "id": 8,
+      "name": "LAIDANI Zakaria",
+      "email": "",
+      "is_active": 1,
+      "last_accessed": null,
+      "created_at": "2026-03-15 13:36:46.191860",
+      "system_name": "ATPCO"
+    },
+    {
+      "id": 9,
+      "name": "HASSISSENE Chemseddine",
+      "email": "",
+      "is_active": 1,
+      "last_accessed": null,
+      "created_at": "2026-03-15 13:36:46.192483",
+      "system_name": "BAC (Amadeus)"
+    },
+    {
+      "id": 22,
+      "name": "SAAD Nassima",
+      "email": "",
+      "is_active": 1,
+      "last_accessed": null,
+      "created_at": "2026-03-15 13:36:46.202480",
+      "system_name": "BSP LINK"
+    },
+    {
+      "id": 23,
+      "name": "AKKACHA Mohamed Amine (DVR)",
+      "email": "",
+      "is_active": 1,
+      "last_accessed": null,
+      "created_at": "2026-03-15 13:36:46.203295",
+      "system_name": "E-DOLÉANCE"
+    },
+    {
+      "id": 25,
+      "name": "BOUCHIK Mounir",
+      "email": "",
+      "is_active": 1,
+      "last_accessed": null,
+      "created_at": "2026-03-15 13:36:46.204469",
+      "system_name": "HERMES CALL CENTER"
+    },
+    {
+      "id": 26,
+      "name": "SAFAR ZITOUN Naim (DRM)",
+      "email": "",
+      "is_active": 1,
+      "last_accessed": null,
+      "created_at": "2026-03-15 13:36:46.205019",
+      "system_name": "OAG / INNOVATA"
+    },
+    {
+      "id": 16,
+      "name": "BELDJERDI Zakaria",
+      "email": "",
+      "is_active": 1,
+      "last_accessed": null,
+      "created_at": "2026-03-15 13:36:46.197944",
+      "system_name": "SITE WEB AIR ALGÉRIE"
+    }
+  ],
+  "processes": [
+    {
+      "id": 124,
+      "code": "PROC-AA-DC-01",
+      "name": "Etablissement de contrats incentive",
+      "description": "Collecte des données BSP (chiffre d'affaires, nombre de billets émis, part d'Air Algérie par rapport aux autres compagnies)",
+      "context": "# Etablissement de contrats incentive\n\n## Description\nCollecte des données BSP (chiffre d'affaires, nombre de billets émis, part d'Air Algérie par rapport aux autres compagnies)\n\n## Systèmes utilisés (déclaratif key user)\nPlateforme BSP (IATA Billing and Settlement Plan\n\n## Outputs / KPI\nTéléchargement données sur Excel, classement des agences\n\n## Contexte questionnaire — BSP Link (BSPLINK)\n- **Q1 — Quels rapports BSP sont consultés régulièrement sur le portail BSP Link (Hot File, Billing Analysis, Agent Sales Summary** : Le rapport le plus téléchargé par les unités s’intitule Airline_Billing.zip. Il est mis à disposition sur la plateforme BSP de manière hebdomadaire pour la plupart des marchés, et bimensuelle pour les marchés africains en particulier.\n- **Q2 — Comment se fait le rapprochement entre les données BSP et les données internes (Accelya Distribution, Rapid) ? Quels typ** : Question transmise à la Sous-Direction des Recettes Commerciales habilitée à répondre.\n- **Q3 — Quels marchés BSP sont couverts (Algérie, France, autres) ? Y a-t-il des spécificités par marché ?** : l'Algérie n'est pas un marché BSP Air Algérie adhére à plus de 30 marchés BSP à savoir: France, Espagne, Allemagne, Grande Bretagne, Italie, Belgique, Hollande, Suisse, Autriche, Hongrie, Russie, Portugal, Turquie, Canada, Emirats Arabes, Arabie Saoudite, Qatar, Tunisie, Liban, Jordanie, Egypte, Sénégal, Niger, Burkina Faso, Mali, Mauritanie, Niger…\n- **Q4 — Comment sont suivies les performances des agences IATA à travers les données BSP (volume de ventes, taux de remboursemen** : Les performances des agences IATA BSP peuvent être suivies à travers le chiffre d'affaire, taux de remboursement, le nombre d'ADM. Les incidents de paiement sont quasiment inexistants car IATA à travers son système assure un réconciliation. Contrairement à ce qui se fait en Algérie Les incidents de paiement sont fréquents et doivent être controlés…\n- **Q5 — Comment sont gérés les cas de défaut de paiement d'une agence ? Le suivi est-il dans BSP Link ou dans un autre système ?** : Les cas de défaut de paiement sont gérés à travers le BSP, la compensation se fait à travers le BSP sauf pour l'Algérie.\n- **Q6 — Quels sont les principaux irritants avec BSP Link aujourd'hui ? Y a-t-il des données manquantes ou des rapports insuffis** : Les responsables marchés sont mieux placés pour répondre à cette question. Néanmoins, à mon avis le BSP offre des informations multiples pour faciliter la réconciliation et IATA sur son portail met à la disposition des utilisateurs un espace pour créer des requêtes et poser toutes les questions possibles + un chat et numéro de téléphone.\n- **Q7 — Quelles analyses aimeriez-vous réaliser à partir des données BSP (tendances de ventes par agence, par marché, saisonnali** : Nous aimerions exploiter toutes les données disponibles: analyse des ventes par agence, par marché et par période, si possible par forme de paiement (cash, cc, EP) et par type de carte.",
+      "category": "COMMERCIAL",
+      "status": "DOCUMENTED",
+      "problems": "Process entièrement manuel sur Excel sans automatisation. Fréquence de mise à jour différente selon les marchés (hebdomadaire vs bimensuel). L'Algérie n'est pas un marché BSP, créant des spécificités de gestion. Incidents de paiement fréquents en Algérie contrairement aux marchés BSP. Manque d'analyses avancées comme les tendances saisonnières et les types de paiement. Pas d'intégration avec les systèmes internes (Accelya Distribution, Rapid).",
+      "recommendations": "Automatiser l'extraction et le traitement des données BSP. Développer un tableau de bord Power BI pour remplacer Excel. Standardiser les fréquences de reporting BSP. Intégrer les données BSP avec les systèmes internes (ACCELYA, ACCELYA-DIST). Implémenter des analyses avancées (saisonnalité, types de paiement, tendances). Créer un workflow de validation automatisé pour les contrats incentive.",
+      "validation_status": "NOT_REQUESTED",
+      "validated_by": "",
+      "validated_at": null,
+      "created_by": "SAAD Nassima",
+      "created_at": "2026-05-14 09:13:08.738962",
+      "steps": [
+        {
+          "id": 615,
+          "ord": 1,
+          "title": "Accès à la plateforme BSP Link",
+          "description": "Connexion au portail IATA BSP Link pour accéder aux données de vente des agences",
+          "step_type": "INPUT",
+          "actor_role": "Analyste Revenue Management",
+          "data_inputs": "Identifiants d'accès BSP Link",
+          "data_outputs": "Accès au portail BSP",
+          "interactions": "Homme → Système",
+          "problems": "",
+          "duration_estimate": "5 minutes"
+        },
+        {
+          "id": 616,
+          "ord": 2,
+          "title": "Téléchargement rapport Airline_Billing.zip",
+          "description": "Téléchargement hebdomadaire (ou bimensuel pour l'Afrique) du rapport Airline_Billing.zip contenant les données BSP",
+          "step_type": "MANUAL",
+          "actor_role": "Analyste Revenue Management",
+          "data_inputs": "Rapports BSP disponibles sur le portail",
+          "data_outputs": "Fichier Airline_Billing.zip téléchargé",
+          "interactions": "Homme → Système",
+          "problems": "Fréquence différente selon les marchés (hebdomadaire vs bimensuel)",
+          "duration_estimate": "10 minutes"
+        },
+        {
+          "id": 617,
+          "ord": 3,
+          "title": "Extraction des données vers Excel",
+          "description": "Décompression du fichier zip et extraction des données BSP (chiffre d'affaires, nombre de billets, parts de marché) vers Excel",
+          "step_type": "MANUAL",
+          "actor_role": "Analyste Revenue Management",
+          "data_inputs": "Fichier Airline_Billing.zip",
+          "data_outputs": "Fichier Excel avec données BSP structurées",
+          "interactions": "Homme → Système",
+          "problems": "Process manuel sur Excel, pas d'automatisation",
+          "duration_estimate": "30 minutes"
+        },
+        {
+          "id": 618,
+          "ord": 4,
+          "title": "Analyse des performances par marché",
+          "description": "Analyse des données par marché BSP (France, Espagne, Allemagne, etc.) pour identifier les performances par zone géographique",
+          "step_type": "MANUAL",
+          "actor_role": "Analyste Revenue Management",
+          "data_inputs": "Données BSP par marché (30+ marchés)",
+          "data_outputs": "Analyse comparative des performances par marché",
+          "interactions": "Homme → Système",
+          "problems": "Spécificités par marché non standardisées, l'Algérie n'étant pas un marché BSP",
+          "duration_estimate": "45 minutes"
+        },
+        {
+          "id": 619,
+          "ord": 5,
+          "title": "Calcul des indicateurs de performance agences",
+          "description": "Calcul du chiffre d'affaires, taux de remboursement, nombre d'ADM par agence IATA",
+          "step_type": "MANUAL",
+          "actor_role": "Analyste Revenue Management",
+          "data_inputs": "Données brutes des ventes agences",
+          "data_outputs": "KPI de performance par agence",
+          "interactions": "Homme → Système",
+          "problems": "Incidents de paiement fréquents en Algérie vs quasi-inexistants dans BSP",
+          "duration_estimate": "1 heure"
+        },
+        {
+          "id": 620,
+          "ord": 6,
+          "title": "Classement des agences",
+          "description": "Établissement d'un classement des agences basé sur les performances calculées pour identifier les partenaires prioritaires",
+          "step_type": "MANUAL",
+          "actor_role": "Analyste Revenue Management",
+          "data_inputs": "KPI de performance par agence",
+          "data_outputs": "Classement hiérarchisé des agences",
+          "interactions": "Homme → Système",
+          "problems": "",
+          "duration_estimate": "30 minutes"
+        },
+        {
+          "id": 621,
+          "ord": 7,
+          "title": "Définition des critères incentive",
+          "description": "Définition des critères et seuils pour les contrats incentive basés sur les performances et le classement des agences",
+          "step_type": "DECISION",
+          "actor_role": "Manager Revenue Management",
+          "data_inputs": "Classement des agences, objectifs commerciaux",
+          "data_outputs": "Critères et seuils incentive définis",
+          "interactions": "Homme → Système",
+          "problems": "",
+          "duration_estimate": "1 heure"
+        },
+        {
+          "id": 622,
+          "ord": 8,
+          "title": "Rédaction des contrats incentive",
+          "description": "Élaboration des contrats incentive personnalisés par agence en fonction des critères définis",
+          "step_type": "MANUAL",
+          "actor_role": "Équipe Revenue Management",
+          "data_inputs": "Critères incentive, données agences",
+          "data_outputs": "Contrats incentive rédigés",
+          "interactions": "Homme → Système",
+          "problems": "Manque d'analyses avancées (tendances saisonnières, types de paiement)",
+          "duration_estimate": "2 heures"
+        },
+        {
+          "id": 623,
+          "ord": 9,
+          "title": "Validation et diffusion",
+          "description": "Validation des contrats incentive et diffusion aux agences concernées",
+          "step_type": "OUTPUT",
+          "actor_role": "Manager Revenue Management",
+          "data_inputs": "Contrats incentive finalisés",
+          "data_outputs": "Contrats incentive validés et diffusés",
+          "interactions": "Homme → Système",
+          "problems": "",
+          "duration_estimate": "30 minutes"
+        }
+      ],
+      "structures": [
+        {
+          "code": "DC",
+          "name": "Division Commerciale"
+        },
+        {
+          "code": "DVR",
+          "name": "Direction des Ventes et Réseau"
+        }
+      ]
+    },
+    {
+      "id": 125,
+      "code": "PROC-AA-DC-02",
+      "name": "Réduction des coûts de distribution (GDS)",
+      "description": "Etablissement d'ADM (pénalités) vis-à-vis des agences de voyages effectuant des reservations improductives générant des coûts inutiles",
+      "context": "# Réduction des coûts de distribution (GDS)\n\n## Description\nEtablissement d'ADM (pénalités) vis-à-vis des agences de voyages effectuant des reservations improductives générant des coûts inutiles\n\n## Systèmes utilisés (déclaratif key user)\nACCELYA BIDT Audit & Intelligence\n\n## Outputs / KPI\nINPUT: BIDT (Billing Information Data Tapes) reçu des GDS                                                           OUTPUT: ADM (AGENCY DEBIT MEMO)\n\n## Contexte questionnaire — ACCELYA Distribution (ACCELYA-DIST)\n- **Q1 — Quels canaux de distribution sont gérés via Accelya Distribution (agences propres, agences IATA, site web, GDS, BSP) ? Q** : Concernant la plateforme mise à la disposition de la SDGD/DVR, intitulée « BIDT Audit & Intelligence », celle-ci couvre le canal de distribution indirect, à savoir le BSP ainsi que les agences de voyage en Algérie, lesquelles opèrent, comme il se doit, via les systèmes GDS.\n- **Q2 — Comment fonctionne le processus d'émission de billets par canal ? Y a-t-il des différences de processus entre les canaux** : A ma connaissance pas de différence.\n- **Q3 — Comment sont gérées les agences de vente (accréditation, suivi des ventes, commissions, plafonds de crédit) ?** : En Algérie, une agence doit d’abord passer par le bureau AIP/DVR pour obtenir l’accréditation IATA. Une fois accréditée, elle peut choisir de travailler avec Air Algérie ou avec d’autres compagnies. Dans le cas où elle opte pour Air Algérie, le dossier est ensuite déposé auprès de la Direction Régionale. Le suivi des ventes est assuré au niveau des…\n- **Q4 — Quels rapports de ventes sont produits à partir d'Accelya Distribution (ventes par canal, par agence, par destination, p** : La plateforme BIDT Audit & Intelligence génère des rapports liés aux ADMs (Agency Debit Memo), détaillant les irrégularités de réservation par type, marché et période. Elle permet également d’extraire les coûts GDS par marché, par GDS et par période\n- **Q5 — Comment se fait le rapprochement entre les ventes Accelya et les données BSP Link ? Quels écarts sont fréquents ?** : La question a été partagée avec la Sous-direction Recettes Commerciales habilitée à répondre. Aujourd'hui le rapprochement se fait manuellement. par fichier excel ligne à ligne. PNR Pays numéro de billet\n- **Q6 — Comment sont suivies les commissions agents et les incentives ? Le calcul est-il automatique dans Accelya ou manuel ?** : Les redressements de commission agents sont générés automatiquement par Accelya. Pour les incentives, nous n’avons pas d’outil automatique et recevons des fichiers Excel de la DSI.\n- **Q7 — Quels sont les principaux irritants avec Accelya Distribution aujourd'hui ? Y a-t-il des problèmes de reporting, de déla** : En comparant l’outil Accelya à l’outil précédent, nous constatons plusieurs manques, notamment l’absence de filtres personnalisés. Auparavant, nous pouvions extraire les coûts GDS seuls. Aujourd’hui, bien que cela soit possible, nous relevons toujours des différences par rapport aux fichiers transmis par l’équipe Accelya. Nous n'arrivons toujours p…\n- **Q8 — Quelles analyses commerciales aimeriez-vous réaliser (performance par canal, rentabilité par agence, tendances de vente,** : Nous aimerions réaliser des analyses par canal, par agence, tendance de vente, part/agence, tendance des ventes/période, prévisions, market share, typologie des clients. Lien avec RAPID non mis en place mais bienvenue",
+      "category": "COMMERCIAL",
+      "status": "DOCUMENTED",
+      "problems": "Absence de filtres personnalisés dans l'outil Accelya par rapport à l'outil précédent. Difficultés à extraire les coûts GDS seuls avec des différences persistantes par rapport aux fichiers transmis par l'équipe Accelya. Rapprochement manuel ligne par ligne entre les ventes Accelya et les données BSP Link via fichiers Excel. Processus de validation et de suivi largement manuels. Absence d'automatisation du recouvrement des ADM.",
+      "recommendations": "Mettre en place des filtres personnalisés dans Accelya BIDT pour faciliter l'extraction des données. Automatiser le rapprochement entre Accelya et BSP Link pour éliminer le traitement manuel. Développer des tableaux de bord automatisés pour le suivi des ADM et du recouvrement. Intégrer l'outil avec RAPID pour des analyses commerciales plus poussées (performance par canal, rentabilité par agence, tendances). Implémenter des analyses prédictives pour anticiper les comportements d'agences et optimiser la distribution.",
+      "validation_status": "NOT_REQUESTED",
+      "validated_by": "",
+      "validated_at": null,
+      "created_by": "SAAD Nassima",
+      "created_at": "2026-05-14 09:13:08.742369",
+      "steps": [
+        {
+          "id": 624,
+          "ord": 1,
+          "title": "Réception des données BIDT",
+          "description": "Réception des fichiers BIDT (Billing Information Data Tapes) depuis les systèmes GDS contenant les informations de réservation et de facturation des agences de voyage",
+          "step_type": "INPUT",
+          "actor_role": "Responsable Distribution GDS",
+          "data_inputs": "BIDT (Billing Information Data Tapes) depuis GDS",
+          "data_outputs": "Données de réservation structurées",
+          "interactions": "système→système (GDS vers Accelya BIDT)",
+          "problems": "",
+          "duration_estimate": "Automatique"
+        },
+        {
+          "id": 625,
+          "ord": 2,
+          "title": "Audit et analyse des réservations",
+          "description": "Analyse automatisée des données BIDT pour identifier les réservations improductives et les irrégularités générant des coûts inutiles (annulations tardives, no-show, modifications excessives)",
+          "step_type": "AUTOMATED",
+          "actor_role": "Système Accelya BIDT",
+          "data_inputs": "Données de réservation BIDT",
+          "data_outputs": "Rapport d'irrégularités par type, marché et période",
+          "interactions": "traitement automatisé par le système",
+          "problems": "Absence de filtres personnalisés, différences dans les extractions de coûts GDS",
+          "duration_estimate": "Traitement automatique quotidien"
+        },
+        {
+          "id": 626,
+          "ord": 3,
+          "title": "Génération des rapports d'audit",
+          "description": "Production des rapports détaillés d'audit incluant les irrégularités de réservation par type, marché et période, ainsi que les coûts GDS par marché et par GDS",
+          "step_type": "OUTPUT",
+          "actor_role": "Système Accelya BIDT",
+          "data_inputs": "Résultats d'analyse des irrégularités",
+          "data_outputs": "Rapports ADM détaillés, rapports coûts GDS",
+          "interactions": "génération automatique de rapports",
+          "problems": "Difficultés à extraire les coûts GDS seuls, différences avec les fichiers Accelya",
+          "duration_estimate": "Génération automatique"
+        },
+        {
+          "id": 627,
+          "ord": 4,
+          "title": "Validation et contrôle des ADM",
+          "description": "Validation manuelle des ADM générés automatiquement, vérification de la cohérence des pénalités calculées et des irrégularités identifiées",
+          "step_type": "MANUAL",
+          "actor_role": "Responsable Distribution GDS",
+          "data_inputs": "Rapports ADM générés automatiquement",
+          "data_outputs": "ADM validés et approuvés",
+          "interactions": "homme→système (validation dans Accelya)",
+          "problems": "Processus de validation manuel, rapprochement manuel ligne par ligne",
+          "duration_estimate": "2-3 heures par batch"
+        },
+        {
+          "id": 628,
+          "ord": 5,
+          "title": "Émission des ADM vers les agences",
+          "description": "Émission officielle des Agency Debit Memo (ADM) vers les agences de voyage fautives pour facturation des pénalités liées aux réservations improductives",
+          "step_type": "OUTPUT",
+          "actor_role": "Responsable Distribution GDS",
+          "data_inputs": "ADM validés",
+          "data_outputs": "ADM transmis aux agences via BSP",
+          "interactions": "système→système (Accelya vers BSP Link)",
+          "problems": "Rapprochement manuel entre Accelya et BSP Link",
+          "duration_estimate": "Transmission automatique après validation"
+        },
+        {
+          "id": 629,
+          "ord": 6,
+          "title": "Suivi et recouvrement",
+          "description": "Suivi du recouvrement des pénalités ADM auprès des agences de voyage et gestion des éventuels litiges ou contestations",
+          "step_type": "MANUAL",
+          "actor_role": "Responsable Distribution GDS",
+          "data_inputs": "ADM émis, statuts de paiement BSP",
+          "data_outputs": "Rapport de recouvrement, litiges identifiés",
+          "interactions": "homme→système (suivi dans BSP Link et Accelya)",
+          "problems": "Suivi manuel, absence d'automatisation du recouvrement",
+          "duration_estimate": "Suivi hebdomadaire"
+        }
+      ],
+      "structures": [
+        {
+          "code": "DC",
+          "name": "Division Commerciale"
+        },
+        {
+          "code": "DVR",
+          "name": "Direction des Ventes et Réseau"
+        }
+      ]
+    },
+    {
+      "id": 126,
+      "code": "PROC-AA-DC-03",
+      "name": "Procédure de traitement des appels entrants",
+      "description": "Reception des appels via les numéros de telephone dédiés",
+      "context": "# Procédure de traitement des appels entrants\n\n## Description\nReception des appels via les numéros de telephone dédiés\n\n## Systèmes utilisés (déclaratif key user)\nHERMES-NET\n\n## Outputs / KPI\nTaux de traitement des appels\n\n## Contexte questionnaire — Hermes Call Center (VOCALCOM)\n- **Q1 — Comment est organisé le call center (nombre d'agents, horaires d'ouverture, langues, files d'attente par motif) ? Y a-t-** : - Le Contact Center est operrationnel 24/24 et 7j/j - Langues parlées: Arabe, Tamazight, Français, Anglais, Espagnol, Italien, Turque, Allemand. - Nombre de téléopérateurs production + vente + emission :104 - Files d'attente : Information DZ FR Information DZ Réservation DZ FR Réservation DZ Réservation ES Information ES Réservation FR Information…\n- **Q2 — Quel est le volume d'appels quotidien/mensuel ? Quelle est la répartition par motif (réservation, information, réclamati** : Le volume d’appels quotidien varie en fonction de plusieurs paramètres, notamment le jour de la semaine, les promotions lancées ou encore les irrégularités de vols. À titre d’exemple, la moyenne enregistrée entre le 1er avril et le 19 avril est d’environ 7 000 appels par jour, avec des pics dépassant les 9 000 appels correspondant aux lancements de…\n- **Q3 — Quels sont les pics d'activité (saisonnalité, jours de la semaine, heures) et comment sont-ils gérés ?** : Les pics d’activité sont principalement observés durant les périodes de forte demande (vacances, saison estivale), en début de semaine, ainsi qu’aux heures de pointe, notamment en matinée et en soirée à partir de 20h. Afin d’y faire face, une adaptation des plannings est mise en place, avec un renforcement des effectifs sur ces créneaux. Un suivi e…\n- **Q4 — Quels outils les agents utilisent-ils pendant un appel (Hermes pour la téléphonie, Altéa pour les PNR, E-Doléance pour l** : les outils utilisés: - Hermes-net pour la téléphonie, - ARD web pour la réservation, tarification et vente, - OPS pour la vérification des e-tickets archivés, - Système ALMS pour la gestion des clients fidèles,\n- **Q5 — Les agents peuvent-ils effectuer des réservations et des modifications directement dans Altéa depuis le call center ? Qu** : Au niveau du centre d’appels, les agents sont habilités à effectuer des réservations ainsi que des modifications (revalidation), la vente des documents de voyage via la transmission de lien de paiement ainsi que le remboursement.\n- **Q6 — Comment sont tracés les motifs d'appel ? Les agents saisissent-ils un code motif à chaque appel ou est-ce automatique ?** : Après la clôture de l’appel, l’agent est tenu de qualifier l’appel en identifiant le motif du contact client. Pour cela, il dispose de plusieurs catégories de qualification qu'il doit sélectionner, avec précision, celle qui correspond le mieux à la raison de l’appel ( demande client )\n- **Q7 — Quels indicateurs de performance du call center sont suivis (taux de décroché, temps d'attente moyen, durée moyenne d'ap** : Les indicateurs de performance du centre d’appels sont les suivants La Qualité de Service (QS) : elle correspond au ratio entre le nombre d’appels traités et le nombre total d’appels reçus (appels traités + appels abandonnés). La Relation Client : elle mesure la qualité des interactions entre les agents et les clients, La Durée Moyenne de Traitemen…\n- **Q8 — Quels rapports sont produits et pour quels destinataires ? À quelle fréquence ?** : En matière de reporting, un rapport quotidien est transmis aux superviseurs des brigades, incluant la QS J-1, le nombre d’appels traités et abandonnés sur la plage horaire 00h01–23h59 avec un détail par campagne, ainsi que les indicateurs moyens tels que la durée de communication, la durée moyenne de traitement (DMT) et les abandons moyens. Il comp…",
+      "category": "COMMERCIAL",
+      "status": "DOCUMENTED",
+      "problems": "Pics d'activité causant des temps d'attente élevés dépassant 9000 appels par jour avec impact sur le taux d'abandon. Gestion complexe de la saisonnalité et des créneaux horaires de pointe nécessitant une adaptation constante des plannings.",
+      "recommendations": "1. Optimiser la prédiction des pics d'activité pour un meilleur dimensionnement des équipes. 2. Implémenter un système de callback automatique pour réduire les abandons. 3. Développer des outils d'aide à la décision pour améliorer le routage des appels. 4. Mettre en place des indicateurs prédictifs de charge. 5. Renforcer la formation multilingue des agents pour plus de flexibilité.",
+      "validation_status": "NOT_REQUESTED",
+      "validated_by": "",
+      "validated_at": null,
+      "created_by": "BOUCHIK MOUNIR (VOCALCOM)",
+      "created_at": "2026-05-14 09:13:08.744706",
+      "steps": [
+        {
+          "id": 630,
+          "ord": 1,
+          "title": "Réception de l'appel entrant",
+          "description": "Le système Hermes Call Center reçoit un appel entrant via les numéros de téléphone dédiés et le met en file d'attente selon la langue et le motif présumé",
+          "step_type": "AUTOMATED",
+          "actor_role": "Système de téléphonie",
+          "data_inputs": "Appel téléphonique, numéro appelé, langue détectée",
+          "data_outputs": "Appel en file d'attente avec classification initiale",
+          "interactions": "Client→système",
+          "problems": "",
+          "duration_estimate": "Instantané"
+        },
+        {
+          "id": 631,
+          "ord": 2,
+          "title": "Routage vers agent disponible",
+          "description": "Le système route l'appel vers un agent disponible selon la file d'attente appropriée (Information DZ/FR, Réservation DZ/FR/ES, etc.) et les compétences linguistiques requises",
+          "step_type": "AUTOMATED",
+          "actor_role": "Système de routage",
+          "data_inputs": "Appel en attente, disponibilité agents, compétences linguistiques",
+          "data_outputs": "Appel routé vers agent spécifique",
+          "interactions": "Système→système",
+          "problems": "Pics d'activité causant des temps d'attente élevés (>9000 appels/jour)",
+          "duration_estimate": "Variable selon charge"
+        },
+        {
+          "id": 632,
+          "ord": 3,
+          "title": "Prise d'appel par l'agent",
+          "description": "L'agent du call center décroche l'appel et accueille le client dans la langue appropriée",
+          "step_type": "MANUAL",
+          "actor_role": "Téléopérateur",
+          "data_inputs": "Appel routé, informations contextuelles",
+          "data_outputs": "Communication établie avec le client",
+          "interactions": "Agent→client",
+          "problems": "",
+          "duration_estimate": "30 secondes"
+        },
+        {
+          "id": 633,
+          "ord": 4,
+          "title": "Abandon d'appel",
+          "description": "Le client raccroche avant qu'un agent ne soit disponible",
+          "step_type": "DECISION",
+          "actor_role": "Client",
+          "data_inputs": "Temps d'attente dépassé",
+          "data_outputs": "Appel abandonné, statistique enregistrée",
+          "interactions": "Client→système",
+          "problems": "Taux d'abandon élevé pendant les pics",
+          "duration_estimate": "Variable"
+        },
+        {
+          "id": 634,
+          "ord": 5,
+          "title": "Identification du motif d'appel",
+          "description": "L'agent identifie le motif de l'appel du client (réservation, information, réclamation, modification, etc.)",
+          "step_type": "MANUAL",
+          "actor_role": "Téléopérateur",
+          "data_inputs": "Demande client verbale",
+          "data_outputs": "Motif d'appel identifié",
+          "interactions": "Agent↔client",
+          "problems": "",
+          "duration_estimate": "1-2 minutes"
+        },
+        {
+          "id": 635,
+          "ord": 6,
+          "title": "Traitement réservation",
+          "description": "Pour les demandes de réservation, l'agent utilise ARD Web pour créer une nouvelle réservation, vérifier les tarifs et effectuer la vente",
+          "step_type": "MANUAL",
+          "actor_role": "Téléopérateur",
+          "data_inputs": "Demande de réservation, dates, destinations, passagers",
+          "data_outputs": "PNR créé, tarification, lien de paiement",
+          "interactions": "Agent→système→client",
+          "problems": "",
+          "duration_estimate": "5-10 minutes"
+        },
+        {
+          "id": 636,
+          "ord": 7,
+          "title": "Traitement modification/revalidation",
+          "description": "Pour les modifications, l'agent accède au PNR existant via ARD Web et effectue les modifications requises",
+          "step_type": "MANUAL",
+          "actor_role": "Téléopérateur",
+          "data_inputs": "Référence PNR, modifications demandées",
+          "data_outputs": "PNR modifié, nouveau tarif si applicable",
+          "interactions": "Agent→système→client",
+          "problems": "",
+          "duration_estimate": "3-8 minutes"
+        },
+        {
+          "id": 637,
+          "ord": 8,
+          "title": "Vérification e-ticket",
+          "description": "Pour les demandes d'information sur les e-tickets, l'agent consulte le système OPS pour vérifier les e-tickets archivés",
+          "step_type": "MANUAL",
+          "actor_role": "Téléopérateur",
+          "data_inputs": "Référence e-ticket ou PNR",
+          "data_outputs": "Statut e-ticket, informations vol",
+          "interactions": "Agent→système→client",
+          "problems": "",
+          "duration_estimate": "2-5 minutes"
+        },
+        {
+          "id": 638,
+          "ord": 9,
+          "title": "Gestion client fidèle",
+          "description": "Pour les clients du programme de fidélité, l'agent consulte le système ALMS pour vérifier le statut et les avantages",
+          "step_type": "MANUAL",
+          "actor_role": "Téléopérateur",
+          "data_inputs": "Numéro de carte de fidélité",
+          "data_outputs": "Statut client, miles disponibles, avantages",
+          "interactions": "Agent→système→client",
+          "problems": "",
+          "duration_estimate": "2-4 minutes"
+        },
+        {
+          "id": 639,
+          "ord": 10,
+          "title": "Traitement réclamation",
+          "description": "Si la demande nécessite une réclamation formelle, l'agent oriente vers le système E-doléance pour traitement spécialisé",
+          "step_type": "MANUAL",
+          "actor_role": "Téléopérateur",
+          "data_inputs": "Détails de la réclamation",
+          "data_outputs": "Dossier de réclamation créé, numéro de suivi",
+          "interactions": "Agent→système→client",
+          "problems": "",
+          "duration_estimate": "5-15 minutes"
+        },
+        {
+          "id": 640,
+          "ord": 11,
+          "title": "Qualification de l'appel",
+          "description": "À la fin de l'appel, l'agent qualifie obligatoirement l'appel en sélectionnant le motif précis parmi les catégories disponibles",
+          "step_type": "MANUAL",
+          "actor_role": "Téléopérateur",
+          "data_inputs": "Détails de l'appel traité",
+          "data_outputs": "Appel qualifié avec motif précis",
+          "interactions": "Agent→système",
+          "problems": "",
+          "duration_estimate": "30 secondes"
+        },
+        {
+          "id": 641,
+          "ord": 12,
+          "title": "Enregistrement statistiques",
+          "description": "Le système enregistre automatiquement les métriques de l'appel (durée, motif, résolution) pour les rapports de performance",
+          "step_type": "AUTOMATED",
+          "actor_role": "Système de reporting",
+          "data_inputs": "Données de l'appel, qualification, durées",
+          "data_outputs": "Statistiques mises à jour, données pour reporting",
+          "interactions": "Système→base de données",
+          "problems": "",
+          "duration_estimate": "Instantané"
+        }
+      ],
+      "structures": [
+        {
+          "code": "DC",
+          "name": "Division Commerciale"
+        },
+        {
+          "code": "DVR",
+          "name": "Direction des Ventes et Réseau"
+        }
+      ]
+    },
+    {
+      "id": 144,
+      "code": "PROC-AA-DIVEX-02",
+      "name": "Programmation des enveloppes des vols charters(OMRA,HADJ,Sahraouis,OIM,ponctuels)ainsi que leur régulation",
+      "description": "La programmation des enveloppes de vols charters ainsi que leur régulation s’effectuent selon le processus suivant :\n\nExpression du besoin\nLa demande est initiée par la SD Charters relevant de la DVR, précisant les besoins en termes de destinations, capacités et périodes d’exploitation.\nÉtude de faisabilité\nUne analyse est réalisée par le département Charters de la SD Programme (DC), en coordination avec les entités concernées, portant sur :\nla disponibilité des avions (flotte vive),\nles temps de vol et la faisabilité technique validés par la DOA,\nles contraintes opérationnelles éventuelles.\nÉlaboration de la proposition\nSur la base de cette étude, une proposition de programme charter est établie et transmise au département Charters de la DVR.\nValidation\nAprès validation de la proposition par la DVR, le processus de mise en œuvre est enclenché.\nDiffusion de l’intention et demandes d’accords\nLe département Charters de la SD Programme procède à :\nla diffusion de l’intention de programmat",
+      "context": "# Programmation des enveloppes des vols charters(OMRA,HADJ,Sahraouis,OIM,ponctuels)ainsi que leur régulation\n\n## Description\nLa programmation des enveloppes de vols charters ainsi que leur régulation s’effectuent selon le processus suivant :\n\nExpression du besoin\nLa demande est initiée par la SD Charters relevant de la DVR, précisant les besoins en termes de destinations, capacités et périodes d’exploitation.\nÉtude de faisabilité\nUne analyse est réalisée par le département Charters de la SD Programme (DC), en coordination avec les entités concernées, portant sur :\nla disponibilité des avions (flotte vive),\nles temps de vol et la faisabilité technique validés par la DOA,\nles contraintes opérationnelles éventuelles.\nÉlaboration de la proposition\nSur la base de cette étude, une proposition de programme charter est établie et transmise au département Charters de la DVR.\nValidation\nAprès validation de la proposition par la DVR, le processus de mise en œuvre est enclenché.\nDiffusion de l’intention et demandes d’accords\nLe département Charters de la SD Programme procède à :\nla diffusion de l’intention de programmation,\nla sollicitation des autorisations et accords nécessaires (slots, autorisations aviatiosn civiles et survol).\nLancement\nUne fois l’ensemble des accords obtenus, le département procède au lancement des vols charters.\n\n## Systèmes utilisés (déclaratif key user)\nExcel, AIMS, lien de la DMRA, SSIM pour les Slots, mails\n\n## Outputs / KPI\nLa diffusion des enveloppes relatives aux vols charters (Omra, Hadj, Sahraouis et charters ponctuels) s’effectue par voie électronique, via l’envoi d’e-mails accompagnés de fichiers Excel détaillant les programmes (capacités, fréquences, périodes).\n\nLe suivi de la performance du processus repose notamment sur les indicateurs suivants :\n\nTaux de respect de la demande commerciale ;\nRespect des délais de traitement et de diffusion des enveloppes.\n\nCes éléments permettent d’assurer une meilleure coordination entre les entités concernées et d’optimiser la réponse aux besoins opérationnels et commerciaux.\n\n## Contexte questionnaire — Aircraft Information Management System (AIMS)\n- **Q1 — Quel est le processus complet de création d'un programme de vols, de l'initiative commerciale jusqu'à la publication SSI** : La réception sous forme de fréquencemètre de la demande des marchés via la DVR/ Flotte vive fournie par la DMRA / Contraintes Slots selon les coordinateurs/contraintes opérationnelles selon la DOA, DOS, ANAC/ Dimensionnement Personnel Naviguant par la DOA/Coordination DC DIVEX DMRA/passage au COMEX pour validation de la DG/ Diffusion des intentions…\n- **Q2 — Combien de vols sont programmés en moyenne par jour / par saison IATA ? Quelle est la répartition entre vols réguliers, ** : En moyenne 250 vols par jour majoritairement vols réguliers.\n- **Q3 — Comment sont gérées les modifications de programme en cours de saison (annulations, ajouts, changements d'horaires) ? Qu** : Le programme subit des modifications suite aléas ( indisponibilité avion, NOTAM, vols additifs, contraintes exogènes … ) au niveau de la SD programme pour la régulation saison et au niveau du pour le mois au niveau du suivi flotte du CCO ou carrément le jour j au CCO ; le circuit de validation dépend de l'obtention des accords requis et les collabo…\n- **Q4 — Comment le programme de vols est-il transmis à Altéa (format SSIM) ? Cette transmission est-elle automatique ou manuelle** : Le programme est transmis au FDM via des e mail de lancements et aussi sous format SSIM , cette option n'est pas totalement fiable.\n- **Q5 — Comment sont planifiés les rotations et les rosters des équipages (PNT et PNC) ? Quelles contraintes sont prises en comp** : les planing sont etablis manuelement en respectant le regime de travail PN FTL,preference ,...\n- **Q6 — Combien de membres d'équipage sont gérés dans AIMS (PNT et PNC séparément) ? Combien de qualifications différentes sont ** : le nombre est de 579 PNT et de 1636 PNC pour les quailfications en PNT , on gére trois qualifications A330-NG-ATR le PNC Memes qualifications que ceux du pnt avec PNC MONO A BE-QUALIF\n- **Q7 — Comment sont gérés les cas d'indisponibilité imprévue (maladie, absence) ? Quel est le processus de remplacement et qui ** : les cas d'indisponibiltes sont gerées par des declenchement des alertes et solicitations ,et c'est au niveau du departement suivi (service suivi et check in )\n- **Q8 — Quelles sont les règles FTL (Flight Time Limitations) appliquées ? Sont-elles configurées dans AIMS ou suivies manuellem** : le TSV et temps de repos sont parametrés sur AIMS ,parfois contourné manuellement tout en restant legal vis a vis du decret",
+      "category": "OPERATIONAL",
+      "status": "DOCUMENTED",
+      "problems": "Processus largement manuel basé sur Excel et emails sans workflow intégré. Coordination complexe entre multiples entités avec risques d'incohérence. Système SSIM peu fiable pour la transmission. Suivi manuel des accords avec risque d'oubli. Pas de traçabilité des validations et transmissions. Délais variables et imprévisibles selon les autorités externes.",
+      "recommendations": "Implémenter un workflow digital intégré pour automatiser les étapes de validation. Développer un tableau de bord unique consolidant les statuts des demandes d'accords. Améliorer la fiabilité de l'interface SSIM ou développer une alternative. Mettre en place des notifications automatiques et un suivi temps réel. Créer un référentiel centralisé des contacts et procédures par destination. Développer des indicateurs de performance en temps réel.",
+      "validation_status": "NOT_REQUESTED",
+      "validated_by": "",
+      "validated_at": null,
+      "created_by": "Benaouicha Hanane",
+      "created_at": "2026-05-14 09:13:08.777803",
+      "steps": [
+        {
+          "id": 654,
+          "ord": 1,
+          "title": "Expression du besoin par SD Charters",
+          "description": "La SD Charters relevant de la DVR initie la demande en précisant les besoins en termes de destinations, capacités et périodes d'exploitation pour les vols charters (OMRA, HADJ, Sahraouis, OIM, ponctuels)",
+          "step_type": "INPUT",
+          "actor_role": "SD Charters",
+          "data_inputs": "Besoins commerciaux, demandes clients",
+          "data_outputs": "Expression de besoin formalisée (destinations, capacités, périodes)",
+          "interactions": "Homme→système (saisie manuelle)",
+          "problems": "Processus basé sur Excel et emails, pas d'outil intégré",
+          "duration_estimate": "1-2 jours"
+        },
+        {
+          "id": 655,
+          "ord": 2,
+          "title": "Étude de faisabilité technique et opérationnelle",
+          "description": "Le département Charters de la SD Programme (DC) analyse la faisabilité en coordination avec les entités concernées : disponibilité flotte, temps de vol, contraintes opérationnelles",
+          "step_type": "MANUAL",
+          "actor_role": "Département Charters SD Programme",
+          "data_inputs": "Expression de besoin, données flotte vive DMRA, contraintes DOA",
+          "data_outputs": "Analyse de faisabilité technique et opérationnelle",
+          "interactions": "Homme→système (consultation AIMS), coordination inter-services",
+          "problems": "Coordination manuelle entre plusieurs entités, risque d'incohérence",
+          "duration_estimate": "2-3 jours"
+        },
+        {
+          "id": 656,
+          "ord": 3,
+          "title": "Validation disponibilité flotte par DMRA",
+          "description": "Vérification de la disponibilité des avions (flotte vive) par la DMRA",
+          "step_type": "MANUAL",
+          "actor_role": "DMRA",
+          "data_inputs": "Planning flotte, maintenance programmée",
+          "data_outputs": "Confirmation disponibilité avions",
+          "interactions": "Homme→système (consultation planning)",
+          "problems": "Validation manuelle, délais d'attente",
+          "duration_estimate": "1 jour"
+        },
+        {
+          "id": 657,
+          "ord": 4,
+          "title": "Validation faisabilité technique par DOA",
+          "description": "La DOA valide les temps de vol et la faisabilité technique des rotations proposées",
+          "step_type": "MANUAL",
+          "actor_role": "DOA",
+          "data_inputs": "Proposition de rotations, contraintes FTL",
+          "data_outputs": "Validation technique des temps de vol",
+          "interactions": "Homme→système (vérification contraintes)",
+          "problems": "Processus manuel, risque d'erreur dans les calculs FTL",
+          "duration_estimate": "1-2 jours"
+        },
+        {
+          "id": 658,
+          "ord": 5,
+          "title": "Élaboration de la proposition de programme",
+          "description": "Sur la base de l'étude de faisabilité, le département Charters établit une proposition complète de programme charter",
+          "step_type": "MANUAL",
+          "actor_role": "Département Charters SD Programme",
+          "data_inputs": "Analyses de faisabilité consolidées",
+          "data_outputs": "Proposition détaillée de programme charter",
+          "interactions": "Homme→système (compilation données Excel)",
+          "problems": "Consolidation manuelle des données, risque d'erreur",
+          "duration_estimate": "1 jour"
+        },
+        {
+          "id": 659,
+          "ord": 6,
+          "title": "Transmission proposition à DVR",
+          "description": "La proposition de programme charter est transmise au département Charters de la DVR pour validation",
+          "step_type": "OUTPUT",
+          "actor_role": "Département Charters SD Programme",
+          "data_inputs": "Proposition de programme finalisée",
+          "data_outputs": "Document de proposition transmis",
+          "interactions": "Homme→système (envoi email)",
+          "problems": "Transmission par email, pas de workflow intégré",
+          "duration_estimate": "0.5 jour"
+        },
+        {
+          "id": 660,
+          "ord": 7,
+          "title": "Validation par DVR",
+          "description": "La DVR examine et valide la proposition de programme charter",
+          "step_type": "DECISION",
+          "actor_role": "DVR",
+          "data_inputs": "Proposition de programme charter",
+          "data_outputs": "Décision de validation ou demande de modification",
+          "interactions": "Homme→système (consultation documents)",
+          "problems": "Processus de validation non tracé, délais variables",
+          "duration_estimate": "1-2 jours"
+        },
+        {
+          "id": 661,
+          "ord": 8,
+          "title": "Diffusion de l'intention de programmation",
+          "description": "Le département Charters diffuse l'intention de programmation aux services concernés",
+          "step_type": "OUTPUT",
+          "actor_role": "Département Charters SD Programme",
+          "data_inputs": "Programme validé par DVR",
+          "data_outputs": "Intention de programmation diffusée",
+          "interactions": "Homme→système (diffusion multi-destinataires)",
+          "problems": "Diffusion manuelle, pas de confirmation de réception",
+          "duration_estimate": "0.5 jour"
+        },
+        {
+          "id": 662,
+          "ord": 9,
+          "title": "Demande des slots",
+          "description": "Sollicitation des créneaux de décollage/atterrissage (slots) auprès des coordinateurs aéroportuaires",
+          "step_type": "MANUAL",
+          "actor_role": "Département Charters SD Programme",
+          "data_inputs": "Programme détaillé avec horaires",
+          "data_outputs": "Demandes de slots transmises",
+          "interactions": "Homme→système (interface SSIM)",
+          "problems": "Système SSIM pas totalement fiable selon retours utilisateurs",
+          "duration_estimate": "1 jour"
+        },
+        {
+          "id": 663,
+          "ord": 10,
+          "title": "Demande autorisations aviation civile",
+          "description": "Sollicitation des autorisations auprès des autorités de l'aviation civile des pays concernés",
+          "step_type": "MANUAL",
+          "actor_role": "Département Charters SD Programme",
+          "data_inputs": "Détails des vols programmés",
+          "data_outputs": "Demandes d'autorisation transmises",
+          "interactions": "Homme→système (emails aux autorités)",
+          "problems": "Processus manuel, délais variables selon pays",
+          "duration_estimate": "1-2 jours"
+        },
+        {
+          "id": 664,
+          "ord": 11,
+          "title": "Demande autorisations de survol",
+          "description": "Sollicitation des autorisations de survol des espaces aériens concernés",
+          "step_type": "MANUAL",
+          "actor_role": "Département Charters SD Programme",
+          "data_inputs": "Routes de vol planifiées",
+          "data_outputs": "Demandes d'autorisation de survol",
+          "interactions": "Homme→système (contact autorités survol)",
+          "problems": "Processus long et complexe, suivi manuel des demandes",
+          "duration_estimate": "2-5 jours"
+        },
+        {
+          "id": 665,
+          "ord": 12,
+          "title": "Attente et consolidation des accords",
+          "description": "Attente de l'obtention de tous les accords nécessaires (slots, autorisations civiles, survol)",
+          "step_type": "WAIT",
+          "actor_role": "Département Charters SD Programme",
+          "data_inputs": "Réponses des différentes autorités",
+          "data_outputs": "Consolidation des accords obtenus",
+          "interactions": "Homme→système (suivi des réponses)",
+          "problems": "Suivi manuel des accords, risque d'oubli ou de retard",
+          "duration_estimate": "5-15 jours"
+        },
+        {
+          "id": 666,
+          "ord": 13,
+          "title": "Lancement des vols charters",
+          "description": "Une fois tous les accords obtenus, lancement officiel des vols charters dans le système",
+          "step_type": "MANUAL",
+          "actor_role": "Département Charters SD Programme",
+          "data_inputs": "Tous les accords nécessaires",
+          "data_outputs": "Vols activés dans le système de programmation",
+          "interactions": "Homme→système (saisie AIMS)",
+          "problems": "Saisie manuelle dans AIMS, risque d'erreur de saisie",
+          "duration_estimate": "1 jour"
+        },
+        {
+          "id": 667,
+          "ord": 14,
+          "title": "Gestion des refus d'accords",
+          "description": "En cas de refus d'un ou plusieurs accords, retour pour modification du programme",
+          "step_type": "MANUAL",
+          "actor_role": "Département Charters SD Programme",
+          "data_inputs": "Notifications de refus",
+          "data_outputs": "Programme modifié",
+          "interactions": "Homme→système (modification programme)",
+          "problems": "Retours en arrière coûteux en temps",
+          "duration_estimate": "2-3 jours"
+        },
+        {
+          "id": 668,
+          "ord": 15,
+          "title": "Transmission au système passagers",
+          "description": "Transmission des programmes charter vers le système de réservation Altéa via format SSIM",
+          "step_type": "MANUAL",
+          "actor_role": "Département Charters SD Programme",
+          "data_inputs": "Programme de vols validé et lancé",
+          "data_outputs": "Données SSIM transmises à Altéa",
+          "interactions": "Système→système (transmission SSIM)",
+          "problems": "Transmission SSIM pas totalement fiable selon retours",
+          "duration_estimate": "0.5 jour"
+        },
+        {
+          "id": 669,
+          "ord": 16,
+          "title": "Diffusion finale des enveloppes",
+          "description": "Diffusion finale des enveloppes de vols charters par email avec fichiers Excel détaillés",
+          "step_type": "OUTPUT",
+          "actor_role": "Département Charters SD Programme",
+          "data_inputs": "Programme finalisé et activé",
+          "data_outputs": "Enveloppes diffusées (capacités, fréquences, périodes)",
+          "interactions": "Homme→système (diffusion email)",
+          "problems": "Diffusion manuelle par email, pas de traçabilité",
+          "duration_estimate": "0.5 jour"
+        }
+      ],
+      "structures": [
+        {
+          "code": "DC",
+          "name": "Division Commerciale"
+        },
+        {
+          "code": "DOA",
+          "name": "Direction des Opérations Aériennes"
+        },
+        {
+          "code": "DMRA",
+          "name": "Division Maintenance & Réparations des Aéronefs"
+        },
+        {
+          "code": "DIVEX",
+          "name": "Division de l'Exploitation"
+        },
+        {
+          "code": "DVR",
+          "name": "Direction des Ventes et Réseau"
+        }
+      ]
+    },
+    {
+      "id": 146,
+      "code": "PROC-AA-DIVEX-04",
+      "name": "Affrètement et fretement",
+      "description": "Une fois le besoin en affrètement validé, le lancement de l’appel d’offres est effectué conformément aux procédures en vigueur (PS 17, CPA, CPM) avec une mise à jour préalable du cahier des charges après le COMEX  et le passage de cette révison au CPA avant de pouvor lancer cet appel. \nLe processus comprend les étapes suivantes :\n\n\nLancement de l’appel d’offres\nÉlaboration et diffusion du cahier des charges aux opérateurs concernés, dans le respect des procédures internes.\n\n\nSélection et contractualisation\nAnalyse des offres reçues et sélection de l’opérateur retenu, suivie de la contractualisation.\nVeiller à l’obtention de l’ensemble des autorisations nécessaires (ANAC, autorités de l’aviation civile des pays concernés, VERITAL), conformément à la circulaire ANAC 35-10 janvier 2025 relative à l’aviation civile, ainsi qu’aux procédures en vigueur.\n\n\nSuivi de l’affrètement\nUn suivi quotidien et rigoureux est assuré tout au long de l’opération, incluant :\n\n\nl’établissement des laissez-pa",
+      "context": "# Affrètement et fretement\n\n## Description\nUne fois le besoin en affrètement validé, le lancement de l’appel d’offres est effectué conformément aux procédures en vigueur (PS 17, CPA, CPM) avec une mise à jour préalable du cahier des charges après le COMEX  et le passage de cette révison au CPA avant de pouvor lancer cet appel. \nLe processus comprend les étapes suivantes :\n\n\nLancement de l’appel d’offres\nÉlaboration et diffusion du cahier des charges aux opérateurs concernés, dans le respect des procédures internes.\n\n\nSélection et contractualisation\nAnalyse des offres reçues et sélection de l’opérateur retenu, suivie de la contractualisation.\nVeiller à l’obtention de l’ensemble des autorisations nécessaires (ANAC, autorités de l’aviation civile des pays concernés, VERITAL), conformément à la circulaire ANAC 35-10 janvier 2025 relative à l’aviation civile, ainsi qu’aux procédures en vigueur.\n\n\nSuivi de l’affrètement\nUn suivi quotidien et rigoureux est assuré tout au long de l’opération, incluant :\n\n\nl’établissement des laissez-passer pour les PN des avions affrétés ainsi que le personnel technique (mécaniciens)la coordination des réservations des équipages affrétés (PN),le suivi des heures de vols réaliséset aussi l'obtention des assurances auprès de la DAJA, \n\n\nle suivi administratif et financier (traitement des factures, conformité des prestations) en collaboration par mail avec la DOA; la SD GAF de la DC procèdera au réglement des factures ensuite.\n\n\n\n\nL’ensemble de ces actions vise à garantir une mise en œuvre conforme, sécurisée et efficace des opérations d’affrètement.\n\nSi tu veux, je peux te faire une version encore plus “audit/ISO” avec risques + contrôles internes 👍\n\n## Systèmes utilisés (déclaratif key user)\nExcel, AIMS,Mails\n\n## Outputs / KPI\nLe suivi des opérations d’affrètement repose sur les indicateurs clés suivants :\n\nTaux de réalisation du programme affrété : mesure du niveau d’exécution des vols programmés et transmis aux compagnies affrétées ;\nTaux de ponctualité des avions affrétés : suivi de la performance en matière de respect des horaires (départs/arrivées) ;\nSuivi des irrégularités liées aux avions affrétés et à leurs équipages : identification, analyse et traitement des écarts opérationnels (retards, annulations, indisponibilités techniques, contraintes équipage, etc.).\n\nCes indicateurs permettent d’évaluer la fiabilité des partenaires affrétés et d’assurer un pilotage efficace des opérations.\n\n## Contexte questionnaire — Aircraft Information Management System (AIMS)\n- **Q1 — Quel est le processus complet de création d'un programme de vols, de l'initiative commerciale jusqu'à la publication SSI** : La réception sous forme de fréquencemètre de la demande des marchés via la DVR/ Flotte vive fournie par la DMRA / Contraintes Slots selon les coordinateurs/contraintes opérationnelles selon la DOA, DOS, ANAC/ Dimensionnement Personnel Naviguant par la DOA/Coordination DC DIVEX DMRA/passage au COMEX pour validation de la DG/ Diffusion des intentions…\n- **Q2 — Combien de vols sont programmés en moyenne par jour / par saison IATA ? Quelle est la répartition entre vols réguliers, ** : En moyenne 250 vols par jour majoritairement vols réguliers.\n- **Q3 — Comment sont gérées les modifications de programme en cours de saison (annulations, ajouts, changements d'horaires) ? Qu** : Le programme subit des modifications suite aléas ( indisponibilité avion, NOTAM, vols additifs, contraintes exogènes … ) au niveau de la SD programme pour la régulation saison et au niveau du pour le mois au niveau du suivi flotte du CCO ou carrément le jour j au CCO ; le circuit de validation dépend de l'obtention des accords requis et les collabo…\n- **Q4 — Comment le programme de vols est-il transmis à Altéa (format SSIM) ? Cette transmission est-elle automatique ou manuelle** : Le programme est transmis au FDM via des e mail de lancements et aussi sous format SSIM , cette option n'est pas totalement fiable.\n- **Q5 — Comment sont planifiés les rotations et les rosters des équipages (PNT et PNC) ? Quelles contraintes sont prises en comp** : les planing sont etablis manuelement en respectant le regime de travail PN FTL,preference ,...\n- **Q6 — Combien de membres d'équipage sont gérés dans AIMS (PNT et PNC séparément) ? Combien de qualifications différentes sont ** : le nombre est de 579 PNT et de 1636 PNC pour les quailfications en PNT , on gére trois qualifications A330-NG-ATR le PNC Memes qualifications que ceux du pnt avec PNC MONO A BE-QUALIF\n- **Q7 — Comment sont gérés les cas d'indisponibilité imprévue (maladie, absence) ? Quel est le processus de remplacement et qui ** : les cas d'indisponibiltes sont gerées par des declenchement des alertes et solicitations ,et c'est au niveau du departement suivi (service suivi et check in )\n- **Q8 — Quelles sont les règles FTL (Flight Time Limitations) appliquées ? Sont-elles configurées dans AIMS ou suivies manuellem** : le TSV et temps de repos sont parametrés sur AIMS ,parfois contourné manuellement tout en restant legal vis a vis du decret",
+      "category": "OPERATIONAL",
+      "status": "DOCUMENTED",
+      "problems": "Suivi manuel chronophage des heures de vol, coordination par email peu efficace entre services, calculs KPI manuels sujets à erreurs, absence d'automatisation dans le suivi opérationnel",
+      "recommendations": "Automatiser le suivi des heures de vol via intégration AIMS, mettre en place un workflow numérique pour la coordination inter-services, développer un tableau de bord automatisé pour les KPI, digitaliser le processus de validation des factures",
+      "validation_status": "NOT_REQUESTED",
+      "validated_by": "",
+      "validated_at": "2026-05-17 10:23:16.960141",
+      "created_by": "Benaouicha Hanane",
+      "created_at": "2026-05-14 09:13:08.782137",
+      "steps": [
+        {
+          "id": 681,
+          "ord": 1,
+          "title": "Validation du besoin d'affrètement",
+          "description": "Le besoin en affrètement est identifié et validé par les services concernés avant le lancement du processus",
+          "step_type": "INPUT",
+          "actor_role": "Responsable affrètement",
+          "data_inputs": "Demande d'affrètement avec spécifications",
+          "data_outputs": "Besoin validé et documenté",
+          "interactions": "Validation hiérarchique",
+          "problems": "",
+          "duration_estimate": "1-2 jours"
+        },
+        {
+          "id": 682,
+          "ord": 2,
+          "title": "Passage au COMEX",
+          "description": "Le dossier d'affrètement est présenté et validé par le COMEX avant de poursuivre la procédure",
+          "step_type": "DECISION",
+          "actor_role": "Direction Générale",
+          "data_inputs": "Dossier d'affrètement préparé",
+          "data_outputs": "Validation ou refus COMEX",
+          "interactions": "Présentation et décision collégiale",
+          "problems": "",
+          "duration_estimate": "Variable selon planning COMEX"
+        },
+        {
+          "id": 683,
+          "ord": 3,
+          "title": "Mise à jour du cahier des charges",
+          "description": "Révision et mise à jour du cahier des charges après validation COMEX",
+          "step_type": "MANUAL",
+          "actor_role": "Responsable affrètement",
+          "data_inputs": "Cahier des charges existant et directives COMEX",
+          "data_outputs": "Cahier des charges révisé",
+          "interactions": "Homme→document",
+          "problems": "",
+          "duration_estimate": "2-3 jours"
+        },
+        {
+          "id": 684,
+          "ord": 4,
+          "title": "Passage au CPA",
+          "description": "La révision du cahier des charges est soumise au CPA (Commission Permanente d'Appel d'offres) pour validation",
+          "step_type": "DECISION",
+          "actor_role": "Commission CPA",
+          "data_inputs": "Cahier des charges révisé",
+          "data_outputs": "Validation CPA pour lancement appel d'offres",
+          "interactions": "Validation réglementaire",
+          "problems": "",
+          "duration_estimate": "1 semaine"
+        },
+        {
+          "id": 685,
+          "ord": 5,
+          "title": "Lancement appel d'offres",
+          "description": "Élaboration et diffusion du cahier des charges aux opérateurs concernés selon procédures PS 17, CPA, CPM",
+          "step_type": "OUTPUT",
+          "actor_role": "Service achats",
+          "data_inputs": "Cahier des charges validé et liste opérateurs",
+          "data_outputs": "Appel d'offres diffusé",
+          "interactions": "Diffusion par email/courrier",
+          "problems": "",
+          "duration_estimate": "1-2 jours"
+        },
+        {
+          "id": 686,
+          "ord": 6,
+          "title": "Réception et analyse des offres",
+          "description": "Collecte des offres reçues des opérateurs et analyse comparative selon critères définis",
+          "step_type": "MANUAL",
+          "actor_role": "Commission d'évaluation",
+          "data_inputs": "Offres des opérateurs",
+          "data_outputs": "Analyse comparative des offres",
+          "interactions": "Analyse documentaire",
+          "problems": "",
+          "duration_estimate": "1-2 semaines"
+        },
+        {
+          "id": 687,
+          "ord": 7,
+          "title": "Sélection de l'opérateur",
+          "description": "Sélection de l'opérateur retenu basée sur l'analyse des offres et critères d'évaluation",
+          "step_type": "DECISION",
+          "actor_role": "Commission d'évaluation",
+          "data_inputs": "Analyse comparative des offres",
+          "data_outputs": "Opérateur sélectionné",
+          "interactions": "Décision collégiale",
+          "problems": "",
+          "duration_estimate": "2-3 jours"
+        },
+        {
+          "id": 688,
+          "ord": 8,
+          "title": "Contractualisation",
+          "description": "Négociation et signature du contrat d'affrètement avec l'opérateur sélectionné",
+          "step_type": "MANUAL",
+          "actor_role": "Service juridique",
+          "data_inputs": "Conditions négociées et cadre contractuel",
+          "data_outputs": "Contrat d'affrètement signé",
+          "interactions": "Négociation et formalisation",
+          "problems": "",
+          "duration_estimate": "1-2 semaines"
+        },
+        {
+          "id": 689,
+          "ord": 9,
+          "title": "Obtention des autorisations",
+          "description": "Veiller à l'obtention de toutes les autorisations nécessaires (ANAC, autorités aviation civile, VERITAL) selon circulaire ANAC 35-10",
+          "step_type": "MANUAL",
+          "actor_role": "Responsable réglementaire",
+          "data_inputs": "Dossiers techniques et réglementaires",
+          "data_outputs": "Autorisations obtenues",
+          "interactions": "Communication avec autorités",
+          "problems": "",
+          "duration_estimate": "2-4 semaines"
+        },
+        {
+          "id": 690,
+          "ord": 10,
+          "title": "Arrêt du processus",
+          "description": "En cas de refus COMEX, arrêt du processus d'affrètement",
+          "step_type": "OUTPUT",
+          "actor_role": "Responsable affrètement",
+          "data_inputs": "Décision de refus COMEX",
+          "data_outputs": "Processus interrompu",
+          "interactions": "Notification interne",
+          "problems": "",
+          "duration_estimate": ""
+        },
+        {
+          "id": 691,
+          "ord": 11,
+          "title": "Établissement laissez-passer PN",
+          "description": "Établissement des laissez-passer pour le personnel navigant des avions affrétés et personnel technique",
+          "step_type": "MANUAL",
+          "actor_role": "Service PN affrètement",
+          "data_inputs": "Listes équipages et personnel technique",
+          "data_outputs": "Laissez-passer établis",
+          "interactions": "Traitement administratif",
+          "problems": "",
+          "duration_estimate": "1-2 jours"
+        },
+        {
+          "id": 692,
+          "ord": 12,
+          "title": "Coordination réservations équipages",
+          "description": "Coordination des réservations d'hébergement et transport pour les équipages affrétés",
+          "step_type": "MANUAL",
+          "actor_role": "Coordinateur équipages",
+          "data_inputs": "Planning équipages et rotations",
+          "data_outputs": "Réservations confirmées",
+          "interactions": "Communication avec prestataires",
+          "problems": "",
+          "duration_estimate": "Variable selon opération"
+        },
+        {
+          "id": 693,
+          "ord": 13,
+          "title": "Obtention assurances DAJA",
+          "description": "Obtention des assurances nécessaires auprès de la DAJA pour couvrir l'opération d'affrètement",
+          "step_type": "MANUAL",
+          "actor_role": "Responsable assurances",
+          "data_inputs": "Détails opération et besoins couverture",
+          "data_outputs": "Polices d'assurance",
+          "interactions": "Communication avec assureurs",
+          "problems": "",
+          "duration_estimate": "3-5 jours"
+        },
+        {
+          "id": 694,
+          "ord": 14,
+          "title": "Suivi quotidien heures de vol",
+          "description": "Suivi quotidien et rigoureux des heures de vol réalisées pendant l'opération d'affrètement",
+          "step_type": "MANUAL",
+          "actor_role": "Contrôleur opérations",
+          "data_inputs": "Données de vol temps réel",
+          "data_outputs": "Rapports heures de vol",
+          "interactions": "Suivi temps réel",
+          "problems": "Suivi manuel chronophage",
+          "duration_estimate": "Quotidien pendant opération"
+        },
+        {
+          "id": 695,
+          "ord": 15,
+          "title": "Suivi administratif et financier",
+          "description": "Traitement des factures et vérification de conformité des prestations en collaboration avec DOA par email",
+          "step_type": "MANUAL",
+          "actor_role": "Gestionnaire administratif",
+          "data_inputs": "Factures et justificatifs prestataires",
+          "data_outputs": "Factures vérifiées",
+          "interactions": "Collaboration par email avec DOA",
+          "problems": "Coordination par email peu efficace",
+          "duration_estimate": "Variable selon volume"
+        },
+        {
+          "id": 696,
+          "ord": 16,
+          "title": "Règlement factures par SD GAF",
+          "description": "La Sous-Direction GAF de la DC procède au règlement des factures après vérification",
+          "step_type": "OUTPUT",
+          "actor_role": "SD GAF",
+          "data_inputs": "Factures vérifiées et validées",
+          "data_outputs": "Paiements effectués",
+          "interactions": "Processus comptable",
+          "problems": "",
+          "duration_estimate": "Selon délais paiement"
+        },
+        {
+          "id": 697,
+          "ord": 17,
+          "title": "Calcul KPI et reporting",
+          "description": "Calcul des indicateurs de performance : taux de réalisation, ponctualité, suivi des irrégularités",
+          "step_type": "MANUAL",
+          "actor_role": "Analyste performance",
+          "data_inputs": "Données opérationnelles et financières",
+          "data_outputs": "Tableau de bord KPI",
+          "interactions": "Analyse de données",
+          "problems": "Calculs manuels sujets à erreurs",
+          "duration_estimate": "Hebdomadaire/mensuel"
+        }
+      ],
+      "structures": [
+        {
+          "code": "DC",
+          "name": "Division Commerciale"
+        },
+        {
+          "code": "DOA",
+          "name": "Direction des Opérations Aériennes"
+        },
+        {
+          "code": "DAGP",
+          "name": "Direction Achat et Gestion du Patrimoine"
+        },
+        {
+          "code": "DIVEX",
+          "name": "Division de l'Exploitation"
+        },
+        {
+          "code": "DG",
+          "name": "Direction Générale"
+        },
+        {
+          "code": "DAG",
+          "name": "Division des Affaires Générales"
+        },
+        {
+          "code": "CCO",
+          "name": "Centre de Contrôle des Opérations"
+        }
+      ]
+    },
+    {
+      "id": 153,
+      "code": "PROC-AA-DIVEX-11",
+      "name": "Gestion des codes compagnies (Carrier Code)",
+      "description": "Création et mise à jour des codes compagnies dans le système",
+      "context": "# Gestion des codes compagnies (Carrier Code)\n\n## Description\nCréation et mise à jour des codes compagnies dans le système\n\n## Systèmes utilisés (déclaratif key user)\nAIMS\n\n## Outputs / KPI\nBase des compagnies à jour, intégration des vols affrétés, continuité des opérations inter-compagnies\n\n## Contexte questionnaire — Aircraft Information Management System (AIMS)\n- **Q1 — Quel est le processus complet de création d'un programme de vols, de l'initiative commerciale jusqu'à la publication SSI** : La réception sous forme de fréquencemètre de la demande des marchés via la DVR/ Flotte vive fournie par la DMRA / Contraintes Slots selon les coordinateurs/contraintes opérationnelles selon la DOA, DOS, ANAC/ Dimensionnement Personnel Naviguant par la DOA/Coordination DC DIVEX DMRA/passage au COMEX pour validation de la DG/ Diffusion des intentions…\n- **Q2 — Combien de vols sont programmés en moyenne par jour / par saison IATA ? Quelle est la répartition entre vols réguliers, ** : En moyenne 250 vols par jour majoritairement vols réguliers.\n- **Q3 — Comment sont gérées les modifications de programme en cours de saison (annulations, ajouts, changements d'horaires) ? Qu** : Le programme subit des modifications suite aléas ( indisponibilité avion, NOTAM, vols additifs, contraintes exogènes … ) au niveau de la SD programme pour la régulation saison et au niveau du pour le mois au niveau du suivi flotte du CCO ou carrément le jour j au CCO ; le circuit de validation dépend de l'obtention des accords requis et les collabo…\n- **Q4 — Comment le programme de vols est-il transmis à Altéa (format SSIM) ? Cette transmission est-elle automatique ou manuelle** : Le programme est transmis au FDM via des e mail de lancements et aussi sous format SSIM , cette option n'est pas totalement fiable.\n- **Q5 — Comment sont planifiés les rotations et les rosters des équipages (PNT et PNC) ? Quelles contraintes sont prises en comp** : les planing sont etablis manuelement en respectant le regime de travail PN FTL,preference ,...\n- **Q6 — Combien de membres d'équipage sont gérés dans AIMS (PNT et PNC séparément) ? Combien de qualifications différentes sont ** : le nombre est de 579 PNT et de 1636 PNC pour les quailfications en PNT , on gére trois qualifications A330-NG-ATR le PNC Memes qualifications que ceux du pnt avec PNC MONO A BE-QUALIF\n- **Q7 — Comment sont gérés les cas d'indisponibilité imprévue (maladie, absence) ? Quel est le processus de remplacement et qui ** : les cas d'indisponibiltes sont gerées par des declenchement des alertes et solicitations ,et c'est au niveau du departement suivi (service suivi et check in )\n- **Q8 — Quelles sont les règles FTL (Flight Time Limitations) appliquées ? Sont-elles configurées dans AIMS ou suivies manuellem** : le TSV et temps de repos sont parametrés sur AIMS ,parfois contourné manuellement tout en restant legal vis a vis du decret",
+      "category": "OPERATIONAL",
+      "status": "DOCUMENTED",
+      "problems": "Processus de validation manuel et chronophage pour les codes IATA/ICAO. Tests manuels non automatisés risquant de laisser passer des anomalies. Synchronisation manuelle entre systèmes (AIMS vers Altéa) créant des risques d'incohérence et des délais supplémentaires. Documentation manuelle sans système centralisé de gestion documentaire. Absence d'automatisation dans la chaîne de validation et de déploiement.",
+      "recommendations": "Automatiser la validation des codes IATA/ICAO via des APIs ou bases de données de référence. Implémenter des tests automatisés pour valider l'intégration des nouveaux codes compagnies. Développer des interfaces automatisées entre AIMS et les systèmes connexes (Altéa, etc.) pour éviter les synchronisations manuelles. Mettre en place un système de gestion documentaire centralisé. Créer un workflow automatisé de validation et d'approbation. Implémenter des contrôles de cohérence automatiques entre systèmes.",
+      "validation_status": "NOT_REQUESTED",
+      "validated_by": "",
+      "validated_at": null,
+      "created_by": "Bennouar Adnane",
+      "created_at": "2026-05-14 09:13:08.796998",
+      "steps": [
+        {
+          "id": 768,
+          "ord": 1,
+          "title": "Identification du besoin de création/mise à jour de code compagnie",
+          "description": "Identification du besoin de créer un nouveau code compagnie ou de mettre à jour un code existant, suite à des partenariats, des accords d'affrètement ou des modifications commerciales",
+          "step_type": "INPUT",
+          "actor_role": "Responsable Opérations Commerciales",
+          "data_inputs": "Demandes partenariats, accords affrètement, besoins opérationnels",
+          "data_outputs": "Demande formalisée de création/modification code compagnie",
+          "interactions": "Analyse manuelle des besoins",
+          "problems": "",
+          "duration_estimate": "1-2 jours"
+        },
+        {
+          "id": 769,
+          "ord": 2,
+          "title": "Validation du code compagnie IATA/ICAO",
+          "description": "Vérification de la disponibilité et de la conformité du code compagnie selon les standards IATA/ICAO",
+          "step_type": "MANUAL",
+          "actor_role": "Responsable Codes et Standards",
+          "data_inputs": "Demande de code compagnie, références IATA/ICAO",
+          "data_outputs": "Code compagnie validé et approuvé",
+          "interactions": "Consultation manuelle des référentiels IATA/ICAO",
+          "problems": "Processus de validation manuel et chronophage",
+          "duration_estimate": "2-3 jours"
+        },
+        {
+          "id": 770,
+          "ord": 3,
+          "title": "Saisie du code compagnie dans AIMS",
+          "description": "Création ou mise à jour du code compagnie dans le système AIMS avec tous les attributs nécessaires (nom, code IATA, code ICAO, pays, etc.)",
+          "step_type": "MANUAL",
+          "actor_role": "Opérateur AIMS",
+          "data_inputs": "Code compagnie validé, informations compagnie détaillées",
+          "data_outputs": "Code compagnie créé/mis à jour dans AIMS",
+          "interactions": "Homme→système - Saisie manuelle dans AIMS",
+          "problems": "",
+          "duration_estimate": "30 minutes"
+        },
+        {
+          "id": 771,
+          "ord": 4,
+          "title": "Test et validation de l'intégration",
+          "description": "Test de l'intégration du nouveau code compagnie dans les processus opérationnels, notamment pour les vols affrétés et les opérations inter-compagnies",
+          "step_type": "MANUAL",
+          "actor_role": "Responsable Tests Opérationnels",
+          "data_inputs": "Code compagnie intégré dans AIMS",
+          "data_outputs": "Validation de l'intégration fonctionnelle",
+          "interactions": "Test manuel des fonctionnalités",
+          "problems": "Tests manuels non automatisés",
+          "duration_estimate": "1-2 heures"
+        },
+        {
+          "id": 772,
+          "ord": 5,
+          "title": "Correction des anomalies",
+          "description": "Correction des éventuelles anomalies détectées lors des tests d'intégration",
+          "step_type": "MANUAL",
+          "actor_role": "Opérateur AIMS",
+          "data_inputs": "Anomalies identifiées",
+          "data_outputs": "Code compagnie corrigé",
+          "interactions": "Homme→système - Modification dans AIMS",
+          "problems": "",
+          "duration_estimate": "1 heure"
+        },
+        {
+          "id": 773,
+          "ord": 6,
+          "title": "Mise en production du code compagnie",
+          "description": "Activation du code compagnie en environnement de production pour utilisation opérationnelle",
+          "step_type": "MANUAL",
+          "actor_role": "Administrateur AIMS",
+          "data_inputs": "Code compagnie validé et testé",
+          "data_outputs": "Code compagnie actif en production",
+          "interactions": "Homme→système - Activation en production",
+          "problems": "",
+          "duration_estimate": "15 minutes"
+        },
+        {
+          "id": 774,
+          "ord": 7,
+          "title": "Synchronisation avec les systèmes connexes",
+          "description": "Synchronisation du nouveau code compagnie avec les autres systèmes qui en ont besoin (Altéa, systèmes de planification)",
+          "step_type": "MANUAL",
+          "actor_role": "Administrateur Systèmes",
+          "data_inputs": "Code compagnie depuis AIMS",
+          "data_outputs": "Code compagnie synchronisé dans tous les systèmes",
+          "interactions": "Système→système - Synchronisation manuelle",
+          "problems": "Synchronisation manuelle entre systèmes, risque d'incohérence",
+          "duration_estimate": "1-2 heures"
+        },
+        {
+          "id": 775,
+          "ord": 8,
+          "title": "Notification et communication",
+          "description": "Information des équipes opérationnelles concernées de la disponibilité du nouveau code compagnie",
+          "step_type": "OUTPUT",
+          "actor_role": "Responsable Communication Opérationnelle",
+          "data_inputs": "Code compagnie opérationnel",
+          "data_outputs": "Notification envoyée aux équipes",
+          "interactions": "Homme→système - Envoi de notifications",
+          "problems": "",
+          "duration_estimate": "30 minutes"
+        },
+        {
+          "id": 776,
+          "ord": 9,
+          "title": "Documentation et archivage",
+          "description": "Documentation de la création/modification du code compagnie et archivage des informations pour traçabilité",
+          "step_type": "MANUAL",
+          "actor_role": "Gestionnaire Documentation",
+          "data_inputs": "Informations complètes du processus",
+          "data_outputs": "Documentation archivée",
+          "interactions": "Homme→système - Saisie documentation",
+          "problems": "Documentation manuelle sans système centralisé",
+          "duration_estimate": "30 minutes"
+        }
+      ],
+      "structures": [
+        {
+          "code": "DSI",
+          "name": "Direction des Systèmes d'Information"
+        },
+        {
+          "code": "DC",
+          "name": "Division Commerciale"
+        },
+        {
+          "code": "DOA",
+          "name": "Direction des Opérations Aériennes"
+        },
+        {
+          "code": "DIVEX",
+          "name": "Division de l'Exploitation"
+        }
+      ]
+    },
+    {
+      "id": 131,
+      "code": "PROC-AA-DOS-05",
+      "name": "Datawarehouse Feeds",
+      "description": "Les données issues des modules Customer Management (CM) et Flight Management (FM) sont extraites quotidiennement et transmises au serveur AH",
+      "context": "# Datawarehouse Feeds\n\n## Description\nLes données issues des modules Customer Management (CM) et Flight Management (FM) sont extraites quotidiennement et transmises au serveur AH\n\n## Systèmes utilisés (déclaratif key user)\nALTEA DCS AH et GH\n\n## Outputs / KPI\nServeur FTP (DSI)\n\n## Contexte questionnaire — Suite Altéa Amadeus (ALTEA)\n- **Q1 — Quels sont les canaux de vente connectés à Altéa Reservation (agences, site web, call center, GDS tiers) ? Quel est le v** : Tous les canaux de ventes susmentionnés sont connectés à Altéa Reservation La moyenne de PNRs créés par jour est entre 18.500 et 19.000, 6.000 - 6.500 ATO/CTO (Agences AH) 3.500 - 4.000 IBE-AH 8.000 OTHERS (GDSs) 400 - 500 CONTACT CENTER\n- **Q2 — Quelles sont les règles de gestion spécifiques appliquées lors de la création d'un PNR (limites de segments, délais de t** : Aucune limite pour les segments, 16 coupons pour les tickets En ce qui concerne l'annulation automatique des réservations, le système ARI (Amadeus Revenue Integrity) est déployé pour l'annulation des réservations suivant les régles en place (Time limit dont la politique définit conjointement avec la SDRM, réservations non productives)\n- **Q3 — Comment sont gérés les PNR de groupe vs les PNR individuels ? Y a-t-il des processus métier différents ?** : les pnr groupes sont crées au niveau des agences groupes d'Air Algérie en request via le même système pour éventuel traitement par l'équipe groupdesk de la DRM via le système AGM, cependant, aucune autre différence pour les deux.\n- **Q4 — Quels rapports ou extractions sont produits régulièrement à partir des données de réservation ? Par qui et à quelle fréq** : Les données de bookings sont exploités par le RMS pour la génération des processus de prévision, optimisation ainsi que les comparatifs et courbes de bookings comme indicateur de performance primaire de la gestion des vols\n- **Q15 — Quels sont les principaux irritants métier aujourd'hui avec la suite Altéa ? Quelles données manquent ou sont difficiles** : Les données soumises à une intervention manuelle (clôture du vol) ou si les escales ne sont pas encore sous Altéa\n- **Q16 — Quels indicateurs clés (KPI) aimeriez-vous suivre à partir des données Altéa qui ne sont pas disponibles aujourd'hui ?** : KPI de performance embarquement\n- **Q17 — Y a-t-il des processus métier qui nécessitent aujourd'hui des extractions manuelles ou des contournements par rapport à ** : Messages opérationnels Messages MVT: Absence d’envoi des messages pour certains vols. Transmission de Mouvement erronés (erreurs sur la date ou heure d’arrivée). Message LDM: Vols opérants en appareils affrétés Un défi majeur réside dans la réception tardive ou absence des documents AHM565 de la part des compagnies. Certains appareils arrivent et e…",
+      "category": "OPERATIONAL",
+      "status": "DOCUMENTED",
+      "problems": "Données soumises à intervention manuelle pour la clôture des vols. Escales non encore migrées sous Altéa créent des données manquantes. KPI de performance embarquement non disponibles actuellement. Messages opérationnels problématiques (MVT, LDM) avec transmission erronée ou absente.",
+      "recommendations": "Automatiser la clôture des vols pour éviter les interventions manuelles. Accélérer la migration des escales sous Altéa. Développer les KPI de performance embarquement demandés. Fiabiliser la transmission des messages opérationnels MVT et LDM. Mettre en place un monitoring de la qualité des feeds transmis.",
+      "validation_status": "NOT_REQUESTED",
+      "validated_by": "",
+      "validated_at": null,
+      "created_by": "LOUNAOUCI Nassim",
+      "created_at": "2026-05-14 09:13:08.754156",
+      "steps": [
+        {
+          "id": 968,
+          "ord": 1,
+          "title": "Extraction quotidienne données Customer Management",
+          "description": "Extraction automatique des données du module Customer Management d'Altéa pour alimentation du datawarehouse",
+          "step_type": "AUTOMATED",
+          "actor_role": "Système Altéa",
+          "data_inputs": "Données Customer Management (PNR, réservations, passagers)",
+          "data_outputs": "Fichiers de données CM formatés",
+          "interactions": "système→système",
+          "problems": "Données soumises à intervention manuelle pour clôture des vols",
+          "duration_estimate": "Quotidien - automatique"
+        },
+        {
+          "id": 969,
+          "ord": 2,
+          "title": "Extraction quotidienne données Flight Management",
+          "description": "Extraction automatique des données du module Flight Management d'Altéa pour alimentation du datawarehouse",
+          "step_type": "AUTOMATED",
+          "actor_role": "Système Altéa",
+          "data_inputs": "Données Flight Management (vols, mouvements, opérations)",
+          "data_outputs": "Fichiers de données FM formatés",
+          "interactions": "système→système",
+          "problems": "Escales non encore sous Altéa créent des données manquantes",
+          "duration_estimate": "Quotidien - automatique"
+        },
+        {
+          "id": 970,
+          "ord": 3,
+          "title": "Consolidation et préparation des feeds",
+          "description": "Consolidation des données CM et FM extraites, formatage et préparation pour transmission",
+          "step_type": "AUTOMATED",
+          "actor_role": "Processus ETL",
+          "data_inputs": "Fichiers CM et FM extraits",
+          "data_outputs": "Feeds consolidés prêts pour transmission",
+          "interactions": "système→système",
+          "problems": "",
+          "duration_estimate": "30 minutes"
+        },
+        {
+          "id": 971,
+          "ord": 4,
+          "title": "Transmission vers serveur AH",
+          "description": "Transmission quotidienne des feeds de données vers le serveur AH via FTP",
+          "step_type": "AUTOMATED",
+          "actor_role": "Serveur FTP",
+          "data_inputs": "Feeds consolidés",
+          "data_outputs": "Données disponibles sur serveur AH",
+          "interactions": "système→serveur",
+          "problems": "",
+          "duration_estimate": "15 minutes"
+        },
+        {
+          "id": 972,
+          "ord": 5,
+          "title": "Exploitation des données par RMS",
+          "description": "Utilisation des données transmises par le RMS pour génération des processus de prévision et optimisation",
+          "step_type": "AUTOMATED",
+          "actor_role": "Analyste Revenue Management",
+          "data_inputs": "Données datawarehouse",
+          "data_outputs": "Processus de prévision, optimisation, comparatifs et courbes de bookings",
+          "interactions": "utilisateur→système",
+          "problems": "KPI de performance embarquement non disponibles",
+          "duration_estimate": "Continu"
+        }
+      ],
+      "structures": [
+        {
+          "code": "DSI",
+          "name": "Direction des Systèmes d'Information"
+        },
+        {
+          "code": "DOS",
+          "name": "Direction des Opérations Sol"
+        },
+        {
+          "code": "DRM",
+          "name": "Direction du Revenue Management"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "code": "PROC-WT-001",
+      "name": "Gestion des irrégularités bagages (perte, retard, OHD)",
+      "description": "Process de bout en bout de la gestion des bagages irréguliers : déclaration d'irrégularité à l'escale, recherche via World Tracer, suivi OHD/AGL, indemnisation, et clôture des dossiers. Implique les escales, le département Recherche & Indemnisation, le département Qualité, et les délégations à l'étranger.",
+      "context": "Contexte : Air Algérie utilise World Tracer pour gérer les irrégularités bagages (pertes, retards, objets trouvés). Le système est centralisé : toutes les compagnies interlines peuvent consulter et modifier les mêmes dossiers. La recherche est mondiale.\r\n\r\nFlux opérationnel actuel :\r\n\r\n1. Déclaration d'irrégularité — Quand un bagage est perdu ou retardé, l'agent d'escale crée un dossier dans World Tracer (rapport AHL ou DPR). Si le système n'est pas utilisé dans l'escale, la réclamation est faite manuellement : par écrit ou par e-mail, sans aucune recherche automatique.\r\n\r\n2. Recherche des bagages — World Tracer centralise les dossiers et effectue une recherche mondiale automatique, y compris pour les bagages interlines (multi-compagnies). Les escales doivent enregistrer les OHD (On-Hand bagages, objets en main trouvés) et les AGL (bagages non réclamés à l'arrivée) en volume suffisant pour permettre le matching.\r\n\r\n3. Suivi des KPI — Le département Qualité (sous-direction contrôle des escales, contact : Mme Abdoun Zakia) suit les indicateurs de performance à partir des statistiques générées par World Tracer. Le département de Mme Touahria (Recherche) produit des statistiques mais ne gère pas directement les KPI.\r\n\r\n4. Indemnisation — Gérée manuellement par le département Recherche et Indemnisation, sans outil dédié. Le DPR est transmis au contentieux qui l'analyse manuellement. Les frais de livraison à l'étranger sont réglés par les délégations ou directions régionales. Il n'existe pas de vision consolidée des coûts totaux (abonnement WT + frais de recherche + indemnisations + frais de livraison + storage). Convention de Varsovie appliquée.\r\n\r\n5. Clôture des dossiers — Un fichier clôturé reste 60 jours sur le système. Un fichier ouvert (non clôturé) reste 180 jours + 3 ans d'archivage, générant des frais de stockage et de recherche supplémentaires.\r\n\r\nProblèmes identifiés :\r\n\r\n- Migration World Tracer natif → World Tracer Desktop incomplète : 12 escales migrées sur l'ensemble du réseau, fin prévue octobre 2026 au plus tard. Formation de 133 personnes restantes à réaliser entre avril et septembre 2026 (pas pendant le Hadj ni la haute saison août).\r\n- Agents polyvalents dans les escales nationales : un même agent gère enregistrement, embarquement, transit, assistance PMR et litiges bagages. Résultat : remplissage partiel des dossiers (champs obligatoires seulement), pas de recherche effectuée dans certaines escales.\r\n- Personnel dédié insuffisant même dans les escales qui en ont.\r\n- Formation non terminée (de 112 à 133 personnes à former). Certaines directions régionales ne répondent pas aux emails.\r\n- Pas de vision globale des coûts liés aux bagages perdus : chaque processus et chaque coût sont gérés séparément.\r\n- Fichiers non clôturés engendrent des frais supplémentaires de storage et de recherche.\r\n- Utilisation de fichiers Excel en parallèle pour pallier les lacunes du système (notamment au département Contentieux).\r\n- Interconnexion World Tracer ↔ ALTEA prévue mais en attente de fin de migration.\r\n- 2000 à 3000 pertes de bagages par mois en haute saison. Majorité due au chargement et au transit.\r\n- Le système pourrait faire 90% du travail si les fichiers AHL et les données OHD étaient correctement remplis au lieu des seuls champs obligatoires.",
+      "category": "OPERATIONAL",
+      "status": "VALIDATED",
+      "problems": "Migration World Tracer incomplète (12/toutes escales migrées), formation insuffisante (133 personnes à former), agents polyvalents avec temps limité, remplissage partiel des dossiers (champs obligatoires seulement), enregistrement OHD insuffisant, processus d'indemnisation entièrement manuel, gestion décentralisée des frais, utilisation parallèle d'Excel, interconnexion ALTEA-World Tracer en attente, fichiers non clôturés générant des coûts supplémentaires, absence de vision consolidée des coûts totaux, 2000-3000 pertes/mois en haute saison",
+      "recommendations": "Accélérer la migration World Tracer Desktop et les formations, dédier du personnel spécialisé bagages dans les escales principales, améliorer la qualité de saisie des données OHD/AGL, développer un outil dédié pour l'indemnisation, centraliser la gestion des coûts, mettre en place des tableaux de bord consolidés, automatiser l'interconnexion avec ALTEA, optimiser la clôture des dossiers, établir des procédures standardisées",
+      "validation_status": "NOT_REQUESTED",
+      "validated_by": "",
+      "validated_at": null,
+      "created_by": "admin",
+      "created_at": "2026-04-12 11:00:43.220748",
+      "steps": [
+        {
+          "id": 1,
+          "ord": 1,
+          "title": "Déclaration d'irrégularité bagage",
+          "description": "L'agent d'escale crée un dossier dans World Tracer (rapport AHL pour bagages perdus ou DPR pour retards) lorsqu'un passager signale un problème de bagage. Si World Tracer n'est pas disponible, la déclaration se fait manuellement par écrit ou email.",
+          "step_type": "INPUT",
+          "actor_role": "Agent d'escale",
+          "data_inputs": "Informations passager, détails du bagage, numéro de vol",
+          "data_outputs": "Dossier AHL ou DPR créé",
+          "interactions": "Homme→système (World Tracer) ou homme→papier",
+          "problems": "Escales non migrées vers World Tracer Desktop, remplissage partiel des dossiers (champs obligatoires uniquement), pas de recherche effectuée dans certaines escales",
+          "duration_estimate": "10-15 minutes"
+        },
+        {
+          "id": 2,
+          "ord": 2,
+          "title": "Recherche automatique mondiale",
+          "description": "World Tracer effectue une recherche automatique mondiale des bagages en croisant les dossiers d'irrégularités avec les OHD (objets trouvés) et AGL (bagages non réclamés) enregistrés par toutes les compagnies du réseau interlines.",
+          "step_type": "AUTOMATED",
+          "actor_role": "Système World Tracer",
+          "data_inputs": "Dossiers AHL/DPR, base OHD/AGL mondiale",
+          "data_outputs": "Résultats de matching, propositions de correspondances",
+          "interactions": "Système→système (recherche automatique)",
+          "problems": "Données OHD insuffisamment renseignées, qualité des données limitée par le remplissage partiel",
+          "duration_estimate": "Temps réel"
+        },
+        {
+          "id": 3,
+          "ord": 3,
+          "title": "Enregistrement des OHD et AGL",
+          "description": "Les escales doivent enregistrer dans World Tracer tous les bagages trouvés (OHD - On-Hand) et les bagages non réclamés à l'arrivée (AGL) pour alimenter la base de données de recherche.",
+          "step_type": "MANUAL",
+          "actor_role": "Agent d'escale",
+          "data_inputs": "Bagages physiques trouvés ou non réclamés",
+          "data_outputs": "Fiches OHD/AGL dans World Tracer",
+          "interactions": "Homme→système",
+          "problems": "Volume insuffisant d'enregistrement OHD, personnel polyvalent avec peu de temps dédié",
+          "duration_estimate": "5-10 minutes par bagage"
+        },
+        {
+          "id": 4,
+          "ord": 4,
+          "title": "Suivi des KPI qualité",
+          "description": "Le département Qualité (sous-direction contrôle des escales) suit les indicateurs de performance à partir des statistiques générées par World Tracer pour mesurer l'efficacité du processus.",
+          "step_type": "MANUAL",
+          "actor_role": "Responsable Qualité",
+          "data_inputs": "Statistiques World Tracer",
+          "data_outputs": "Tableaux de bord KPI, rapports qualité",
+          "interactions": "Homme→système→fichiers Excel",
+          "problems": "Utilisation de fichiers Excel en parallèle, pas de vision consolidée des coûts totaux",
+          "duration_estimate": "Quotidien/hebdomadaire"
+        },
+        {
+          "id": 5,
+          "ord": 5,
+          "title": "Analyse pour indemnisation",
+          "description": "Le département Contentieux analyse manuellement les dossiers DPR transmis pour déterminer les indemnisations selon la Convention de Varsovie. Aucun outil dédié n'est utilisé.",
+          "step_type": "MANUAL",
+          "actor_role": "Agent contentieux",
+          "data_inputs": "Dossiers DPR, réclamations passagers",
+          "data_outputs": "Décisions d'indemnisation",
+          "interactions": "Homme→fichiers Excel",
+          "problems": "Processus entièrement manuel, pas d'outil dédié, pas de vision consolidée des coûts",
+          "duration_estimate": "30-60 minutes par dossier"
+        },
+        {
+          "id": 6,
+          "ord": 6,
+          "title": "Gestion des frais de livraison",
+          "description": "Les frais de livraison à l'étranger sont réglés par les délégations ou directions régionales de manière décentralisée, sans coordination centrale.",
+          "step_type": "MANUAL",
+          "actor_role": "Délégations régionales",
+          "data_inputs": "Demandes de livraison, factures transporteurs",
+          "data_outputs": "Paiements frais de livraison",
+          "interactions": "Homme→systèmes comptables locaux",
+          "problems": "Gestion décentralisée, pas de vision consolidée des coûts de livraison",
+          "duration_estimate": "Variable"
+        },
+        {
+          "id": 7,
+          "ord": 7,
+          "title": "Paiement des indemnisations",
+          "description": "Traitement des paiements d'indemnisation aux passagers selon les décisions du contentieux, en application de la Convention de Varsovie.",
+          "step_type": "MANUAL",
+          "actor_role": "Service comptabilité",
+          "data_inputs": "Décisions d'indemnisation validées",
+          "data_outputs": "Paiements aux passagers",
+          "interactions": "Homme→systèmes de paiement",
+          "problems": "Processus manuel, suivi des coûts non centralisé",
+          "duration_estimate": "Variable"
+        },
+        {
+          "id": 8,
+          "ord": 8,
+          "title": "Clôture des dossiers",
+          "description": "Les dossiers sont clôturés une fois le bagage retrouvé et livré, ou après indemnisation. Un dossier clôturé reste 60 jours sur le système, un dossier non clôturé reste 180 jours + 3 ans d'archivage.",
+          "step_type": "MANUAL",
+          "actor_role": "Agent d'escale ou département Recherche",
+          "data_inputs": "Confirmation livraison ou indemnisation",
+          "data_outputs": "Dossier clôturé dans World Tracer",
+          "interactions": "Homme→système",
+          "problems": "Fichiers non clôturés génèrent des frais supplémentaires de storage et recherche",
+          "duration_estimate": "5 minutes"
+        }
+      ],
+      "structures": [
+        {
+          "code": "DSI",
+          "name": "Direction des Systèmes d'Information"
+        },
+        {
+          "code": "DOS",
+          "name": "Direction des Opérations Sol"
+        },
+        {
+          "code": "DFC",
+          "name": "Direction Finance et Comptabilité"
+        },
+        {
+          "code": "DAG",
+          "name": "Division des Affaires Générales"
+        },
+        {
+          "code": "DVR",
+          "name": "Direction des Ventes et Réseau"
+        }
+      ]
+    }
+  ],
+  "kpi": {
+    "perimetre": "DC + DRM + DVR (structure_ids 2, 26, 27)",
+    "nb_systemes": 8,
+    "nb_flux": 14,
+    "nb_questionnaires": 8,
+    "nb_questionnaires_completed": 7,
+    "nb_questions_total": 72,
+    "nb_questions_repondues": 72,
+    "taux_completion_pct": 100.0,
+    "nb_key_users": 8,
+    "nb_processes": 8,
+    "nb_process_steps": 82
+  }
+}
