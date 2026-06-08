@@ -982,6 +982,118 @@ class ProcessStep(models.Model):
         return f"{self.process.code} — Étape {self.order}: {self.title}"
 
 
+class ProcessEditLog(models.Model):
+    """Journal d'audit des modifications apportées à un process.
+
+    Trace **qui** a modifié **quoi** et **quand** sur un process et ses étapes.
+    Distinct de ``ProcessValidation`` (qui trace le workflow d'approbation).
+    Chaque édition (champs process, étape, ordre, mermaid…) crée une entrée
+    immuable consultable par tous les acteurs autorisés (staff, divisionnaires,
+    key users) via la page d'historique du process.
+    """
+
+    EDITOR_TYPE_CHOICES = [
+        ('STAFF', 'Administrateur'),
+        ('DIVISION', 'Chef de division'),
+        ('KEY_USER', 'Key User responsable'),
+        ('SYSTEM', 'Système / Script'),
+    ]
+
+    ACTION_CHOICES = [
+        ('CREATE', 'Création du process'),
+        ('UPDATE_FIELDS', 'Modification de champs'),
+        ('ADD_STEP', "Ajout d'une étape"),
+        ('EDIT_STEP', "Modification d'une étape"),
+        ('DELETE_STEP', "Suppression d'une étape"),
+        ('REORDER_STEPS', "Réordonnancement des étapes"),
+        ('EDIT_MERMAID', 'Édition manuelle du diagramme Mermaid'),
+        ('REGEN_MERMAID', 'Régénération du diagramme (statique)'),
+        ('REGEN_AI', 'Régénération du workflow par IA'),
+    ]
+
+    process = models.ForeignKey(
+        Process, on_delete=models.CASCADE, related_name='edit_logs',
+        help_text="Process modifié",
+    )
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES, db_index=True)
+
+    # Identité de l'éditeur
+    editor_type = models.CharField(max_length=15, choices=EDITOR_TYPE_CHOICES, default='STAFF')
+    editor_name = models.CharField(max_length=200, help_text="Nom complet de l'éditeur")
+    editor_role = models.CharField(max_length=200, blank=True, help_text="Rôle / fonction")
+    # Liens vers les comptes/tokens utilisés (selon type)
+    editor_user = models.ForeignKey(
+        'auth.User', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='process_edits', help_text="Compte Django si STAFF",
+    )
+    editor_structure = models.ForeignKey(
+        Structure, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='process_edits',
+        help_text="Division au nom de laquelle l'édition est faite (DIVISION)",
+    )
+    editor_key_user = models.ForeignKey(
+        'KeyUserAccess', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='process_edits',
+        help_text="Token KeyUser utilisé (KEY_USER)",
+    )
+
+    # Cible précise (étape modifiée le cas échéant)
+    step = models.ForeignKey(
+        ProcessStep, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='edit_logs',
+        help_text="Étape concernée (pour ADD_STEP/EDIT_STEP/DELETE_STEP)",
+    )
+    step_label = models.CharField(
+        max_length=300, blank=True,
+        help_text="Libellé de l'étape au moment de l'action (gardé même si l'étape est supprimée)",
+    )
+
+    # Diff
+    changes = models.JSONField(
+        default=dict, blank=True,
+        help_text=(
+            "Détail des modifications. Structure conseillée : "
+            "{'fields': {'name': {'old': 'A', 'new': 'B'}, ...}, 'note': 'libre'}"
+        ),
+    )
+    summary = models.CharField(
+        max_length=500, blank=True,
+        help_text="Résumé court lisible (ex : 'Titre + 2 champs modifiés')",
+    )
+
+    # Contexte
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Journal d'édition de process"
+        verbose_name_plural = "Journal des éditions de process"
+        indexes = [
+            models.Index(fields=['process', '-created_at']),
+            models.Index(fields=['editor_type', '-created_at']),
+        ]
+
+    def __str__(self):
+        return (
+            f"[{self.created_at:%Y-%m-%d %H:%M}] "
+            f"{self.get_action_display()} — {self.process.code} par {self.editor_name}"
+        )
+
+    @property
+    def editor_label(self):
+        """Libellé descriptif de l'éditeur pour l'UI."""
+        base = self.editor_name or '(anonyme)'
+        if self.editor_type == 'DIVISION' and self.editor_structure:
+            return f"{base} ({self.editor_structure.code})"
+        if self.editor_type == 'KEY_USER':
+            return f"{base} (Key User)"
+        if self.editor_type == 'STAFF':
+            return f"{base} (admin)"
+        return base
+
+
 class AuditLog(models.Model):
     """
     Journal d'audit des accès et actions sensibles — exigence loi 18-07 art. 2 (sécurité).
